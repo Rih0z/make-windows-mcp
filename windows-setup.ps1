@@ -34,11 +34,24 @@ if (!(Test-Command node)) {
     refreshenv
 }
 
-# 3. Install Git
-Write-Host "`n[3/5] Installing Git..." -ForegroundColor Yellow
+# 3. Install Git and OpenSSH
+Write-Host "`n[3/5] Installing Git and OpenSSH..." -ForegroundColor Yellow
 if (!(Test-Command git)) {
     choco install git -y
     refreshenv
+}
+
+# Install OpenSSH Server for remote access
+if (!(Get-WindowsCapability -Online | Where-Object Name -like "*OpenSSH.Server*" | Where-Object State -eq "Installed")) {
+    Write-Host "Installing OpenSSH Server..." -ForegroundColor Green
+    Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+    Start-Service sshd
+    Set-Service -Name sshd -StartupType 'Automatic'
+    
+    # Configure firewall for SSH
+    if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue)) {
+        New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -DisplayName "OpenSSH Server (sshd)" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+    }
 }
 
 # 4. Create MCP server directory
@@ -61,7 +74,7 @@ if (!(Test-Path "package.json")) {
 
 # Install dependencies
 Write-Host "Installing dependencies..." -ForegroundColor Green
-npm install express cors dotenv
+npm install express cors dotenv ssh2 ping
 
 # Update package.json scripts
 $packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
@@ -97,5 +110,10 @@ Write-Host "`nServer location: $InstallPath" -ForegroundColor Cyan
 Write-Host "Your IP address: $ipAddress" -ForegroundColor Cyan
 Write-Host "`nNext steps:" -ForegroundColor Yellow
 Write-Host "1. Edit $InstallPath\.env with your settings" -ForegroundColor White
-Write-Host "2. Generate auth token: openssl rand -hex 32" -ForegroundColor White
-Write-Host "3. Start server: cd $InstallPath && npm start" -ForegroundColor White
+Write-Host "2. For NordVPN mesh network:" -ForegroundColor White
+Write-Host "   - Set NORDVPN_ENABLED=true" -ForegroundColor Gray
+Write-Host "   - Add mesh IPs to NORDVPN_HOSTS" -ForegroundColor Gray
+Write-Host "   - Set REMOTE_USERNAME and REMOTE_PASSWORD" -ForegroundColor Gray
+Write-Host "3. Generate auth token: openssl rand -hex 32" -ForegroundColor White
+Write-Host "4. Start server: cd $InstallPath && npm start" -ForegroundColor White
+Write-Host "`nSSH Server is now enabled for remote access" -ForegroundColor Green

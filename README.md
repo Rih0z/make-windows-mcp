@@ -6,6 +6,8 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 
 - 🔨 **リモート.NETビルド** - どのOSからでも.NETアプリケーションをビルド
 - 💻 **PowerShellコマンド実行** - 安全なPowerShellコマンドの実行
+- 🌐 **NordVPNメッシュネットワーク対応** - 複数のWindowsマシンを統合管理
+- 🔗 **SSH経由リモート実行** - SSHでWindows間を接続
 - 🔒 **セキュア通信** - トークンベース認証（本番環境用）
 - 🛡️ **セキュリティ機能** - IPホワイトリスト、レート制限、パス制限
 - 📝 **詳細なログ** - リクエスト/レスポンスの記録
@@ -17,6 +19,7 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 - **クライアント**: Claude Code CLIがインストールされたmacOS/Linux
 - **ネットワーク**: クライアントとWindows VM間の接続
 - **権限**: Windows VMの管理者アクセス
+- **オプション**: NordVPNメッシュネットワーク（リモートWindows用）
 
 ## クイックスタート
 
@@ -62,6 +65,11 @@ claude mcp add --user windows-build-server
 |--------|------|------|------------|
 | `WINDOWS_VM_IP` | Windows VMのIPアドレス | はい | - |
 | `MCP_SERVER_PORT` | サーバーポート | いいえ | 8080 |
+| `NORDVPN_ENABLED` | NordVPNメッシュネットワーク有効化 | いいえ | false |
+| `NORDVPN_HOSTS` | NordVPNメッシュホストIP（カンマ区切り） | いいえ | - |
+| `REMOTE_USERNAME` | リモートWindows認証ユーザー名 | いいえ | Administrator |
+| `REMOTE_PASSWORD` | リモートWindows認証パスワード | いいえ | - |
+| `SSH_TIMEOUT` | SSH接続タイムアウト（ms） | いいえ | 30000 |
 | `MCP_AUTH_TOKEN` | 認証トークン | はい（本番環境） | - |
 | `ALLOWED_IPS` | 許可IPリスト（カンマ区切り） | いいえ | すべて許可 |
 | `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\ |
@@ -95,6 +103,22 @@ claude mcp add --user windows-build-server
 @windows-build-server run_powershell command="Get-Process | Select-Object -First 5"
 ```
 
+### NordVPNメッシュネットワーク経由での操作
+
+```bash
+# リモートホストの接続テスト
+@windows-build-server ping_host host="10.5.0.2"
+
+# リモートWindows上でビルド実行
+@windows-build-server build_dotnet projectPath="C:\\projects\\MyApp.csproj" remoteHost="10.5.0.2"
+
+# リモートでPowerShellコマンド実行
+@windows-build-server run_powershell command="Get-Process" remoteHost="10.5.0.2"
+
+# SSH経由で直接コマンド実行
+@windows-build-server ssh_command host="10.5.0.2" username="Administrator" password="your_password" command="dotnet --version"
+```
+
 ## プロジェクト構成
 
 ```
@@ -112,6 +136,32 @@ claude mcp add --user windows-build-server
 └── .env.example               # 環境変数テンプレート
 ```
 
+## NordVPNメッシュネットワークセットアップ
+
+### 1. NordVPN設定
+1. NordVPNアプリでMeshnet機能を有効化
+2. 各Windowsマシンを同じMeshnetに追加
+3. 各マシンのMeshnet IPアドレスを確認
+
+### 2. Windows設定（各リモートマシン）
+```powershell
+# OpenSSHサーバーを有効化
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Start-Service sshd
+Set-Service -Name sshd -StartupType 'Automatic'
+
+# ファイアウォール設定
+New-NetFirewallRule -Name "SSH" -DisplayName "SSH" -Protocol TCP -LocalPort 22 -Action Allow
+```
+
+### 3. 環境変数設定
+```env
+NORDVPN_ENABLED=true
+NORDVPN_HOSTS=10.5.0.2,10.5.0.3,10.5.0.4
+REMOTE_USERNAME=Administrator
+REMOTE_PASSWORD=your_secure_password
+```
+
 ## セキュリティのベストプラクティス
 
 ### 開発環境
@@ -127,13 +177,17 @@ claude mcp add --user windows-build-server
 
 2. **IPホワイトリストを設定**：
    ```env
-   ALLOWED_IPS=192.168.1.100,192.168.1.101
+   ALLOWED_IPS=192.168.1.100,192.168.1.101,10.5.0.0/24
    ```
 
 3. **ビルドパスを制限**：
    ```env
    ALLOWED_BUILD_PATHS=C:\\projects\\,D:\\builds\\
    ```
+
+4. **SSH認証の強化**：
+   - 強力なパスワードまたはキーベース認証を使用
+   - 必要に応じてSSHポートを変更
 
 ## トラブルシューティング
 
