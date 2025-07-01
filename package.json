@@ -1,0 +1,21 @@
+{
+  "name": "windows-mcp-setup",
+  "version": "1.0.0",
+  "description": "Windows VM MCP Server setup for Claude Code",
+  "scripts": {
+    "setup": "npm install",
+    "configure": "node scripts/configure.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "windows",
+    "build-server"
+  ],
+  "author": "",
+  "license": "MIT"
+}

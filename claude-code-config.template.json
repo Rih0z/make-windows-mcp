@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "command": "node",
+      "args": [
+        "./scripts/mcp-client.js"
+      ],
+      "env": {}
+    }
+  }
+}
