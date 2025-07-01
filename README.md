@@ -92,10 +92,15 @@ claude mcp add --user windows-build-server
 ### Building .NET Applications
 
 ```bash
-# In Claude Code conversation
-@windows-build-server build_dotnet projectPath="Z:\\myproject\\app.csproj" configuration="Debug"
+# Build from local directory (recommended)
 @windows-build-server build_dotnet projectPath="C:\\projects\\MyApp.csproj" configuration="Release"
+
+# For network drives, copy to local first
+@windows-build-server run_powershell command="Copy-Item -Path Z:\\myproject -Destination C:\\temp\\myproject -Recurse"
+@windows-build-server build_dotnet projectPath="C:\\temp\\myproject\\app.csproj" configuration="Debug"
 ```
+
+**⚠️ Important**: Building directly from network drives (Z:) may fail. Always copy to a local directory (C:) first.
 
 ### Running PowerShell Commands
 

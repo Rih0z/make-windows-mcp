@@ -225,21 +225,31 @@ ai_coding_principles:
 build_dotnet:
   description: ".NETアプリケーションのビルド"
   parameters:
-    projectPath: "必須 - .csprojファイルのパス"
+    projectPath: "必須 - .csprojファイルのパス（C:ドライブ推奨）"
     configuration: "オプション - Debug/Release（デフォルト: Debug）"
+  important: "Z:ドライブなどのネットワークドライブからのビルドは失敗する可能性があります"
   example: '@windows-build-server build_dotnet projectPath="C:\\projects\\app.csproj" configuration="Release"'
-
+  
 run_powershell:
-  description: "セーフなPowerShellコマンドの実行"
+  description: "PowerShellコマンドの実行"
   parameters:
     command: "必須 - 実行するコマンド"
-  allowed_commands:
-    - "Get-Process"
-    - "Get-Service"
-    - "Get-ChildItem"
-    - "Get-Content"
-    - "Test-Path"
-  example: '@windows-build-server run_powershell command="Get-Process | Select-Object -First 5"'
+  example: '@windows-build-server run_powershell command="dotnet --version"'
+```
+
+#### ビルド実行時の注意事項
+```yaml
+成功パターン:
+  - C:ドライブのローカルディレクトリからのビルド
+  - 事前にファイルをローカルにコピー
+  
+失敗パターン:
+  - Z:ドライブ（ネットワークドライブ）から直接ビルド
+  - パスに特殊文字やスペースが含まれる場合
+  
+推奨手順:
+  1. ファイルをC:\temp\などにコピー
+  2. ローカルパスでビルドを実行
 ```
 
 ### 🔒 セキュリティ実装
