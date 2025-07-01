@@ -1,276 +1,175 @@
-# Windows MCP Build Server
+# Windows MCP ビルドサーバー
 
-A secure MCP (Model Context Protocol) server that enables Claude Code on macOS/Linux to build Windows applications remotely on a Windows VM. This project provides a bridge between cross-platform development environments and Windows-specific build tools.
+Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/LinuxのClaude CodeからWindows アプリケーションをリモートビルドできるようにするプロジェクトです。
 
-## Features
+## 機能
 
-- 🔨 **Remote .NET Builds** - Build .NET applications from any OS
-- 💻 **Safe PowerShell Execution** - Run whitelisted PowerShell commands
-- 🔒 **Secure Authentication** - Token-based authentication for production
-- 🛡️ **Security First** - IP whitelisting, rate limiting, path restrictions
-- 📝 **Comprehensive Logging** - Detailed request/response logging
-- ⚡ **Easy Setup** - Automated installation scripts
+- 🔨 **リモート.NETビルド** - どのOSからでも.NETアプリケーションをビルド
+- 💻 **PowerShellコマンド実行** - 安全なPowerShellコマンドの実行
+- 🔒 **セキュア通信** - トークンベース認証（本番環境用）
+- 🛡️ **セキュリティ機能** - IPホワイトリスト、レート制限、パス制限
+- 📝 **詳細なログ** - リクエスト/レスポンスの記録
+- ⚡ **簡単セットアップ** - 自動インストールスクリプト付き
 
-## Prerequisites
+## 必要要件
 
-- **Windows VM**: Windows 10/11 with PowerShell 5.1+
-- **Client**: macOS/Linux with Claude Code CLI installed
-- **Network**: Connectivity between client and Windows VM
-- **Permissions**: Administrator access on Windows VM
+- **Windows VM**: Windows 10/11、PowerShell 5.1以上
+- **クライアント**: Claude Code CLIがインストールされたmacOS/Linux
+- **ネットワーク**: クライアントとWindows VM間の接続
+- **権限**: Windows VMの管理者アクセス
 
-## Quick Start
+## クイックスタート
 
-### 1. Windows VM Setup
+### 1. Windows VMのセットアップ
 
 ```powershell
-# Run as Administrator
+# 管理者権限で実行
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\windows-setup.ps1
 
-# Navigate to server directory
+# サーバーディレクトリに移動
 cd C:\mcp-server
 
-# Copy server file from mounted directory
+# サーバーファイルをコピー
 copy Z:\windows\server.js server.js /Y
 
-# Start the server
+# サーバーを起動
 npm start
 ```
 
-### 2. Client Setup (Mac/Linux)
+### 2. クライアント設定（Mac/Linux）
 
 ```bash
-# Clone and setup
-git clone https://github.com/yourusername/windows-mcp-build-server.git
-cd windows-mcp-build-server
+# リポジトリをクローン
+git clone https://github.com/Rih0z/make-windows-mcp.git
+cd make-windows-mcp
 npm install
 
-# Configure connection
+# 接続設定
 cp .env.example .env
-# Edit .env with your Windows VM IP
+# .envファイルを編集してWindows VMのIPアドレスを設定
 nano .env
 
-# Add to Claude Code
+# Claude Codeに追加
 claude mcp add --user windows-build-server
 ```
 
-## Configuration
+## 設定
 
-### Environment Variables
+### 環境変数
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `WINDOWS_VM_IP` | IP address of Windows VM | Yes | - |
-| `MCP_SERVER_PORT` | Server port | No | 8080 |
-| `MCP_AUTH_TOKEN` | Authentication token | Yes (production) | - |
-| `ALLOWED_IPS` | Comma-separated allowed IPs | No | All |
-| `ENABLE_HTTPS` | Enable HTTPS | No | false |
-| `LOG_LEVEL` | Logging level | No | info |
+| 変数名 | 説明 | 必須 | デフォルト |
+|--------|------|------|------------|
+| `WINDOWS_VM_IP` | Windows VMのIPアドレス | はい | - |
+| `MCP_SERVER_PORT` | サーバーポート | いいえ | 8080 |
+| `MCP_AUTH_TOKEN` | 認証トークン | はい（本番環境） | - |
+| `ALLOWED_IPS` | 許可IPリスト（カンマ区切り） | いいえ | すべて許可 |
+| `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\ |
+| `LOG_LEVEL` | ログレベル | いいえ | info |
 
-### Security Best Practices
+## 使い方
 
-1. **Always use authentication in production:**
-   ```bash
-   # Generate a secure token
-   openssl rand -hex 32
-   ```
-
-2. **Restrict IP access:**
-   ```env
-   ALLOWED_IPS=192.168.1.50,192.168.1.51
-   ```
-
-3. **Enable HTTPS for sensitive data:**
-   ```env
-   ENABLE_HTTPS=true
-   HTTPS_CERT_PATH=C:\certs\server.crt
-   HTTPS_KEY_PATH=C:\certs\server.key
-   ```
-
-## Usage
-
-### Building .NET Applications
+### .NETアプリケーションのビルド
 
 ```bash
-# Build from local directory (recommended)
+# ローカルディレクトリからビルド（推奨）
 @windows-build-server build_dotnet projectPath="C:\\projects\\MyApp.csproj" configuration="Release"
 
-# For network drives, copy to local first
+# ネットワークドライブの場合は、まずローカルにコピー
 @windows-build-server run_powershell command="Copy-Item -Path Z:\\myproject -Destination C:\\temp\\myproject -Recurse"
 @windows-build-server build_dotnet projectPath="C:\\temp\\myproject\\app.csproj" configuration="Debug"
 ```
 
-**⚠️ Important**: Building directly from network drives (Z:) may fail. Always copy to a local directory (C:) first.
+**⚠️ 重要**: ネットワークドライブ（Z:）から直接ビルドすると失敗する可能性があります。必ずローカルディレクトリ（C:）にコピーしてからビルドしてください。
 
-### Running PowerShell Commands
+### PowerShellコマンドの実行
 
 ```bash
-# Check .NET version
+# .NETバージョンを確認
 @windows-build-server run_powershell command="dotnet --version"
 
-# List files
+# ファイル一覧
 @windows-build-server run_powershell command="Get-ChildItem C:\\projects"
 
-# Check running processes
+# プロセス確認
 @windows-build-server run_powershell command="Get-Process | Select-Object -First 5"
 ```
 
-## Project Structure
+## プロジェクト構成
 
 ```
 .
-├── scripts/
-│   ├── mcp-client.js          # MCP client wrapper
-│   └── configure.js           # Interactive setup
-├── sample-apps/               # Example applications
-│   ├── HelloWorld.cs          # .NET console app
-│   └── HelloWorld.csproj
-├── windows-setup.ps1          # Windows installer
-├── secure-server.js           # MCP server implementation
-├── claude-code-config.template.json  # Claude Code config
-└── .env.example               # Environment template
+├── scripts/                    # ユーティリティスクリプト
+│   ├── mcp-client.js          # MCPクライアントラッパー
+│   └── configure.js           # 対話式設定スクリプト
+├── sample-apps/               # サンプルアプリケーション
+│   ├── HelloWorld.cs          # .NETコンソールアプリ
+│   └── HelloWorld.csproj      # プロジェクトファイル
+├── test-dotnet/               # テスト済み.NETアプリ
+├── windows-setup.ps1          # Windowsインストーラー
+├── server.js                  # MCPサーバー実装
+├── claude-code-config.template.json  # Claude Code設定テンプレート
+└── .env.example               # 環境変数テンプレート
 ```
 
-## Troubleshooting
+## セキュリティのベストプラクティス
 
-### Connection Issues
+### 開発環境
+- `MCP_AUTH_TOKEN`は空のままでOK
+- IPホワイトリストの使用を推奨
+- ログを定期的に確認
 
-1. **Check firewall:**
-   ```powershell
-   Get-NetFirewallRule -DisplayName "MCP Server"
-   ```
-
-2. **Test connectivity:**
+### 本番環境
+1. **認証トークンを必ず設定**：
    ```bash
-   curl http://YOUR_VM_IP:8080/health
+   openssl rand -hex 32  # セキュアなトークンを生成
    ```
 
-3. **Verify auth token:**
-   - Ensure the same token is set in both .env files
-   - Token should not contain spaces or special characters
-
-### Build Errors
-
-1. **Missing .NET SDK:**
-   ```powershell
-   dotnet --version
-   # If not installed:
-   choco install dotnet-sdk -y
-   ```
-
-2. **Path issues:**
-   - Use absolute paths for project files
-   - Ensure paths don't contain '..'
-
-## Security Best Practices
-
-### Development Environment
-- Leave `MCP_AUTH_TOKEN` empty for local development
-- Use IP whitelisting even in development
-- Monitor logs regularly
-
-### Production Environment
-1. **Always set authentication token**:
-   ```bash
-   openssl rand -hex 32  # Generate secure token
-   ```
-
-2. **Configure IP whitelisting**:
+2. **IPホワイトリストを設定**：
    ```env
    ALLOWED_IPS=192.168.1.100,192.168.1.101
    ```
 
-3. **Restrict build paths**:
+3. **ビルドパスを制限**：
    ```env
-   ALLOWED_BUILD_PATHS=C:\projects\,D:\builds\
+   ALLOWED_BUILD_PATHS=C:\\projects\\,D:\\builds\\
    ```
 
-4. **Use HTTPS** (if exposing to internet):
-   - Generate SSL certificates
-   - Use reverse proxy (nginx/Apache)
-   - Never expose directly to internet
+## トラブルシューティング
 
-### Security Features
-- **Path Traversal Protection**: Prevents `..` in paths
-- **Command Whitelisting**: Only safe PowerShell commands allowed
-- **Rate Limiting**: 100 requests/minute per IP
-- **Request Logging**: All requests logged with timestamp and IP
-- **Output Limiting**: 1MB max output per command
-
-## Advanced Configuration
-
-### Adding Custom PowerShell Commands
-
-Edit `mcp-server.js` and add to the `safeCommands` array:
-
-```javascript
-const safeCommands = [
-  /^Get-Process/i,
-  /^Get-Service/i,
-  /^Your-Custom-Command/i  // Add your command
-];
-```
-
-### Changing Allowed Build Paths
-
-Update `.env` file:
-```env
-ALLOWED_BUILD_PATHS=C:\src\,D:\projects\,E:\builds\
-```
-
-## Monitoring and Maintenance
-
-### View Logs
+### .NET SDKが見つからない
 ```powershell
-# Real-time logs
-Get-Content C:\mcp-server\server.log -Wait
-
-# Filter by date
-Select-String "2024-01-01" C:\mcp-server\server.log
-```
-
-### Health Check
-```bash
-curl http://YOUR_VM_IP:8080/health
-```
-
-## Common Issues
-
-### .NET SDK Not Found
-```powershell
-# Install .NET SDK
+# .NET SDKをインストール
 winget install Microsoft.DotNet.SDK.8
-# Or
+# または
 choco install dotnet-sdk
 ```
 
-### Firewall Blocking Connection
+### ファイアウォールがブロックしている
 ```powershell
-# Add firewall rule
+# ファイアウォールルールを追加
 New-NetFirewallRule -DisplayName "MCP Server" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
 ```
 
-### Build Timeouts
-Increase timeout in `mcp-server.js`:
+### ビルドタイムアウト
+`server.js`でタイムアウトを増やす：
 ```javascript
-const timeout = setTimeout(() => {...}, 600000); // 10 minutes
+const timeout = setTimeout(() => {...}, 600000); // 10分
 ```
 
-## Contributing
+## 動作確認済み環境
 
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Windows 11 VM
+- .NET SDK 8.0.411
+- Node.js 18+
+- PowerShell 5.1
 
-## License
+## ライセンス
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照
 
-## Acknowledgments
+## 謝辞
 
-- Built for [Claude Code](https://claude.ai/code) by Anthropic
-- Uses [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
-- Powered by Node.js and Express
+- [Claude Code](https://claude.ai/code) by Anthropic向けに開発
+- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)を使用
+- Node.jsとExpressで構築

@@ -4,7 +4,9 @@
   "description": "Windows VM MCP Server setup for Claude Code",
   "scripts": {
     "setup": "npm install",
-    "configure": "node scripts/configure.js"
+    "configure": "node scripts/configure.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "echo \"No linting configured\" && exit 0"
   },
   "dependencies": {
     "dotenv": "^16.3.1"
