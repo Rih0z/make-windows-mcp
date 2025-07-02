@@ -2,6 +2,29 @@
 
 このドキュメントは、Windows MCPサーバーのクライアント設定に必要な情報をまとめたものです。
 
+## プロジェクトファイル構造
+
+このプロジェクトはサーバー側とクライアント側に明確に分離されています：
+
+```
+make-windows-mcp/
+├── server/                    # Windows VM側コンポーネント
+│   ├── src/
+│   │   ├── server.js          # MCPサーバー本体
+│   │   └── utils/             # サーバー用ユーティリティ
+│   └── setup/
+│       └── windows-setup.ps1  # Windows環境セットアップ
+│
+├── client/                    # Mac/Linux側コンポーネント
+│   ├── src/
+│   │   └── mcp-client.js      # Claude Code接続クライアント
+│   └── setup/
+│       └── production-setup.js # 本番環境設定
+│
+├── examples/                  # サンプルアプリ
+└── tests/                     # テストスイート
+```
+
 ## クライアントに必要なファイル
 
 他のプロジェクトでWindows MCPサーバーを利用する場合、以下のファイルが必要です：

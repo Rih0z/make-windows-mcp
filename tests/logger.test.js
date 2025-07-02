@@ -6,7 +6,7 @@ const logger = require('../server/src/utils/logger');
 jest.mock('fs');
 
 describe('Logger', () => {
-  const mockLogDir = path.join(__dirname, '..', 'logs');
+  const mockLogDir = path.join(__dirname, '..', 'server', 'src', 'logs');
   
   beforeEach(() => {
     jest.clearAllMocks();

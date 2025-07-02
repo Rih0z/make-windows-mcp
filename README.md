@@ -15,10 +15,24 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 
 ## 概要
 
-このシステムは以下の2つのコンポーネントで構成されています：
+このシステムは以下の2つの独立したコンポーネントで構成されています：
 
-1. **サーバー側（Windows VM）**: `server.js` - MCPプロトコルを実装したExpressサーバー
-2. **クライアント側（Mac/Linux）**: `mcp-client.js` - Claude CodeとMCPサーバーを接続するラッパー
+### 🖥️ **サーバー側（Windows VM）**
+- **ファイル**: `server/src/server.js`
+- **役割**: MCPプロトコルを実装したExpressサーバー
+- **機能**: PowerShell実行、.NETビルド、SSH接続、セキュリティ制御
+- **依存関係**: Express.js、SSH2、Helmet、Ping等
+
+### 💻 **クライアント側（Mac/Linux）**  
+- **ファイル**: `client/src/mcp-client.js`
+- **役割**: Claude CodeとWindows MCPサーバーの接続ブリッジ
+- **機能**: MCP通信、環境設定、認証ヘッダー管理
+- **依存関係**: dotenv（最小構成）
+
+### 🔄 **通信フロー**
+```
+Claude Code → client/mcp-client.js → Windows VM/server.js → PowerShell/dotnet
+```
 
 ## 必要要件
 
@@ -250,31 +264,75 @@ make-windows-mcp/
 
 ## プロジェクト構成
 
+このプロジェクトは、Windows VM上で動作するサーバー側とMac/Linux上で動作するクライアント側に明確に分離されています：
+
 ```
-.
-├── server/                    # Windows VM上で動作するサーバー側
-│   ├── src/                   
-│   │   ├── server.js          # MCPサーバー本体
-│   │   └── utils/             # サーバー用ユーティリティ
-│   │       ├── logger.js      # ロギング機能
-│   │       ├── rate-limiter.js # レート制限
-│   │       └── security.js    # セキュリティ検証
-│   ├── setup/
-│   │   └── windows-setup.ps1  # Windowsサーバーセットアップ
-│   └── package.json           # サーバー側の依存関係
-├── client/                    # Mac/Linux上で動作するクライアント側
-│   ├── src/
-│   │   └── mcp-client.js      # MCPクライアント
-│   ├── setup/
-│   │   └── production-setup.js # 本番環境セットアップ
-│   └── package.json           # クライアント側の依存関係
-├── examples/                  # サンプルアプリケーション
-│   ├── hello-world/
-│   └── test-dotnet/
-├── tests/                     # テストファイル
-├── docs/                      # ドキュメント
-└── .env.example               # 環境変数テンプレート
+make-windows-mcp/
+├── 📁 server/                    # 🖥️ Windows VM上で動作するサーバー側
+│   ├── 📁 src/                   # サーバーソースコード
+│   │   ├── 📄 server.js          # MCPサーバー本体（Express.js）
+│   │   └── 📁 utils/             # サーバー用ユーティリティモジュール
+│   │       ├── 📄 logger.js      # 構造化ログ・ローテーション機能
+│   │       ├── 📄 rate-limiter.js # レート制限・DoS防止
+│   │       └── 📄 security.js    # コマンド・パス・認証情報の検証
+│   ├── 📁 setup/                 # セットアップスクリプト
+│   │   └── 📄 windows-setup.ps1  # Windows環境自動セットアップ
+│   ├── 📄 package.json           # サーバー側依存関係（Express、SSH2等）
+│   └── 📄 README.md              # サーバー側セットアップ・運用ガイド
+│
+├── 📁 client/                    # 💻 Mac/Linux上で動作するクライアント側
+│   ├── 📁 src/                   # クライアントソースコード
+│   │   └── 📄 mcp-client.js      # MCPクライアント（Claude Code接続）
+│   ├── 📁 setup/                 # セットアップスクリプト
+│   │   └── 📄 production-setup.js # 本番環境セットアップ・認証設定
+│   ├── 📄 package.json           # クライアント側依存関係（dotenv等）
+│   └── 📄 README.md              # クライアント側セットアップ・使用ガイド
+│
+├── 📁 examples/                  # 🎯 サンプルアプリケーション
+│   ├── 📁 hello-world/           # シンプルな.NETコンソールアプリ
+│   │   ├── 📄 HelloWorld.cs      # C#ソースコード
+│   │   └── 📄 HelloWorld.csproj  # プロジェクトファイル
+│   └── 📁 test-dotnet/           # テスト用.NETアプリケーション
+│       ├── 📄 Program.cs         # メインプログラム
+│       ├── 📄 TestApp.csproj     # プロジェクト設定
+│       └── 📄 README.md          # アプリ説明
+│
+├── 📁 tests/                     # 🧪 テストスイート（Jest）
+│   ├── 📄 server*.test.js        # サーバー機能テスト
+│   ├── 📄 security*.test.js      # セキュリティ機能テスト
+│   ├── 📄 logger*.test.js        # ログ機能テスト
+│   └── 📄 rate-limiter*.test.js  # レート制限テスト
+│
+├── 📁 docs/                      # 📚 ドキュメント
+│   ├── 📄 CLAUDE.md              # Claude Code用セットアップガイド
+│   └── 📄 SETUP.md               # 詳細セットアップ手順
+│
+├── 📄 package.json               # 🔧 ルートプロジェクト設定（ワークスペース）
+├── 📄 jest.config.js             # テスト設定
+├── 📄 .env.example               # 環境変数テンプレート
+├── 📄 install-all.sh             # 全依存関係一括インストール
+└── 📄 README.md                  # このファイル（メインドキュメント）
 ```
+
+### 各ディレクトリの役割
+
+#### 🖥️ **server/** - Windows VM側
+- **目的**: PowerShellコマンド実行、.NETビルド、SSH接続処理
+- **動作環境**: Windows 10/11 + Node.js + .NET SDK
+- **主要機能**: MCP API サーバー、セキュリティ検証、ログ管理
+
+#### 💻 **client/** - Mac/Linux側  
+- **目的**: Claude CodeとWindows MCPサーバーの橋渡し
+- **動作環境**: macOS/Linux + Node.js + Claude Code CLI
+- **主要機能**: MCP プロトコル接続、認証、環境設定
+
+#### 🎯 **examples/** - サンプル
+- **目的**: 動作確認・学習用のサンプルアプリケーション
+- **内容**: .NETプロジェクトのビルド例、テストケース
+
+#### 🧪 **tests/** - テスト
+- **目的**: 全機能の自動テスト（カバレッジ91%+）
+- **内容**: ユニットテスト、統合テスト、セキュリティテスト
 
 ## NordVPNメッシュネットワークセットアップ
 
