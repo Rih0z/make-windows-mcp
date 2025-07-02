@@ -51,7 +51,7 @@ describe('Server Integration Tests', () => {
     };
     
     // Import server after mocking
-    app = require('../src/server.js');
+    app = require('../server/src/server.js');
   });
 
   beforeEach(() => {

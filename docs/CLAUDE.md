@@ -8,12 +8,11 @@
 
 ```
 make-windows-mcp/
-├── src/
-│   └── scripts/
-│       └── mcp-client.js  # MCPクライアントラッパー（必須）
-├── .env                   # 環境変数設定（必須・要編集）
-├── package.json          # 依存関係定義（必須）
-└── package-lock.json     # 依存関係ロック（必須）
+├── client/
+│   ├── src/
+│   │   └── mcp-client.js  # MCPクライアントラッパー（必須）
+│   └── package.json       # クライアント依存関係（必須）
+└── .env                   # 環境変数設定（必須・要編集）
 ```
 
 ## 環境変数設定（.env）
@@ -58,8 +57,8 @@ REMOTE_PASSWORD=your-password
 1. **ファイルのコピー**
    ```bash
    # 必要なファイルを新しいプロジェクトにコピー
-   cp -r src/ /path/to/new/project/
-   cp package.json package-lock.json .env /path/to/new/project/
+   cp -r client/ /path/to/new/project/
+   cp .env /path/to/new/project/
    ```
 
 2. **環境変数の設定**
@@ -71,6 +70,7 @@ REMOTE_PASSWORD=your-password
 
 3. **依存関係のインストール**
    ```bash
+   cd /path/to/new/project/client
    npm install
    ```
 

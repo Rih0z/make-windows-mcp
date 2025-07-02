@@ -124,7 +124,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should start server successfully', (done) => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       request(app)
@@ -137,7 +137,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle all MCP endpoints', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Test tools/list
@@ -161,7 +161,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle authentication scenarios', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Missing auth header
@@ -191,7 +191,7 @@ describe('Complete 100% Coverage', () => {
       process.env.RATE_LIMIT_WINDOW = '1000';
       
       jest.resetModules();
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // First 2 requests should pass
@@ -207,7 +207,7 @@ describe('Complete 100% Coverage', () => {
       process.env.ALLOWED_IPS = '192.168.1.100';
       
       jest.resetModules();
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Request from non-whitelisted IP
@@ -221,7 +221,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should execute all tool commands', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Test build_dotnet
@@ -294,7 +294,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle SSH commands', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       const sshRes = await request(app)
@@ -320,7 +320,7 @@ describe('Complete 100% Coverage', () => {
     test('should handle remote execution', async () => {
       process.env.REMOTE_PASSWORD = 'test123';
       
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       const remoteRes = await request(app)
@@ -342,7 +342,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle validation errors', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Invalid path
@@ -398,7 +398,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle unknown tool', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       const res = await request(app)
@@ -417,7 +417,7 @@ describe('Complete 100% Coverage', () => {
     });
 
     test('should handle general errors', async () => {
-      const app = require('../src/server.js');
+      const app = require('../server/src/server.js');
       const request = require('supertest');
       
       // Send invalid params structure
@@ -452,7 +452,7 @@ describe('Complete 100% Coverage', () => {
       
       // Test directory creation
       fs.existsSync.mockReturnValue(false);
-      logger = require('../src/utils/logger');
+      logger = require('../server/src/utils/logger');
       expect(fs.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('logs'), { recursive: true });
       
       // Test all log levels
@@ -491,7 +491,7 @@ describe('Complete 100% Coverage', () => {
   describe('Security 100% Coverage', () => {
     beforeEach(() => {
       jest.resetModules();
-      security = require('../src/utils/security');
+      security = require('../server/src/utils/security');
     });
 
     test('should cover all security validation', () => {
@@ -545,7 +545,7 @@ describe('Complete 100% Coverage', () => {
   describe('Rate Limiter 100% Coverage', () => {
     beforeEach(() => {
       jest.resetModules();
-      rateLimiter = require('../src/utils/rate-limiter');
+      rateLimiter = require('../server/src/utils/rate-limiter');
     });
 
     test('should cover all rate limiter functionality', () => {

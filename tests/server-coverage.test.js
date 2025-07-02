@@ -48,9 +48,9 @@ describe('Server Coverage Tests', () => {
     };
     
     // Require fresh instances for each test
-    rateLimiter = require('../src/utils/rate-limiter');
+    rateLimiter = require('../server/src/utils/rate-limiter');
     rateLimiter.clear();
-    app = require('../src/server.js');
+    app = require('../server/src/server.js');
   });
 
   afterEach(() => {
@@ -88,7 +88,7 @@ describe('Server Coverage Tests', () => {
       
       // Clear module cache and reload server
       jest.resetModules();
-      app = require('../src/server.js');
+      app = require('../server/src/server.js');
 
       const response = await request(app)
         .get('/health')
@@ -104,7 +104,7 @@ describe('Server Coverage Tests', () => {
       
       // Clear module cache and reload server
       jest.resetModules();
-      app = require('../src/server.js');
+      app = require('../server/src/server.js');
 
       await request(app)
         .get('/health')

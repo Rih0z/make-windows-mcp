@@ -74,10 +74,10 @@ describe('Final Coverage Tests', () => {
     }));
     
     // Now require modules
-    logger = require('../src/utils/logger');
-    security = require('../src/utils/security');
-    rateLimiter = require('../src/utils/rate-limiter');
-    app = require('../src/server.js');
+    logger = require('../server/src/utils/logger');
+    security = require('../server/src/utils/security');
+    rateLimiter = require('../server/src/utils/rate-limiter');
+    app = require('../server/src/server.js');
   });
 
   afterEach(() => {
@@ -215,7 +215,7 @@ describe('Final Coverage Tests', () => {
       jest.doMock('fs', () => fsMock);
       
       // Now require logger which should create directory
-      const newLogger = require('../src/utils/logger');
+      const newLogger = require('../server/src/utils/logger');
       
       expect(fsMock.mkdirSync).toHaveBeenCalledWith(
         expect.stringContaining('logs'),

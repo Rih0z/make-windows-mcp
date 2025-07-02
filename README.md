@@ -35,13 +35,17 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 ```powershell
 # 管理者権限で実行
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# サーバーディレクトリに移動
+cd server\setup
 .\windows-setup.ps1
 
 # サーバーディレクトリに移動
 cd C:\mcp-server
 
 # サーバーファイルをコピー
-copy Z:\windows\server.js server.js /Y
+copy Z:\windows\server\src\*.* . /Y
+copy Z:\windows\server\src\utils\*.* utils\ /Y
 
 # サーバーを起動
 npm start
@@ -86,9 +90,10 @@ claude mcp add --user windows-build-server
 
 ### セットアップスクリプトの使い方
 
-#### Windows側セットアップスクリプト（windows-setup.ps1）
+#### Windows側セットアップスクリプト（server/setup/windows-setup.ps1）
 ```powershell
 # 管理者権限でPowerShellを起動して実行
+cd server\setup
 .\windows-setup.ps1
 
 # スクリプトが実行する内容：
@@ -103,8 +108,9 @@ claude mcp add --user windows-build-server
 
 #### クライアント側設定
 ```bash
-# src/scripts/production-setup.jsを使用して本番環境をセットアップ
-node src/scripts/production-setup.js
+# client/setup/production-setup.jsを使用して本番環境をセットアップ
+cd client
+node setup/production-setup.js
 
 # このスクリプトは以下を実行：
 # 1. 認証トークンの生成
@@ -117,11 +123,12 @@ node src/scripts/production-setup.js
 #### 基本的な起動方法
 ```bash
 # MCPクライアントを起動
-node src/scripts/mcp-client.js
+cd client
+node src/mcp-client.js
 
 # または、実行権限を付与して直接実行
-chmod +x src/scripts/mcp-client.js
-./src/scripts/mcp-client.js
+chmod +x src/mcp-client.js
+./src/mcp-client.js
 ```
 
 #### Claude Codeでの使用
@@ -162,18 +169,17 @@ Stop-Process -Name node
 ```bash
 # ディレクトリ構造
 make-windows-mcp/
-├── src/
-│   └── scripts/
-│       └── mcp-client.js  # MCPクライアントラッパー（必須）
-├── .env                   # 環境変数設定（必須・要編集）
-├── package.json          # 依存関係定義（必須）
-└── package-lock.json     # 依存関係ロック（必須）
+├── client/
+│   ├── src/
+│   │   └── mcp-client.js  # MCPクライアントラッパー（必須）
+│   └── package.json       # クライアント依存関係（必須）
+└── .env                   # 環境変数設定（必須・要編集）
 ```
 
 #### 設定手順
 1. 上記ファイルを新しいプロジェクトにコピー
 2. `.env`ファイルを編集してWindows VMのIPアドレスを設定
-3. `npm install`を実行
+3. `cd client && npm install`を実行
 4. `claude mcp add --user windows-build-server`でClaude Codeに登録
 
 ### 使用例
@@ -246,24 +252,27 @@ make-windows-mcp/
 
 ```
 .
-├── src/                       # ソースコード
-│   ├── server.js              # MCPサーバー実装
-│   ├── scripts/               # ユーティリティスクリプト
-│   │   ├── mcp-client.js      # MCPクライアントラッパー
+├── server/                    # Windows VM上で動作するサーバー側
+│   ├── src/                   
+│   │   ├── server.js          # MCPサーバー本体
+│   │   └── utils/             # サーバー用ユーティリティ
+│   │       ├── logger.js      # ロギング機能
+│   │       ├── rate-limiter.js # レート制限
+│   │       └── security.js    # セキュリティ検証
+│   ├── setup/
+│   │   └── windows-setup.ps1  # Windowsサーバーセットアップ
+│   └── package.json           # サーバー側の依存関係
+├── client/                    # Mac/Linux上で動作するクライアント側
+│   ├── src/
+│   │   └── mcp-client.js      # MCPクライアント
+│   ├── setup/
 │   │   └── production-setup.js # 本番環境セットアップ
-│   └── utils/                 # ユーティリティモジュール
-│       ├── logger.js          # ロギング機能
-│       ├── rate-limiter.js    # レート制限
-│       └── security.js        # セキュリティ検証
+│   └── package.json           # クライアント側の依存関係
+├── examples/                  # サンプルアプリケーション
+│   ├── hello-world/
+│   └── test-dotnet/
 ├── tests/                     # テストファイル
 ├── docs/                      # ドキュメント
-│   ├── CLAUDE.md              # Claude Code用設定
-│   └── SETUP.md               # セットアップガイド
-├── sample-apps/               # サンプルアプリケーション
-│   ├── HelloWorld.cs          # .NETコンソールアプリ
-│   └── HelloWorld.csproj      # プロジェクトファイル
-├── test-dotnet/               # テスト済み.NETアプリ
-├── windows-setup.ps1          # Windowsインストーラー
 └── .env.example               # 環境変数テンプレート
 ```
 

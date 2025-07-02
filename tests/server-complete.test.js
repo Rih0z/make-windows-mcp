@@ -21,7 +21,7 @@ jest.mock('ssh2');
 jest.mock('ping');
 
 // Mock utils
-jest.mock('../src/utils/security', () => ({
+jest.mock('../server/src/utils/security', () => ({
   validatePowerShellCommand: jest.fn((cmd) => {
     if (cmd.includes('malicious')) throw new Error('Dangerous command detected');
     return cmd;
@@ -40,11 +40,11 @@ jest.mock('../src/utils/security', () => ({
   })
 }));
 
-jest.mock('../src/utils/rate-limiter', () => ({
+jest.mock('../server/src/utils/rate-limiter', () => ({
   checkLimit: jest.fn(() => ({ allowed: true, remaining: 9 }))
 }));
 
-jest.mock('../src/utils/logger', () => ({
+jest.mock('../server/src/utils/logger', () => ({
   info: jest.fn(),
   security: jest.fn(),
   access: jest.fn(),
@@ -52,16 +52,16 @@ jest.mock('../src/utils/logger', () => ({
   error: jest.fn()
 }));
 
-const security = require('../src/utils/security');
-const rateLimiter = require('../src/utils/rate-limiter');
-const logger = require('../src/utils/logger');
+const security = require('../server/src/utils/security');
+const rateLimiter = require('../server/src/utils/rate-limiter');
+const logger = require('../server/src/utils/logger');
 
 describe('Server Complete Coverage', () => {
   let app;
 
   beforeAll(() => {
     // Create actual server instance
-    delete require.cache[require.resolve('../src/server.js')];
+    delete require.cache[require.resolve('../server/src/server.js')];
     
     // Mock child_process spawn
     const { spawn } = require('child_process');

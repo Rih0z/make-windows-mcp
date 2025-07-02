@@ -1,6 +1,6 @@
-const security = require('../src/utils/security');
-const rateLimiter = require('../src/utils/rate-limiter');
-const logger = require('../src/utils/logger');
+const security = require('../server/src/utils/security');
+const rateLimiter = require('../server/src/utils/rate-limiter');
+const logger = require('../server/src/utils/logger');
 const fs = require('fs');
 const path = require('path');
 

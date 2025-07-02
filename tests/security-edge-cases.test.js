@@ -1,4 +1,4 @@
-const security = require('../src/utils/security');
+const security = require('../server/src/utils/security');
 
 describe('Security Edge Cases', () => {
   describe('PowerShell Command Edge Cases', () => {

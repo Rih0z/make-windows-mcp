@@ -4,10 +4,26 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables
-const envPath = path.join(__dirname, '..', '..', '.env');
-if (!fs.existsSync(envPath)) {
-  console.error('Error: .env file not found. Please copy .env.example to .env and configure it.');
+// Load environment variables - check multiple locations
+const possibleEnvPaths = [
+  path.join(__dirname, '..', '.env'),           // client/.env
+  path.join(__dirname, '..', '..', '.env'),     // root .env
+  path.join(process.cwd(), '.env')              // current directory .env
+];
+
+let envPath = null;
+for (const p of possibleEnvPaths) {
+  if (fs.existsSync(p)) {
+    envPath = p;
+    break;
+  }
+}
+
+if (!envPath) {
+  console.error('Error: .env file not found.');
+  console.error('Please create .env file in one of these locations:');
+  possibleEnvPaths.forEach(p => console.error(`  - ${p}`));
+  console.error('\nYou can copy .env.example to .env and configure it.');
   process.exit(1);
 }
 

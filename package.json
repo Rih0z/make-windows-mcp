@@ -1,27 +1,22 @@
 {
-  "name": "windows-mcp-setup",
+  "name": "windows-mcp",
   "version": "1.0.0",
-  "description": "Windows VM MCP Server setup for Claude Code",
+  "description": "Windows MCP - Connect Claude Code to Windows build environments",
+  "private": true,
   "scripts": {
-    "setup": "npm install",
-    "start": "node src/server.js",
-    "dev": "NODE_ENV=development node src/server.js",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "server:start": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "client:start": "cd client && npm start",
+    "client:setup": "cd client && npm run setup",
     "test": "jest",
-    "test:security": "jest --testNamePattern=\"Security\"",
     "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch",
-    "production:check": "node src/scripts/production-setup.js check",
-    "production:generate": "node src/scripts/production-setup.js generate",
-    "lint": "echo \"No linting configured\" && exit 0"
+    "test:watch": "jest --watch"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "ssh2": "^1.15.0",
-    "ping": "^0.4.4",
-    "helmet": "^7.1.0"
-  },
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "devDependencies": {
     "jest": "^29.7.0",
     "supertest": "^6.3.3",

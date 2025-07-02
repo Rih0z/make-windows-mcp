@@ -1,9 +1,9 @@
 module.exports = {
   testEnvironment: 'node',
   collectCoverageFrom: [
-    'src/**/*.js',
+    'server/src/**/*.js',
+    'client/src/**/*.js',
     '!**/node_modules/**',
-    '!**/__tests__/**',
     '!**/tests/**'
   ],
   coverageThreshold: {

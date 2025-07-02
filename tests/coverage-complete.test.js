@@ -66,10 +66,10 @@ describe('Complete Coverage Tests', () => {
     console.error = jest.fn();
     
     // Require fresh modules
-    logger = require('../src/utils/logger');
-    security = require('../src/utils/security');
-    rateLimiter = require('../src/utils/rate-limiter');
-    app = require('../src/server.js');
+    logger = require('../server/src/utils/logger');
+    security = require('../server/src/utils/security');
+    rateLimiter = require('../server/src/utils/rate-limiter');
+    app = require('../server/src/server.js');
   });
 
   afterEach(() => {
@@ -273,8 +273,8 @@ describe('Complete Coverage Tests', () => {
       fs.existsSync.mockReturnValue(false);
       
       // Re-require logger to trigger constructor
-      delete require.cache[require.resolve('../src/utils/logger')];
-      const newLogger = require('../src/utils/logger');
+      delete require.cache[require.resolve('../server/src/utils/logger')];
+      const newLogger = require('../server/src/utils/logger');
       
       expect(fs.mkdirSync).toHaveBeenCalledWith(
         expect.stringContaining('logs'),
@@ -423,7 +423,7 @@ describe('Complete Coverage Tests', () => {
       
       // Re-require app to pick up new env var
       jest.resetModules();
-      const testApp = require('../src/server.js');
+      const testApp = require('../server/src/server.js');
       
       // Should allow 10.x.x.x
       await request(testApp)
