@@ -4,15 +4,14 @@
   "description": "Windows VM MCP Server setup for Claude Code",
   "scripts": {
     "setup": "npm install",
-    "configure": "node scripts/configure.js",
-    "start": "node server.js",
-    "dev": "NODE_ENV=development node server.js",
+    "start": "node src/server.js",
+    "dev": "NODE_ENV=development node src/server.js",
     "test": "jest",
     "test:security": "jest --testNamePattern=\"Security\"",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
-    "production:check": "node scripts/production-setup.js check",
-    "production:generate": "node scripts/production-setup.js generate",
+    "production:check": "node src/scripts/production-setup.js check",
+    "production:generate": "node src/scripts/production-setup.js generate",
     "lint": "echo \"No linting configured\" && exit 0"
   },
   "dependencies": {

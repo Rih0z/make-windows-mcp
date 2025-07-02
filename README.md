@@ -103,8 +103,8 @@ claude mcp add --user windows-build-server
 
 #### クライアント側設定
 ```bash
-# scripts/production-setup.jsを使用して本番環境をセットアップ
-node scripts/production-setup.js
+# src/scripts/production-setup.jsを使用して本番環境をセットアップ
+node src/scripts/production-setup.js
 
 # このスクリプトは以下を実行：
 # 1. 認証トークンの生成
@@ -117,11 +117,11 @@ node scripts/production-setup.js
 #### 基本的な起動方法
 ```bash
 # MCPクライアントを起動
-node scripts/mcp-client.js
+node src/scripts/mcp-client.js
 
 # または、実行権限を付与して直接実行
-chmod +x scripts/mcp-client.js
-./scripts/mcp-client.js
+chmod +x src/scripts/mcp-client.js
+./src/scripts/mcp-client.js
 ```
 
 #### Claude Codeでの使用
@@ -162,8 +162,9 @@ Stop-Process -Name node
 ```bash
 # ディレクトリ構造
 make-windows-mcp/
-├── scripts/
-│   └── mcp-client.js      # MCPクライアントラッパー（必須）
+├── src/
+│   └── scripts/
+│       └── mcp-client.js  # MCPクライアントラッパー（必須）
 ├── .env                   # 環境変数設定（必須・要編集）
 ├── package.json          # 依存関係定義（必須）
 └── package-lock.json     # 依存関係ロック（必須）
@@ -245,16 +246,24 @@ make-windows-mcp/
 
 ```
 .
-├── scripts/                    # ユーティリティスクリプト
-│   ├── mcp-client.js          # MCPクライアントラッパー
-│   └── configure.js           # 対話式設定スクリプト
+├── src/                       # ソースコード
+│   ├── server.js              # MCPサーバー実装
+│   ├── scripts/               # ユーティリティスクリプト
+│   │   ├── mcp-client.js      # MCPクライアントラッパー
+│   │   └── production-setup.js # 本番環境セットアップ
+│   └── utils/                 # ユーティリティモジュール
+│       ├── logger.js          # ロギング機能
+│       ├── rate-limiter.js    # レート制限
+│       └── security.js        # セキュリティ検証
+├── tests/                     # テストファイル
+├── docs/                      # ドキュメント
+│   ├── CLAUDE.md              # Claude Code用設定
+│   └── SETUP.md               # セットアップガイド
 ├── sample-apps/               # サンプルアプリケーション
 │   ├── HelloWorld.cs          # .NETコンソールアプリ
 │   └── HelloWorld.csproj      # プロジェクトファイル
 ├── test-dotnet/               # テスト済み.NETアプリ
 ├── windows-setup.ps1          # Windowsインストーラー
-├── server.js                  # MCPサーバー実装
-├── claude-code-config.template.json  # Claude Code設定テンプレート
 └── .env.example               # 環境変数テンプレート
 ```
 

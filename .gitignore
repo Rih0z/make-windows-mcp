@@ -70,6 +70,17 @@ obj/
 logs/
 *.log
 
+# Test coverage
+coverage/
+.nyc_output/
+
+# Jest
+*.test.js.snap
+__snapshots__/
+
+# Test output
+check-coverage.js
+
 # Private keys and certificates
 *.pem
 *.key
