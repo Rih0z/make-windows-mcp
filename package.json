@@ -5,7 +5,14 @@
   "scripts": {
     "setup": "npm install",
     "configure": "node scripts/configure.js",
-    "test": "echo \"No tests specified\" && exit 0",
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "test": "jest",
+    "test:security": "jest --testNamePattern=\"Security\"",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "production:check": "node scripts/production-setup.js check",
+    "production:generate": "node scripts/production-setup.js generate",
     "lint": "echo \"No linting configured\" && exit 0"
   },
   "dependencies": {
@@ -13,9 +20,14 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ssh2": "^1.15.0",
-    "ping": "^0.4.4"
+    "ping": "^0.4.4",
+    "helmet": "^7.1.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "jest-environment-node": "^29.7.0"
+  },
   "keywords": [
     "mcp",
     "claude-code",

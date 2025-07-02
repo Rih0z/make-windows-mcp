@@ -13,6 +13,13 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 - 📝 **詳細なログ** - リクエスト/レスポンスの記録
 - ⚡ **簡単セットアップ** - 自動インストールスクリプト付き
 
+## 概要
+
+このシステムは以下の2つのコンポーネントで構成されています：
+
+1. **サーバー側（Windows VM）**: `server.js` - MCPプロトコルを実装したExpressサーバー
+2. **クライアント側（Mac/Linux）**: `mcp-client.js` - Claude CodeとMCPサーバーを接続するラッパー
+
 ## 必要要件
 
 - **Windows VM**: Windows 10/11、PowerShell 5.1以上
@@ -23,7 +30,7 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 
 ## クイックスタート
 
-### 1. Windows VMのセットアップ
+### 1. Windows VMのセットアップ（サーバー側）
 
 ```powershell
 # 管理者権限で実行
@@ -77,7 +84,100 @@ claude mcp add --user windows-build-server
 
 ## 使い方
 
-### .NETアプリケーションのビルド
+### セットアップスクリプトの使い方
+
+#### Windows側セットアップスクリプト（windows-setup.ps1）
+```powershell
+# 管理者権限でPowerShellを起動して実行
+.\windows-setup.ps1
+
+# スクリプトが実行する内容：
+# 1. Node.js（Chocolatey経由）のインストール
+# 2. .NET SDK 8のインストール
+# 3. MCPサーバーディレクトリ（C:\mcp-server）の作成
+# 4. package.jsonファイルの作成
+# 5. npmパッケージのインストール
+# 6. ファイアウォールルールの設定
+# 7. 実行ポリシーの設定
+```
+
+#### クライアント側設定
+```bash
+# scripts/production-setup.jsを使用して本番環境をセットアップ
+node scripts/production-setup.js
+
+# このスクリプトは以下を実行：
+# 1. 認証トークンの生成
+# 2. ファイアウォールコマンドの提供
+# 3. systemdサービス設定の生成
+```
+
+### クライアント側プログラムの使い方
+
+#### 基本的な起動方法
+```bash
+# MCPクライアントを起動
+node scripts/mcp-client.js
+
+# または、実行権限を付与して直接実行
+chmod +x scripts/mcp-client.js
+./scripts/mcp-client.js
+```
+
+#### Claude Codeでの使用
+```bash
+# Claude Codeに登録（初回のみ）
+claude mcp add --user windows-build-server
+
+# 登録後は@プレフィックスで使用
+@windows-build-server run_powershell command="echo 'Hello from Windows'"
+```
+
+### サーバー側プログラムの使い方
+
+#### サーバーの起動
+```powershell
+# Windows VM上で実行
+cd C:\mcp-server
+npm start
+
+# バックグラウンドで実行する場合
+Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory "C:\mcp-server" -WindowStyle Hidden
+```
+
+#### サーバーの停止
+```powershell
+# プロセスを確認
+Get-Process node
+
+# プロセスを停止
+Stop-Process -Name node
+```
+
+### クライアント設定の引き継ぎ（他のプロジェクトで使用する場合）
+
+他のプロジェクトでWindows MCPサーバーを利用する場合、以下のファイルをコピーしてください：
+
+#### 必須ファイル一式
+```bash
+# ディレクトリ構造
+make-windows-mcp/
+├── scripts/
+│   └── mcp-client.js      # MCPクライアントラッパー（必須）
+├── .env                   # 環境変数設定（必須・要編集）
+├── package.json          # 依存関係定義（必須）
+└── package-lock.json     # 依存関係ロック（必須）
+```
+
+#### 設定手順
+1. 上記ファイルを新しいプロジェクトにコピー
+2. `.env`ファイルを編集してWindows VMのIPアドレスを設定
+3. `npm install`を実行
+4. `claude mcp add --user windows-build-server`でClaude Codeに登録
+
+### 使用例
+
+#### .NETアプリケーションのビルド
 
 ```bash
 # ローカルディレクトリからビルド（推奨）
@@ -90,7 +190,7 @@ claude mcp add --user windows-build-server
 
 **⚠️ 重要**: ネットワークドライブ（Z:）から直接ビルドすると失敗する可能性があります。必ずローカルディレクトリ（C:）にコピーしてからビルドしてください。
 
-### PowerShellコマンドの実行
+#### PowerShellコマンドの実行
 
 ```bash
 # .NETバージョンを確認
@@ -101,9 +201,15 @@ claude mcp add --user windows-build-server
 
 # プロセス確認
 @windows-build-server run_powershell command="Get-Process | Select-Object -First 5"
+
+# システム情報の取得
+@windows-build-server run_powershell command="Get-ComputerInfo | Select-Object CsName, OsName, OsVersion"
+
+# サービスの管理
+@windows-build-server run_powershell command="Get-Service | Where-Object {$_.Status -eq 'Running'} | Select-Object -First 10"
 ```
 
-### NordVPNメッシュネットワーク経由での操作
+#### NordVPNメッシュネットワーク経由での操作
 
 ```bash
 # リモートホストの接続テスト
@@ -117,6 +223,22 @@ claude mcp add --user windows-build-server
 
 # SSH経由で直接コマンド実行
 @windows-build-server ssh_command host="10.5.0.2" username="Administrator" password="your_password" command="dotnet --version"
+```
+
+#### VM管理（Hyper-V）
+
+```bash
+# VM一覧を取得
+@windows-build-server run_powershell command="Get-VM"
+
+# VMを起動
+@windows-build-server run_powershell command="Start-VM -Name 'TestVM'"
+
+# VMの状態を確認
+@windows-build-server run_powershell command="Get-VM -Name 'TestVM' | Select-Object Name, State, CPUUsage, MemoryAssigned"
+
+# スナップショットを作成
+@windows-build-server run_powershell command="Checkpoint-VM -Name 'TestVM' -SnapshotName 'BeforeTesting'"
 ```
 
 ## プロジェクト構成
@@ -227,3 +349,121 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照
 - [Claude Code](https://claude.ai/code) by Anthropic向けに開発
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)を使用
 - Node.jsとExpressで構築
+
+---
+
+## 付録
+
+### A. クライアント側プログラム（mcp-client.js）の詳細
+
+#### 概要
+`mcp-client.js`は、Claude CodeとWindows MCPサーバーを接続するNode.jsラッパースクリプトです。環境変数から設定を読み込み、適切な認証情報とともに`npx mcp-remote`コマンドを実行します。
+
+#### 主な機能
+1. **環境変数の読み込み**: `.env`ファイルから接続設定を取得
+2. **設定の検証**: 必要な環境変数が設定されているかチェック
+3. **認証ヘッダーの追加**: トークンが設定されている場合、Authorizationヘッダーを追加
+4. **プロセス管理**: MCPクライアントプロセスの起動と終了コードの伝播
+
+#### コード構造
+```javascript
+// 環境変数の読み込み
+require('dotenv').config({ path: envPath });
+
+// MCPサーバーURLの構築
+const serverUrl = `${protocol}://${WINDOWS_VM_IP}:${MCP_SERVER_PORT}/mcp`;
+
+// npx mcp-remoteコマンドの実行
+const mcpProcess = spawn('npx', args, {
+  stdio: 'inherit',  // 標準入出力を継承
+  env: process.env   // 環境変数を渡す
+});
+```
+
+### B. サーバー側プログラム（server.js）の詳細
+
+#### 概要
+`server.js`は、Windows VM上で動作するMCPプロトコルサーバーです。Express.jsフレームワークを使用し、PowerShellコマンドの実行、.NETビルド、リモート実行などの機能を提供します。
+
+#### アーキテクチャ
+
+1. **セキュリティレイヤー**
+   - Helmet.js: セキュリティヘッダーの設定
+   - CORS: クロスオリジンリクエストの制御
+   - レート制限: DoS攻撃の防止
+   - IPホワイトリスト: アクセス元の制限
+   - Bearer認証: トークンベースの認証
+
+2. **MCPプロトコル実装**
+   - `/mcp`エンドポイント: MCPリクエストの処理
+   - `tools/list`: 利用可能なツールのリスト
+   - `tools/call`: ツールの実行
+
+3. **実行エンジン**
+   - **ローカル実行**: `child_process.spawn`を使用
+   - **リモート実行**: `ssh2`ライブラリを使用したSSH接続
+
+#### 主要コンポーネント
+
+**ミドルウェアスタック**:
+```javascript
+app.use(helmet());           // セキュリティヘッダー
+app.use(cors());            // CORS設定
+app.use(express.json());    // JSONパーサー
+app.use(accessLogger);      // アクセスログ
+app.use(rateLimiter);       // レート制限
+app.use(ipWhitelist);       // IPホワイトリスト
+app.use(authentication);    // 認証
+```
+
+**ツール定義**:
+- `build_dotnet`: .NETプロジェクトのビルド
+- `run_powershell`: PowerShellコマンドの実行
+- `ping_host`: ホストへの接続確認
+- `ssh_command`: SSH経由でのコマンド実行
+
+**セキュリティ検証**:
+```javascript
+// コマンド検証
+const validatedCommand = security.validatePowerShellCommand(args.command);
+
+// パス検証
+const validatedPath = security.validatePath(args.projectPath);
+
+// IP検証
+const validatedHost = security.validateIPAddress(args.host);
+```
+
+### C. ユーティリティモジュール
+
+#### security.js
+- PowerShellコマンドの検証とサニタイズ
+- ファイルパスのディレクトリトラバーサル防止
+- IPアドレスの形式チェック
+- SSH認証情報の検証
+
+#### rate-limiter.js
+- クライアントごとのリクエスト数管理
+- 時間窓内でのレート制限
+- ブロック機能とタイムアウト管理
+
+#### logger.js
+- 構造化ログの記録
+- ログファイルのローテーション
+- アクセスログとセキュリティイベントの記録
+
+### D. セットアップスクリプト
+
+#### windows-setup.ps1
+Windows VM上で実行される自動セットアップスクリプト：
+1. Chocolateyのインストール
+2. Node.jsと.NET SDKのインストール
+3. サーバーディレクトリの作成
+4. 依存関係のインストール
+5. ファイアウォールルールの設定
+
+#### production-setup.js
+本番環境用の設定生成スクリプト：
+1. セキュアなトークンの生成
+2. systemdサービス設定の作成
+3. ファイアウォールコマンドの提供
