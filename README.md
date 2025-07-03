@@ -629,6 +629,57 @@ New-NetFirewallRule -DisplayName "MCP Server" -Direction Inbound -Protocol TCP -
 const timeout = setTimeout(() => {...}, 600000); // 10分
 ```
 
+### 認証エラー（Invalid authorization token）
+
+#### 症状
+```
+SECURITY EVENT: Invalid authorization token 
+{"expectedPartial":"your...oken","receivedPartial":"duOq...rQCB"}
+```
+
+#### 原因
+サーバー側とクライアント側のMCP_AUTH_TOKENが一致していない
+
+#### 解決方法
+
+**1. トークンの確認**
+```powershell
+# Windows VM側で現在のトークンを確認
+cd C:\mcp-server
+type .env | findstr MCP_AUTH_TOKEN
+```
+
+```bash
+# クライアント側で現在のトークンを確認
+cat .env | grep MCP_AUTH_TOKEN
+```
+
+**2. 手動でトークンを統一**
+```powershell
+# Windows VM側の.envファイルを編集
+# MCP_AUTH_TOKEN=クライアント側と同じ32文字のトークン
+```
+
+**3. セットアップスクリプトの再実行（推奨）**
+```powershell
+# Windows VM側でセットアップスクリプトを再実行
+cd server\setup
+.\windows-setup.ps1
+# 新しいトークンが表示されるので、クライアント側の.envに設定
+```
+
+**4. デバッグモードでの確認**
+```powershell
+# サーバーをデバッグモードで起動
+NODE_ENV=development npm start
+```
+
+#### よくある間違い
+- トークンの前後に空白文字がある
+- 引用符で囲んでいる（`"token"`は間違い、`token`が正しい）
+- 改行文字が含まれている
+- セットアップ時に既存の.envファイルがあるとトークンが更新されない（修正済み）
+
 ## 動作確認済み環境
 
 - Windows 11 VM
