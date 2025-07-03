@@ -109,17 +109,18 @@ $packageJson.scripts = @{
 }
 $packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding UTF8
 
-# Create .env file if not exists
+# Create or update .env file
 if (!(Test-Path ".env")) {
     Copy-Item ".env.example" -Destination ".env"
-    
-    # Update .env file with the generated token
-    $envContent = Get-Content ".env" -Raw
-    $envContent = $envContent -replace 'MCP_AUTH_TOKEN=.*', "MCP_AUTH_TOKEN=$authToken"
-    Set-Content -Path ".env" -Value $envContent -Encoding UTF8
-    
-    Write-Host "`nAuthentication token has been set in $InstallPath\.env" -ForegroundColor Green
+    Write-Host "`nCreated .env file from template" -ForegroundColor Green
 }
+
+# Always update the auth token
+$envContent = Get-Content ".env" -Raw
+$envContent = $envContent -replace 'MCP_AUTH_TOKEN=.*', "MCP_AUTH_TOKEN=$authToken"
+Set-Content -Path ".env" -Value $envContent -Encoding UTF8
+
+Write-Host "Authentication token has been updated in $InstallPath\.env" -ForegroundColor Green
 
 # 5. Configure Windows Firewall
 Write-Host "`n[5/5] Configuring Windows Firewall..." -ForegroundColor Yellow
