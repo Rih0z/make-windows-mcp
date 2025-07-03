@@ -64,8 +64,23 @@ Set-Location $InstallPath
 
 # Copy server files
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Copy-Item "$scriptDir\secure-server.js" -Destination "$InstallPath\server.js" -Force
-Copy-Item "$scriptDir\.env.example" -Destination "$InstallPath\.env.example" -Force
+$projectRoot = Split-Path -Parent $scriptDir
+$serverSrcDir = Join-Path $projectRoot "src"
+
+# Copy main server file
+Copy-Item "$serverSrcDir\server.js" -Destination "$InstallPath\server.js" -Force
+
+# Copy utils directory
+$utilsSource = Join-Path $serverSrcDir "utils"
+$utilsDest = Join-Path $InstallPath "utils"
+if (!(Test-Path $utilsDest)) {
+    New-Item -ItemType Directory -Force -Path $utilsDest | Out-Null
+}
+Copy-Item "$utilsSource\*" -Destination $utilsDest -Force
+
+# Copy .env.example from root directory
+$envExample = Join-Path (Split-Path -Parent $projectRoot) ".env.example"
+Copy-Item $envExample -Destination "$InstallPath\.env.example" -Force
 
 # Initialize package.json if not exists
 if (!(Test-Path "package.json")) {
@@ -74,7 +89,7 @@ if (!(Test-Path "package.json")) {
 
 # Install dependencies
 Write-Host "Installing dependencies..." -ForegroundColor Green
-npm install express cors dotenv ssh2 ping
+npm install express@^4.18.2 cors@^2.8.5 dotenv@^16.3.1 ssh2@^1.15.0 ping@^0.4.4 helmet@^7.1.0
 
 # Update package.json scripts
 $packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
