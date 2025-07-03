@@ -69,6 +69,7 @@ obj/
 # Logs
 logs/
 *.log
+server/src/logs/
 
 # Test coverage
 coverage/
