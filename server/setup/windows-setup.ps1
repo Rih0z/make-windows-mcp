@@ -8,6 +8,17 @@ param(
 Write-Host "=== Windows MCP Server Setup ===" -ForegroundColor Cyan
 Write-Host "Installation path: $InstallPath" -ForegroundColor Yellow
 
+# Generate a simple random token at the beginning
+$authToken = -join ((1..32) | ForEach-Object {
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    $chars[(Get-Random -Maximum $chars.Length)]
+})
+
+Write-Host "`n=== Generated Authentication Token ===" -ForegroundColor Yellow
+Write-Host "MCP_AUTH_TOKEN: $authToken" -ForegroundColor Cyan
+Write-Host "Please copy this token for client configuration" -ForegroundColor Green
+Write-Host "============================================`n" -ForegroundColor Yellow
+
 # Check if running as Administrator
 if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Host "This script requires Administrator privileges. Please run as Administrator." -ForegroundColor Red
@@ -102,18 +113,12 @@ $packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding U
 if (!(Test-Path ".env")) {
     Copy-Item ".env.example" -Destination ".env"
     
-    # Generate secure auth token for production
-    $authToken = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
-    
-    # Update .env file with generated token
+    # Update .env file with the generated token
     $envContent = Get-Content ".env" -Raw
     $envContent = $envContent -replace 'MCP_AUTH_TOKEN=.*', "MCP_AUTH_TOKEN=$authToken"
     Set-Content -Path ".env" -Value $envContent -Encoding UTF8
     
-    Write-Host "`n=== IMPORTANT: Authentication Token Generated ===" -ForegroundColor Yellow
-    Write-Host "Auth Token: $authToken" -ForegroundColor Cyan
-    Write-Host "`nThis token has been set in $InstallPath\.env" -ForegroundColor Green
-    Write-Host "Copy this token to your client's .env file (MCP_AUTH_TOKEN) for secure connection" -ForegroundColor Yellow
+    Write-Host "`nAuthentication token has been set in $InstallPath\.env" -ForegroundColor Green
 }
 
 # 5. Configure Windows Firewall
@@ -131,28 +136,20 @@ if ($existingRule) {
 # Get IP address
 $ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1"}).IPAddress | Select-Object -First 1
 
-# Check if auth token was generated
-$currentEnv = Get-Content ".env" -Raw
-if ($currentEnv -match 'MCP_AUTH_TOKEN=(.+)') {
-    $currentToken = $matches[1].Trim()
-    if ($currentToken -and $currentToken -ne '') {
-        Write-Host "`n=== Authentication Token ===" -ForegroundColor Yellow
-        Write-Host "Current Auth Token: $currentToken" -ForegroundColor Cyan
-        Write-Host "Copy this token to your client's .env file for secure connection" -ForegroundColor Yellow
-    }
-}
 
 # Display completion message
 Write-Host "`n=== Setup Complete! ===" -ForegroundColor Green
 Write-Host "`nServer location: $InstallPath" -ForegroundColor Cyan
 Write-Host "Your Windows IP address: $ipAddress" -ForegroundColor Cyan
-Write-Host "`nNext steps:" -ForegroundColor Yellow
-Write-Host "1. Configure client connection:" -ForegroundColor White
-Write-Host "   - Set WINDOWS_VM_IP=$ipAddress in client .env" -ForegroundColor Gray
-Write-Host "   - Set MCP_AUTH_TOKEN (same as server) in client .env" -ForegroundColor Gray
-Write-Host "2. For NordVPN mesh network:" -ForegroundColor White
+Write-Host "`n=== IMPORTANT: Save these values for client configuration ===" -ForegroundColor Yellow
+Write-Host "WINDOWS_VM_IP=$ipAddress" -ForegroundColor Cyan
+Write-Host "MCP_AUTH_TOKEN=$authToken" -ForegroundColor Cyan
+Write-Host "===========================================================`n" -ForegroundColor Yellow
+
+Write-Host "Next steps:" -ForegroundColor Yellow
+Write-Host "1. Configure client .env file with the values above" -ForegroundColor White
+Write-Host "2. Start server: cd $InstallPath && npm start" -ForegroundColor White
+Write-Host "`nFor NordVPN mesh network (optional):" -ForegroundColor Gray
 Write-Host "   - Set NORDVPN_ENABLED=true" -ForegroundColor Gray
 Write-Host "   - Add mesh IPs to NORDVPN_HOSTS" -ForegroundColor Gray
 Write-Host "   - Set REMOTE_USERNAME and REMOTE_PASSWORD" -ForegroundColor Gray
-Write-Host "3. Start server: cd $InstallPath && npm start" -ForegroundColor White
-Write-Host "`nSSH Server is now enabled for remote access" -ForegroundColor Green
