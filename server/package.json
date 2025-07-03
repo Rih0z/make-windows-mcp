@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "NODE_ENV=development node src/server.js"
+    "dev": "NODE_ENV=development node src/server.js",
+    "dangerous": "ENABLE_DANGEROUS_MODE=true node src/server.js",
+    "update": "powershell -ExecutionPolicy Bypass -File setup/update-server.ps1"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -341,7 +341,22 @@ app.post('/mcp', async (req, res) => {
           
         case 'run_powershell':
           try {
-            const validatedCommand = security.validatePowerShellCommand(args.command);
+            // Check if dangerous mode is enabled
+            const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+            
+            let validatedCommand;
+            if (dangerousMode) {
+              // In dangerous mode, skip validation but log warning
+              validatedCommand = args.command;
+              logger.security('DANGEROUS MODE: Unrestricted command execution', { 
+                clientIP, 
+                command: args.command.substring(0, 100),
+                fullCommand: args.command
+              });
+            } else {
+              // Normal mode with security validation
+              validatedCommand = security.validatePowerShellCommand(args.command);
+            }
             
             if (args.remoteHost) {
               const validatedHost = security.validateIPAddress(args.remoteHost);
@@ -356,7 +371,11 @@ app.post('/mcp', async (req, res) => {
               ]);
             }
             
-            logger.info('PowerShell command executed', { clientIP, command: args.command.substring(0, 100) });
+            logger.info('PowerShell command executed', { 
+              clientIP, 
+              command: args.command.substring(0, 100),
+              dangerousMode 
+            });
           } catch (error) {
             result = handleValidationError(error, 'PowerShell', logger, clientIP, { command: args.command });
           }
@@ -375,9 +394,30 @@ app.post('/mcp', async (req, res) => {
         case 'ssh_command':
           try {
             const validatedCreds = security.validateSSHCredentials(args.host, args.username, args.password);
-            const validatedCommand = security.validatePowerShellCommand(args.command);
+            
+            // Check if dangerous mode is enabled for SSH commands too
+            const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+            let validatedCommand;
+            
+            if (dangerousMode) {
+              validatedCommand = args.command;
+              logger.security('DANGEROUS MODE: Unrestricted SSH command execution', { 
+                clientIP, 
+                host: validatedCreds.host,
+                command: args.command.substring(0, 100),
+                fullCommand: args.command
+              });
+            } else {
+              validatedCommand = security.validatePowerShellCommand(args.command);
+            }
+            
             result = await executeSSHCommand(validatedCreds.host, validatedCreds.username, validatedCreds.password, validatedCommand);
-            logger.info('SSH command executed', { clientIP, host: validatedCreds.host, username: validatedCreds.username });
+            logger.info('SSH command executed', { 
+              clientIP, 
+              host: validatedCreds.host, 
+              username: validatedCreds.username,
+              dangerousMode 
+            });
           } catch (error) {
             result = handleValidationError(error, 'SSH', logger, clientIP, { host: args.host });
           }
@@ -544,6 +584,15 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`MCP server running on http://0.0.0.0:${PORT}`);
     console.log(`Health check: http://0.0.0.0:${PORT}/health`);
     console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+    
+    // Display dangerous mode warning if enabled
+    if (process.env.ENABLE_DANGEROUS_MODE === 'true') {
+      console.log('\n⚠️ ⚠️ ⚠️  DANGER: UNRESTRICTED COMMAND EXECUTION ENABLED  ⚠️ ⚠️ ⚠️');
+      console.log('🔥 ALL SECURITY RESTRICTIONS BYPASSED - ANY COMMAND CAN BE EXECUTED');
+      console.log('💀 This includes system-destructive commands, user management, etc.');
+      console.log('🚨 Use ONLY in fully trusted environments');
+      console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️\n');
+    }
     
     // Display available IP addresses
     try {
