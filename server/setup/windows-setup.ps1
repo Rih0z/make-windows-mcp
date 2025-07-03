@@ -101,7 +101,19 @@ $packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding U
 # Create .env file if not exists
 if (!(Test-Path ".env")) {
     Copy-Item ".env.example" -Destination ".env"
-    Write-Host "`nIMPORTANT: Edit $InstallPath\.env to configure your server" -ForegroundColor Yellow
+    
+    # Generate secure auth token for production
+    $authToken = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
+    
+    # Update .env file with generated token
+    $envContent = Get-Content ".env" -Raw
+    $envContent = $envContent -replace 'MCP_AUTH_TOKEN=.*', "MCP_AUTH_TOKEN=$authToken"
+    Set-Content -Path ".env" -Value $envContent -Encoding UTF8
+    
+    Write-Host "`n=== IMPORTANT: Authentication Token Generated ===" -ForegroundColor Yellow
+    Write-Host "Auth Token: $authToken" -ForegroundColor Cyan
+    Write-Host "`nThis token has been set in $InstallPath\.env" -ForegroundColor Green
+    Write-Host "Copy this token to your client's .env file (MCP_AUTH_TOKEN) for secure connection" -ForegroundColor Yellow
 }
 
 # 5. Configure Windows Firewall
@@ -119,16 +131,28 @@ if ($existingRule) {
 # Get IP address
 $ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1"}).IPAddress | Select-Object -First 1
 
+# Check if auth token was generated
+$currentEnv = Get-Content ".env" -Raw
+if ($currentEnv -match 'MCP_AUTH_TOKEN=(.+)') {
+    $currentToken = $matches[1].Trim()
+    if ($currentToken -and $currentToken -ne '') {
+        Write-Host "`n=== Authentication Token ===" -ForegroundColor Yellow
+        Write-Host "Current Auth Token: $currentToken" -ForegroundColor Cyan
+        Write-Host "Copy this token to your client's .env file for secure connection" -ForegroundColor Yellow
+    }
+}
+
 # Display completion message
 Write-Host "`n=== Setup Complete! ===" -ForegroundColor Green
 Write-Host "`nServer location: $InstallPath" -ForegroundColor Cyan
-Write-Host "Your IP address: $ipAddress" -ForegroundColor Cyan
+Write-Host "Your Windows IP address: $ipAddress" -ForegroundColor Cyan
 Write-Host "`nNext steps:" -ForegroundColor Yellow
-Write-Host "1. Edit $InstallPath\.env with your settings" -ForegroundColor White
+Write-Host "1. Configure client connection:" -ForegroundColor White
+Write-Host "   - Set WINDOWS_VM_IP=$ipAddress in client .env" -ForegroundColor Gray
+Write-Host "   - Set MCP_AUTH_TOKEN (same as server) in client .env" -ForegroundColor Gray
 Write-Host "2. For NordVPN mesh network:" -ForegroundColor White
 Write-Host "   - Set NORDVPN_ENABLED=true" -ForegroundColor Gray
 Write-Host "   - Add mesh IPs to NORDVPN_HOSTS" -ForegroundColor Gray
 Write-Host "   - Set REMOTE_USERNAME and REMOTE_PASSWORD" -ForegroundColor Gray
-Write-Host "3. Generate auth token: openssl rand -hex 32" -ForegroundColor White
-Write-Host "4. Start server: cd $InstallPath && npm start" -ForegroundColor White
+Write-Host "3. Start server: cd $InstallPath && npm start" -ForegroundColor White
 Write-Host "`nSSH Server is now enabled for remote access" -ForegroundColor Green

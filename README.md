@@ -189,6 +189,10 @@ cp .env.example .env
 # .envファイルを編集してWindows VMのIPアドレスを設定
 nano .env
 
+# 重要: Windows側でMCP_AUTH_TOKENが設定されている場合
+# Windows側の.envファイルまたはセットアップ完了時に表示されたトークンを
+# クライアント側の.envファイルのMCP_AUTH_TOKENにも設定してください
+
 # MCPクライアントツールに追加
 claude mcp add --user windows-build-server  # Claude Code使用時
 # または
@@ -208,7 +212,7 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `REMOTE_USERNAME` | リモートWindows認証ユーザー名 | いいえ | Administrator |
 | `REMOTE_PASSWORD` | リモートWindows認証パスワード | いいえ | - |
 | `SSH_TIMEOUT` | SSH接続タイムアウト（ms） | いいえ | 30000 |
-| `MCP_AUTH_TOKEN` | 認証トークン | はい（本番環境） | - |
+| `MCP_AUTH_TOKEN` | 認証トークン（Windows/クライアント両方で同じ値を設定） | はい（本番環境） | - |
 | `ALLOWED_IPS` | 許可IPリスト（カンマ区切り） | いいえ | すべて許可 |
 | `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\,C:\build |
 | `LOG_LEVEL` | ログレベル | いいえ | info |
@@ -231,6 +235,9 @@ cd server\setup
 # 5. npmパッケージのインストール
 # 6. ファイアウォールルールの設定
 # 7. 実行ポリシーの設定
+# 8. 認証トークン（MCP_AUTH_TOKEN）の自動生成と表示
+#    - 生成されたトークンはWindows側の.envに自動設定
+#    - クライアント側の.envにコピーする必要があります
 ```
 
 #### クライアント側設定
