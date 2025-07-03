@@ -133,8 +133,17 @@ if ($existingRule) {
     Write-Host "Firewall rule added for port 8080" -ForegroundColor Green
 }
 
-# Get IP address
-$ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1"}).IPAddress | Select-Object -First 1
+# Get IP addresses
+$allIPs = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1"}
+$ipAddress = $allIPs.IPAddress | Select-Object -First 1
+
+# Check for VPN interfaces
+$vpnIPs = @()
+foreach ($ip in $allIPs) {
+    if ($ip.InterfaceAlias -match "VPN|NordVPN|OpenVPN|WireGuard|Tailscale|ZeroTier") {
+        $vpnIPs += $ip.IPAddress
+    }
+}
 
 
 # Display completion message
@@ -144,5 +153,14 @@ Write-Host "--------------------------------------------------------" -Foregroun
 Write-Host "WINDOWS_VM_IP=$ipAddress" -ForegroundColor Cyan
 Write-Host "MCP_AUTH_TOKEN=$authToken" -ForegroundColor Cyan
 Write-Host "--------------------------------------------------------" -ForegroundColor Gray
+
+# Display VPN information if detected
+if ($vpnIPs.Count -gt 0) {
+    Write-Host "`n⚠️  VPN detected! If using VPN to connect, use one of these IPs instead:" -ForegroundColor Yellow
+    foreach ($vpnIP in $vpnIPs) {
+        Write-Host "   WINDOWS_VM_IP=$vpnIP" -ForegroundColor Cyan
+    }
+}
+
 Write-Host "`nSave this .env file in your client project root directory." -ForegroundColor Yellow
 Write-Host "`nThen start the server: cd $InstallPath && npm start" -ForegroundColor White

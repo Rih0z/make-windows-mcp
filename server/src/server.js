@@ -540,10 +540,42 @@ const PORT = getNumericEnv('MCP_SERVER_PORT', 8080);
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '0.0.0.0', async () => {
     console.log(`MCP server running on http://0.0.0.0:${PORT}`);
     console.log(`Health check: http://0.0.0.0:${PORT}/health`);
     console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+    
+    // Display available IP addresses
+    try {
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execPromise = promisify(exec);
+      
+      if (process.platform === 'win32') {
+        const { stdout } = await execPromise('powershell -Command "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike \'*Loopback*\' -and $_.IPAddress -ne \'127.0.0.1\'} | Select-Object -ExpandProperty IPAddress"');
+        const ips = stdout.trim().split('\n').filter(ip => ip);
+        
+        if (ips.length > 0) {
+          console.log('\nYour server is accessible at:');
+          ips.forEach(ip => {
+            console.log(`  http://${ip.trim()}:${PORT}`);
+          });
+          
+          // Check for VPN IPs
+          const { stdout: interfaceInfo } = await execPromise('powershell -Command "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -match \'VPN|NordVPN|OpenVPN|WireGuard|Tailscale|ZeroTier\'} | Select-Object -ExpandProperty IPAddress"');
+          const vpnIps = interfaceInfo.trim().split('\n').filter(ip => ip);
+          
+          if (vpnIps.length > 0) {
+            console.log('\n⚠️  VPN detected! Use these IPs if connecting through VPN:');
+            vpnIps.forEach(ip => {
+              console.log(`  http://${ip.trim()}:${PORT}`);
+            });
+          }
+        }
+      }
+    } catch (err) {
+      // Silently ignore errors in IP detection
+    }
   });
 }
 
