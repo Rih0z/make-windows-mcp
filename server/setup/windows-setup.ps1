@@ -139,17 +139,10 @@ $ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceA
 
 # Display completion message
 Write-Host "`n=== Setup Complete! ===" -ForegroundColor Green
-Write-Host "`nServer location: $InstallPath" -ForegroundColor Cyan
-Write-Host "Your Windows IP address: $ipAddress" -ForegroundColor Cyan
-Write-Host "`n=== IMPORTANT: Save these values for client configuration ===" -ForegroundColor Yellow
+Write-Host "`nCopy the following content to your client's .env file:" -ForegroundColor Yellow
+Write-Host "--------------------------------------------------------" -ForegroundColor Gray
 Write-Host "WINDOWS_VM_IP=$ipAddress" -ForegroundColor Cyan
 Write-Host "MCP_AUTH_TOKEN=$authToken" -ForegroundColor Cyan
-Write-Host "===========================================================`n" -ForegroundColor Yellow
-
-Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "1. Configure client .env file with the values above" -ForegroundColor White
-Write-Host "2. Start server: cd $InstallPath && npm start" -ForegroundColor White
-Write-Host "`nFor NordVPN mesh network (optional):" -ForegroundColor Gray
-Write-Host "   - Set NORDVPN_ENABLED=true" -ForegroundColor Gray
-Write-Host "   - Add mesh IPs to NORDVPN_HOSTS" -ForegroundColor Gray
-Write-Host "   - Set REMOTE_USERNAME and REMOTE_PASSWORD" -ForegroundColor Gray
+Write-Host "--------------------------------------------------------" -ForegroundColor Gray
+Write-Host "`nSave this .env file in your client project root directory." -ForegroundColor Yellow
+Write-Host "`nThen start the server: cd $InstallPath && npm start" -ForegroundColor White

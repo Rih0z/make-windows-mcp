@@ -163,10 +163,25 @@ app.use((req, res, next) => {
     
     const token = providedToken.replace('Bearer ', '');
     if (token !== authToken) {
+      // Log partial tokens for debugging without exposing full token
+      const expectedPartial = authToken.substring(0, 4) + '...' + authToken.substring(authToken.length - 4);
+      const receivedPartial = token.length >= 8 ? 
+        token.substring(0, 4) + '...' + token.substring(token.length - 4) : 
+        'too short';
+      
       logger.security('Invalid authorization token', { 
         clientIP: getClientIP(req),
-        path: req.path 
+        path: req.path,
+        expectedPartial,
+        receivedPartial,
+        tokenLength: { expected: authToken.length, received: token.length }
       });
+      
+      // Development mode hint
+      if (process.env.NODE_ENV === 'development') {
+        logger.debug('Token validation failed - check .env files on both server and client');
+      }
+      
       return res.status(401).json({ error: 'Invalid authorization token' });
     }
   }
