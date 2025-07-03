@@ -10,6 +10,7 @@ const security = require('./utils/security');
 const rateLimiter = require('./utils/rate-limiter');
 const logger = require('./utils/logger');
 const crypto = require('./utils/crypto');
+const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
 function validateEnvironment() {
@@ -99,9 +100,9 @@ app.use((req, res, next) => {
 
 // Rate limiting middleware
 app.use((req, res, next) => {
-  const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-  const maxRequests = parseInt(process.env.RATE_LIMIT_REQUESTS) || 60;
-  const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW) || 60000;
+  const clientIP = getClientIP(req);
+  const maxRequests = getNumericEnv('RATE_LIMIT_REQUESTS', 60);
+  const windowMs = getNumericEnv('RATE_LIMIT_WINDOW', 60000);
   
   const limitResult = rateLimiter.checkLimit(clientIP, maxRequests, windowMs);
   
@@ -121,7 +122,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const allowedIPs = process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(',').map(ip => ip.trim()) : [];
   if (allowedIPs.length > 0) {
-    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const clientIP = getClientIP(req);
     const isAllowed = allowedIPs.some(allowedIP => {
       // Support CIDR notation
       if (allowedIP.includes('/')) {
@@ -154,7 +155,7 @@ app.use((req, res, next) => {
     
     if (!providedToken) {
       logger.security('Missing authorization header', { 
-        clientIP: req.ip || req.connection.remoteAddress,
+        clientIP: getClientIP(req),
         path: req.path 
       });
       return res.status(401).json({ error: 'Authorization header required' });
@@ -163,7 +164,7 @@ app.use((req, res, next) => {
     const token = providedToken.replace('Bearer ', '');
     if (token !== authToken) {
       logger.security('Invalid authorization token', { 
-        clientIP: req.ip || req.connection.remoteAddress,
+        clientIP: getClientIP(req),
         path: req.path 
       });
       return res.status(401).json({ error: 'Invalid authorization token' });
@@ -192,7 +193,7 @@ app.get('/health', (req, res) => {
 
 // MCP endpoint
 app.post('/mcp', async (req, res) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
+  const clientIP = getClientIP(req);
   logger.info('Received MCP request', { 
     clientIP, 
     method: req.body.method, 
@@ -287,8 +288,8 @@ app.post('/mcp', async (req, res) => {
               result = await executeRemoteCommand(validatedHost, command);
             } else {
               // Create project directory structure
-              await executeBuild('cmd.exe', ['/c', `if not exist "${projectDir}" mkdir "${projectDir}"`]);
-              await executeBuild('cmd.exe', ['/c', `if not exist "${releaseDir}" mkdir "${releaseDir}"`]);
+              await executeBuild('cmd.exe', ['/c', createDirCommand(projectDir)]);
+              await executeBuild('cmd.exe', ['/c', createDirCommand(releaseDir)]);
               
               // Copy project to build directory (preserving repository structure)
               const projectSourceDir = validatedPath.substring(0, validatedPath.lastIndexOf('\\'));
@@ -319,8 +320,7 @@ app.post('/mcp', async (req, res) => {
               releaseDir 
             });
           } catch (error) {
-            logger.security('Build validation failed', { clientIP, error: error.message, args });
-            result = { content: [{ type: 'text', text: `Validation error: ${error.message}` }] };
+            result = handleValidationError(error, 'Build', logger, clientIP, { args });
           }
           break;
           
@@ -343,8 +343,7 @@ app.post('/mcp', async (req, res) => {
             
             logger.info('PowerShell command executed', { clientIP, command: args.command.substring(0, 100) });
           } catch (error) {
-            logger.security('PowerShell validation failed', { clientIP, error: error.message, command: args.command });
-            result = { content: [{ type: 'text', text: `Validation error: ${error.message}` }] };
+            result = handleValidationError(error, 'PowerShell', logger, clientIP, { command: args.command });
           }
           break;
           
@@ -354,8 +353,7 @@ app.post('/mcp', async (req, res) => {
             result = await pingHost(validatedHost);
             logger.info('Ping executed', { clientIP, host: validatedHost });
           } catch (error) {
-            logger.security('Ping validation failed', { clientIP, error: error.message, host: args.host });
-            result = { content: [{ type: 'text', text: `Validation error: ${error.message}` }] };
+            result = handleValidationError(error, 'Ping', logger, clientIP, { host: args.host });
           }
           break;
           
@@ -366,14 +364,13 @@ app.post('/mcp', async (req, res) => {
             result = await executeSSHCommand(validatedCreds.host, validatedCreds.username, validatedCreds.password, validatedCommand);
             logger.info('SSH command executed', { clientIP, host: validatedCreds.host, username: validatedCreds.username });
           } catch (error) {
-            logger.security('SSH validation failed', { clientIP, error: error.message, host: args.host });
-            result = { content: [{ type: 'text', text: `Validation error: ${error.message}` }] };
+            result = handleValidationError(error, 'SSH', logger, clientIP, { host: args.host });
           }
           break;
           
         default:
           logger.warn('Unknown tool requested', { clientIP, toolName: name });
-          result = { content: [{ type: 'text', text: `Unknown tool: ${name}` }] };
+          result = createTextResult(`Unknown tool: ${name}`);
       }
       
       res.json(result);
@@ -395,7 +392,7 @@ async function executeBuild(command, args) {
     let processExited = false;
 
     // Add timeout handling
-    const timeout = parseInt(process.env.COMMAND_TIMEOUT) || 300000; // 5 minutes default
+    const timeout = getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
     const timer = setTimeout(() => {
       if (!processExited) {
         process.kill('SIGTERM');
@@ -425,12 +422,7 @@ async function executeBuild(command, args) {
     process.on('error', (err) => {
       clearTimeout(timer);
       processExited = true;
-      resolve({
-        content: [{
-          type: 'text',
-          text: `Process error: ${err.message}`
-        }]
-      });
+      resolve(createTextResult(`Process error: ${err.message}`));
     });
 
     process.on('close', (code) => {
@@ -449,19 +441,11 @@ async function executeBuild(command, args) {
 async function pingHost(host) {
   try {
     const result = await ping.promise.probe(host);
-    return {
-      content: [{
-        type: 'text',
-        text: `Ping result for ${host}:\nAlive: ${result.alive}\nTime: ${result.time}ms\nStatus: ${result.output}`
-      }]
-    };
+    return createTextResult(
+      `Ping result for ${host}:\nAlive: ${result.alive}\nTime: ${result.time}ms\nStatus: ${result.output}`
+    );
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: `Ping failed for ${host}: ${error.message}`
-      }]
-    };
+    return createTextResult(`Ping failed for ${host}: ${error.message}`);
   }
 }
 
@@ -481,36 +465,21 @@ async function executeSSHCommand(host, username, password, command) {
     // Set connection timeout
     connectionTimeout = setTimeout(() => {
       conn.end();
-      resolve({
-        content: [{
-          type: 'text',
-          text: `SSH connection timeout to ${host}`
-        }]
-      });
-    }, parseInt(process.env.SSH_TIMEOUT) || 30000);
+      resolve(createTextResult(`SSH connection timeout to ${host}`));
+    }, getNumericEnv('SSH_TIMEOUT', 30000));
     
     conn.on('ready', () => {
       clearTimeout(connectionTimeout);
       conn.exec(command, (err, stream) => {
         if (err) {
           conn.end();
-          resolve({
-            content: [{
-              type: 'text',
-              text: `SSH Error: ${err.message}`
-            }]
-          });
+          resolve(createTextResult(`SSH Error: ${err.message}`));
           return;
         }
         
         stream.on('close', (code, signal) => {
           conn.end();
-          resolve({
-            content: [{
-              type: 'text',
-              text: `SSH Command completed (code: ${code}):\n${output}`
-            }]
-          });
+          resolve(createTextResult(`SSH Command completed (code: ${code}):\n${output}`));
         }).on('data', (data) => {
           output += data.toString();
         }).stderr.on('data', (data) => {
@@ -522,18 +491,13 @@ async function executeSSHCommand(host, username, password, command) {
       username: username,
       password: password,
       port: 22,
-      readyTimeout: parseInt(process.env.SSH_TIMEOUT) || 30000
+      readyTimeout: getNumericEnv('SSH_TIMEOUT', 30000)
     });
     
     conn.on('error', (err) => {
       clearTimeout(connectionTimeout);
       logger.error('SSH connection error', { host, error: err.message });
-      resolve({
-        content: [{
-          type: 'text',
-          text: `Connection failed to ${host}: ${err.message}`
-        }]
-      });
+      resolve(createTextResult(`Connection failed to ${host}: ${err.message}`));
     });
   });
 }
@@ -543,12 +507,7 @@ async function executeRemoteCommand(host, command) {
   let password = process.env.REMOTE_PASSWORD;
   
   if (!password) {
-    return {
-      content: [{
-        type: 'text',
-        text: 'Error: REMOTE_PASSWORD environment variable not set'
-      }]
-    };
+    return createTextResult('Error: REMOTE_PASSWORD environment variable not set');
   }
   
   // Decrypt password if encrypted
@@ -556,18 +515,13 @@ async function executeRemoteCommand(host, command) {
     password = crypto.decrypt(password);
   } catch (error) {
     logger.error('Failed to decrypt remote password', { error: error.message });
-    return {
-      content: [{
-        type: 'text',
-        text: 'Error: Failed to decrypt remote password'
-      }]
-    };
+    return createTextResult('Error: Failed to decrypt remote password');
   }
   
   return await executeSSHCommand(host, username, password, command);
 }
 
-const PORT = process.env.MCP_SERVER_PORT || 8080;
+const PORT = getNumericEnv('MCP_SERVER_PORT', 8080);
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
