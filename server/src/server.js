@@ -9,6 +9,59 @@ require('dotenv').config();
 const security = require('./utils/security');
 const rateLimiter = require('./utils/rate-limiter');
 const logger = require('./utils/logger');
+const crypto = require('./utils/crypto');
+
+// Validate critical environment variables
+function validateEnvironment() {
+  const warnings = [];
+  
+  // Check for production security settings
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.MCP_AUTH_TOKEN || process.env.MCP_AUTH_TOKEN === 'change-this-to-a-secure-random-token') {
+      warnings.push('MCP_AUTH_TOKEN must be set to a secure value in production');
+    }
+    
+    if (!process.env.ALLOWED_IPS) {
+      warnings.push('ALLOWED_IPS should be configured in production for security');
+    }
+  }
+  
+  // Check SSH credentials if remote features are enabled
+  if (process.env.NORDVPN_ENABLED === 'true') {
+    if (!process.env.REMOTE_PASSWORD) {
+      warnings.push('REMOTE_PASSWORD must be set when NORDVPN_ENABLED is true');
+    }
+  }
+  
+  // Validate numeric environment variables
+  const numericVars = {
+    MCP_SERVER_PORT: { default: 8080, min: 1, max: 65535 },
+    RATE_LIMIT_REQUESTS: { default: 60, min: 1, max: 1000 },
+    RATE_LIMIT_WINDOW: { default: 60000, min: 1000, max: 600000 },
+    COMMAND_TIMEOUT: { default: 300000, min: 1000, max: 3600000 },
+    SSH_TIMEOUT: { default: 30000, min: 1000, max: 300000 }
+  };
+  
+  for (const [varName, config] of Object.entries(numericVars)) {
+    const value = process.env[varName];
+    if (value) {
+      const parsed = parseInt(value);
+      if (isNaN(parsed) || parsed < config.min || parsed > config.max) {
+        warnings.push(`${varName} must be a number between ${config.min} and ${config.max}`);
+      }
+    }
+  }
+  
+  if (warnings.length > 0) {
+    logger.warn('Environment configuration warnings:', { warnings });
+    warnings.forEach(warning => console.warn(`⚠️  ${warning}`));
+  }
+  
+  return warnings;
+}
+
+// Validate environment on startup
+const envWarnings = validateEnvironment();
 
 const app = express();
 
@@ -214,15 +267,57 @@ app.post('/mcp', async (req, res) => {
             const validatedPath = security.validatePath(args.projectPath);
             const configuration = args.configuration || 'Debug';
             
+            // Extract project name from path
+            const projectName = validatedPath.split('\\').pop().replace('.csproj', '');
+            
+            // Fixed directory structure: C:\build\<project-name>\release
+            const buildBaseDir = 'C:\\build';
+            const projectDir = `${buildBaseDir}\\${projectName}`;
+            const releaseDir = `${projectDir}\\release`;
+            
             if (args.remoteHost) {
               const validatedHost = security.validateIPAddress(args.remoteHost);
-              const command = `dotnet build "${validatedPath}" -c ${configuration}`;
+              // Create directories and build on remote host
+              const commands = [
+                `if not exist "${projectDir}" mkdir "${projectDir}"`,
+                `if not exist "${releaseDir}" mkdir "${releaseDir}"`,
+                `dotnet build "${validatedPath}" -c ${configuration} -o "${releaseDir}"`
+              ];
+              const command = commands.join(' && ');
               result = await executeRemoteCommand(validatedHost, command);
             } else {
-              result = await executeBuild('dotnet', ['build', validatedPath, '-c', configuration]);
+              // Create project directory structure
+              await executeBuild('cmd.exe', ['/c', `if not exist "${projectDir}" mkdir "${projectDir}"`]);
+              await executeBuild('cmd.exe', ['/c', `if not exist "${releaseDir}" mkdir "${releaseDir}"`]);
+              
+              // Copy project to build directory (preserving repository structure)
+              const projectSourceDir = validatedPath.substring(0, validatedPath.lastIndexOf('\\'));
+              await executeBuild('xcopy.exe', [
+                projectSourceDir,
+                projectDir,
+                '/E', '/I', '/Y', '/Q'
+              ]);
+              
+              // Build project with output to release directory
+              result = await executeBuild('dotnet.exe', [
+                'build', 
+                validatedPath, 
+                '-c', configuration,
+                '-o', releaseDir
+              ]);
+              
+              // Add output path to result
+              const originalText = result.content[0].text;
+              result.content[0].text = `${originalText}\n\nProject repository saved to: ${projectDir}\nRelease output saved to: ${releaseDir}`;
             }
             
-            logger.info('Build completed', { clientIP, projectPath: validatedPath, configuration });
+            logger.info('Build completed', { 
+              clientIP, 
+              projectPath: validatedPath, 
+              configuration, 
+              projectDir,
+              releaseDir 
+            });
           } catch (error) {
             logger.security('Build validation failed', { clientIP, error: error.message, args });
             result = { content: [{ type: 'text', text: `Validation error: ${error.message}` }] };
@@ -237,7 +332,13 @@ app.post('/mcp', async (req, res) => {
               const validatedHost = security.validateIPAddress(args.remoteHost);
               result = await executeRemoteCommand(validatedHost, validatedCommand);
             } else {
-              result = await executeBuild('powershell', ['-Command', validatedCommand]);
+              // Use proper PowerShell arguments without shell
+              result = await executeBuild('powershell.exe', [
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy', 'Bypass',
+                '-Command', validatedCommand
+              ]);
             }
             
             logger.info('PowerShell command executed', { clientIP, command: args.command.substring(0, 100) });
@@ -286,20 +387,55 @@ app.post('/mcp', async (req, res) => {
 });
 
 async function executeBuild(command, args) {
-  return new Promise((resolve) => {
-    const process = spawn(command, args, { shell: true });
+  return new Promise((resolve, reject) => {
+    // Remove shell: true to prevent command injection
+    const process = spawn(command, args);
     let output = '';
     let error = '';
+    let processExited = false;
 
-    process.stdout.on('data', (data) => {
-      output += data.toString();
-    });
+    // Add timeout handling
+    const timeout = parseInt(process.env.COMMAND_TIMEOUT) || 300000; // 5 minutes default
+    const timer = setTimeout(() => {
+      if (!processExited) {
+        process.kill('SIGTERM');
+        setTimeout(() => {
+          if (!processExited) {
+            process.kill('SIGKILL');
+          }
+        }, 5000);
+        reject(new Error(`Command timed out after ${timeout}ms`));
+      }
+    }, timeout);
 
-    process.stderr.on('data', (data) => {
-      error += data.toString();
+    // Handle stdout safely
+    if (process.stdout) {
+      process.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+    }
+
+    // Handle stderr safely
+    if (process.stderr) {
+      process.stderr.on('data', (data) => {
+        error += data.toString();
+      });
+    }
+
+    process.on('error', (err) => {
+      clearTimeout(timer);
+      processExited = true;
+      resolve({
+        content: [{
+          type: 'text',
+          text: `Process error: ${err.message}`
+        }]
+      });
     });
 
     process.on('close', (code) => {
+      clearTimeout(timer);
+      processExited = true;
       resolve({
         content: [{
           type: 'text',
@@ -333,10 +469,31 @@ async function executeSSHCommand(host, username, password, command) {
   return new Promise((resolve) => {
     const conn = new Client();
     let output = '';
+    let connectionTimeout;
+    
+    // Log connection attempt with hashed credentials
+    logger.info('SSH connection attempt', {
+      host,
+      username,
+      passwordHash: crypto.hashForLogging(password)
+    });
+    
+    // Set connection timeout
+    connectionTimeout = setTimeout(() => {
+      conn.end();
+      resolve({
+        content: [{
+          type: 'text',
+          text: `SSH connection timeout to ${host}`
+        }]
+      });
+    }, parseInt(process.env.SSH_TIMEOUT) || 30000);
     
     conn.on('ready', () => {
+      clearTimeout(connectionTimeout);
       conn.exec(command, (err, stream) => {
         if (err) {
+          conn.end();
           resolve({
             content: [{
               type: 'text',
@@ -364,10 +521,13 @@ async function executeSSHCommand(host, username, password, command) {
       host: host,
       username: username,
       password: password,
-      port: 22
+      port: 22,
+      readyTimeout: parseInt(process.env.SSH_TIMEOUT) || 30000
     });
     
     conn.on('error', (err) => {
+      clearTimeout(connectionTimeout);
+      logger.error('SSH connection error', { host, error: err.message });
       resolve({
         content: [{
           type: 'text',
@@ -380,13 +540,26 @@ async function executeSSHCommand(host, username, password, command) {
 
 async function executeRemoteCommand(host, command) {
   const username = process.env.REMOTE_USERNAME || 'Administrator';
-  const password = process.env.REMOTE_PASSWORD;
+  let password = process.env.REMOTE_PASSWORD;
   
   if (!password) {
     return {
       content: [{
         type: 'text',
         text: 'Error: REMOTE_PASSWORD environment variable not set'
+      }]
+    };
+  }
+  
+  // Decrypt password if encrypted
+  try {
+    password = crypto.decrypt(password);
+  } catch (error) {
+    logger.error('Failed to decrypt remote password', { error: error.message });
+    return {
+      content: [{
+        type: 'text',
+        text: 'Error: Failed to decrypt remote password'
       }]
     };
   }

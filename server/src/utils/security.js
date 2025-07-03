@@ -99,7 +99,7 @@ class SecurityValidator {
     // Validate against allowed build paths
     const allowedPaths = process.env.ALLOWED_BUILD_PATHS ? 
       process.env.ALLOWED_BUILD_PATHS.split(',').map(p => p.trim()) : 
-      ['C:\\projects\\', 'Z:\\'];
+      ['C:\\projects\\', 'Z:\\', 'C:\\build\\'];
 
     const isAllowed = allowedPaths.some(allowedPath => {
       const normalizedAllowed = path.win32.normalize(allowedPath.replace(/\//g, '\\'));

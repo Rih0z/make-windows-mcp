@@ -69,8 +69,12 @@ class RateLimiter {
       }
       
       // Remove clients with no recent activity
-      const lastRequest = Math.max(...clientData.requests, 0);
-      if (now - lastRequest > oneHour && !clientData.blocked) {
+      if (clientData.requests && clientData.requests.length > 0) {
+        const lastRequest = Math.max(...clientData.requests);
+        if (now - lastRequest > oneHour && !clientData.blocked) {
+          this.clients.delete(clientIP);
+        }
+      } else if (!clientData.blocked) {
         this.clients.delete(clientIP);
       }
     }
@@ -87,7 +91,7 @@ class RateLimiter {
 
     const now = Date.now();
     const windowMs = 60000;
-    const activeRequests = clientData.requests.filter(timestamp => now - timestamp < windowMs);
+    const activeRequests = (clientData.requests || []).filter(timestamp => now - timestamp < windowMs);
 
     return {
       requests: activeRequests.length,

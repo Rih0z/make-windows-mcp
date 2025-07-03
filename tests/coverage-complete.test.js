@@ -240,6 +240,10 @@ describe('Complete Coverage Tests', () => {
     });
 
     test('should write to error.log for error messages', () => {
+      // Reload logger after mocks are set up
+      delete require.cache[require.resolve('../server/src/utils/logger')];
+      const logger = require('../server/src/utils/logger');
+      
       logger.error('test error', { code: 500 });
       
       // Should write to both error.log and app.log
@@ -254,6 +258,10 @@ describe('Complete Coverage Tests', () => {
     });
 
     test('should handle file write errors gracefully', () => {
+      // Reload logger after mocks are set up
+      delete require.cache[require.resolve('../server/src/utils/logger')];
+      const logger = require('../server/src/utils/logger');
+      
       fs.appendFileSync.mockImplementation(() => {
         throw new Error('Disk full');
       });

@@ -210,7 +210,7 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `SSH_TIMEOUT` | SSH接続タイムアウト（ms） | いいえ | 30000 |
 | `MCP_AUTH_TOKEN` | 認証トークン | はい（本番環境） | - |
 | `ALLOWED_IPS` | 許可IPリスト（カンマ区切り） | いいえ | すべて許可 |
-| `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\ |
+| `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\,C:\build |
 | `LOG_LEVEL` | ログレベル | いいえ | info |
 
 ## 使い方
@@ -320,6 +320,10 @@ make-windows-mcp/
 ```bash
 # ローカルディレクトリからビルド（推奨）
 @windows-build-server build_dotnet projectPath="C:\\projects\\MyApp.csproj" configuration="Release"
+
+# ビルド時のディレクトリ構造：
+# C:\build\MyApp\              # プロジェクトのリポジトリ全体をコピー
+# C:\build\MyApp\release\      # リリース可能なビルド成果物
 
 # ネットワークドライブの場合は、まずローカルにコピー
 @windows-build-server run_powershell command="Copy-Item -Path Z:\\myproject -Destination C:\\temp\\myproject -Recurse"
@@ -530,7 +534,10 @@ LOG_LEVEL=info                      # 詳細ログ
 
 ### 重要な注意事項
 
-1. **パスワード管理**: SSHパスワードは強力なものを使用し、定期的に変更
+1. **パスワード管理**: 
+   - SSHパスワードは強力なものを使用し、定期的に変更
+   - パスワードの暗号化ツールを使用：`node server/setup/encrypt-password.js`
+   - 暗号化されたパスワードは`enc:`プレフィックスで保存
 2. **定期更新**: Windows VMとサーバーソフトウェアを最新に保つ
 3. **モニタリング**: ログを定期的に監視し、不正アクセスを検出
 4. **最小権限の原則**: 必要な機能のみを有効化
@@ -563,7 +570,35 @@ LOG_LEVEL=info                      # 詳細ログ
 
 4. **SSH認証の強化**：
    - 強力なパスワードまたはキーベース認証を使用
+   - パスワードの暗号化：
+     ```bash
+     # パスワードを暗号化
+     cd server
+     node setup/encrypt-password.js
+     # 出力された暗号化パスワードを.envに設定
+     ```
    - 必要に応じてSSHポートを変更
+
+### 新しいセキュリティ機能（v1.1.0）
+
+1. **コマンドインジェクション対策強化**
+   - `shell: true`を削除し、より安全な実行方式を採用
+   - PowerShellとdotnetコマンドの引数を適切に分離
+
+2. **タイムアウト処理**
+   - すべてのコマンド実行に設定可能なタイムアウト
+   - SSH接続にもタイムアウトを実装
+   - ハングしたプロセスの自動終了
+
+3. **環境変数検証**
+   - 起動時に重要な設定の検証
+   - 本番環境での必須設定のチェック
+   - 数値パラメータの範囲検証
+
+4. **暗号化サポート**
+   - SSH認証情報の暗号化保存
+   - AES-256-GCM暗号化アルゴリズム
+   - 環境変数での安全な保存
 
 ## トラブルシューティング
 

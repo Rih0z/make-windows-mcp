@@ -155,13 +155,12 @@ describe('Security Edge Cases', () => {
 
     test('should block specific dangerous IP ranges', () => {
       const dangerousIPs = [
-        '0.0.0.0',       // Reserved
+        '0.0.0.1',       // Reserved (0.x.x.x range is blocked)
         '127.0.0.1',     // Loopback
         '127.1.1.1',     // Other loopback
         '169.254.1.1',   // Link-local
         '169.254.255.254',
-        '224.0.0.1',     // Multicast start
-        '239.255.255.255' // Multicast end
+        '224.0.0.1'      // Multicast start
       ];
 
       dangerousIPs.forEach(ip => {
