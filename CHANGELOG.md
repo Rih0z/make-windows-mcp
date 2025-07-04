@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.0.12] - 2025-07-05
+
+### 🚨 緊急修正
+- **processモジュール初期化エラーの修正**:
+  - executeBuild関数内での変数名衝突を解決
+  - `const process = spawn()` → `const childProcess = spawn()`
+  - すべての子プロセス参照を修正
+  - "Cannot access 'process' before initialization" エラーを解消
+
+### 改善
+- **バージョン表示の改善**:
+  - ハードコードされたフォールバック値を削除
+  - package.jsonから動的に読み込み、失敗時は'unknown'を表示
+  - サーバーとクライアントのバージョン同期
+
+### ドキュメント
+- **汎用性の向上**:
+  - AIServer Enterprise専用表現を汎用化
+  - USE_CASES.mdに様々な業界向け使用例を追加
+  - READMEの実装状況を正確に反映
+
+## [1.0.11] - 2025-07-04
+
+### 追加 - PDFコンバーター対応 Phase 1
+- **長時間実行プロセス対応**:
+  - タイムアウト拡張: 最大30分（1800秒）まで対応
+  - run_powershellツールにtimeoutパラメータ追加
+  - PDF_PROCESSING_TIMEOUT、MAX_ALLOWED_TIMEOUT環境変数
+- **プロセス管理強化**:
+  - Stop-Process、Wait-Processコマンドを許可リストに追加
+  - プロセス管理のセキュリティ検証（保護プロセスのガード）
+  - 詳細なタイムアウトエラー（ETIMEDOUTコード）
+
 ## [1.0.10] - 2025-07-04
 
 ### 追加 - 開発ワークフロー最適化: エンジニア要望対応完了

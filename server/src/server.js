@@ -2536,7 +2536,7 @@ async function executeBuild(command, args, options = {}) {
     };
     
     // Remove shell: true to prevent command injection
-    const process = spawn(command, args, spawnOptions);
+    const childProcess = spawn(command, args, spawnOptions);
     let output = '';
     let error = '';
     let processExited = false;
@@ -2545,10 +2545,10 @@ async function executeBuild(command, args, options = {}) {
     const timeout = options.timeout || getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
     const timer = setTimeout(() => {
       if (!processExited) {
-        process.kill('SIGTERM');
+        childProcess.kill('SIGTERM');
         setTimeout(() => {
           if (!processExited) {
-            process.kill('SIGKILL');
+            childProcess.kill('SIGKILL');
           }
         }, 5000);
         const timeoutError = new Error(`Command timed out after ${timeout/1000} seconds`);
@@ -2559,26 +2559,26 @@ async function executeBuild(command, args, options = {}) {
     }, timeout);
 
     // Handle stdout safely
-    if (process.stdout) {
-      process.stdout.on('data', (data) => {
+    if (childProcess.stdout) {
+      childProcess.stdout.on('data', (data) => {
         output += data.toString();
       });
     }
 
     // Handle stderr safely
-    if (process.stderr) {
-      process.stderr.on('data', (data) => {
+    if (childProcess.stderr) {
+      childProcess.stderr.on('data', (data) => {
         error += data.toString();
       });
     }
 
-    process.on('error', (err) => {
+    childProcess.on('error', (err) => {
       clearTimeout(timer);
       processExited = true;
       resolve(createTextResult(`Process error: ${err.message}`));
     });
 
-    process.on('close', (code, signal) => {
+    childProcess.on('close', (code, signal) => {
       clearTimeout(timer);
       processExited = true;
       
