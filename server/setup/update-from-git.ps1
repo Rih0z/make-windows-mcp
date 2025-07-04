@@ -68,59 +68,44 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "`n[3/6] Updating server files..." -ForegroundColor Yellow
+Write-Host "`n[3/6] Cleaning and refreshing server files..." -ForegroundColor Yellow
 Set-Location $InstallPath
 
-# Update main server file - maintain src directory structure
-$sourceServerFile = "$TempDir\server\src\server.js"
-$destServerDir = "$InstallPath\src"
-if (Test-Path $sourceServerFile) {
-    # Create src directory if it doesn't exist
-    if (!(Test-Path $destServerDir)) {
-        New-Item -ItemType Directory -Force -Path $destServerDir | Out-Null
+# Remove all existing code files (preserve .env and backups only)
+Write-Host "Removing old code files..." -ForegroundColor Yellow
+$itemsToRemove = @(
+    "src",
+    "utils", 
+    "server.js",
+    "package-lock.json",
+    "README.md",
+    "LICENSE"
+)
+
+foreach ($item in $itemsToRemove) {
+    if (Test-Path $item) {
+        Remove-Item $item -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "   Removed: $item" -ForegroundColor Gray
     }
-    Copy-Item $sourceServerFile -Destination "$destServerDir\server.js" -Force
-    Write-Host "Updated src/server.js" -ForegroundColor Green
-} else {
-    Write-Host "Warning: server.js not found in repository" -ForegroundColor Yellow
 }
 
-# Update utils directory - maintain src directory structure
-$utilsSource = "$TempDir\server\src\utils"
-$utilsDest = "$InstallPath\src\utils"
-if (Test-Path $utilsSource) {
-    if (!(Test-Path $utilsDest)) {
-        New-Item -ItemType Directory -Force -Path $utilsDest | Out-Null
-    }
-    Copy-Item "$utilsSource\*" -Destination $utilsDest -Force
-    Write-Host "Updated src/utils directory" -ForegroundColor Green
+# Copy entire server directory structure from Git
+Write-Host "Copying fresh code from Git repository..." -ForegroundColor Yellow
+$serverSource = "$TempDir\server"
+
+# Copy all directories
+$directories = Get-ChildItem $serverSource -Directory
+foreach ($dir in $directories) {
+    $destPath = Join-Path $InstallPath $dir.Name
+    Copy-Item $dir.FullName -Destination $InstallPath -Recurse -Force
+    Write-Host "   Copied: $($dir.Name)/" -ForegroundColor Green
 }
 
-# Update setup scripts
-$setupSource = "$TempDir\server\setup"
-$setupDest = "$InstallPath\setup"
-if (Test-Path $setupSource) {
-    if (!(Test-Path $setupDest)) {
-        New-Item -ItemType Directory -Force -Path $setupDest | Out-Null
-    }
-    Copy-Item "$setupSource\*" -Destination $setupDest -Force
-    Write-Host "Updated setup scripts" -ForegroundColor Green
-}
-
-# Copy package.json from server directory
-$packageSource = "$TempDir\server\package.json"
-if (Test-Path $packageSource) {
-    Copy-Item $packageSource -Destination "$InstallPath\package.json" -Force
-    Write-Host "Updated package.json" -ForegroundColor Green
-}
-
-# Clean up old structure (move from root to src)
-if (Test-Path "$InstallPath\server.js") {
-    Write-Host "Cleaning up old file structure..." -ForegroundColor Yellow
-    Remove-Item "$InstallPath\server.js" -Force -ErrorAction SilentlyContinue
-}
-if (Test-Path "$InstallPath\utils" -and (Test-Path "$InstallPath\src\utils")) {
-    Remove-Item "$InstallPath\utils" -Recurse -Force -ErrorAction SilentlyContinue
+# Copy all files from server root
+$files = Get-ChildItem $serverSource -File
+foreach ($file in $files) {
+    Copy-Item $file.FullName -Destination $InstallPath -Force
+    Write-Host "   Copied: $($file.Name)" -ForegroundColor Green
 }
 
 Write-Host "`n[4/6] Updating dependencies..." -ForegroundColor Yellow

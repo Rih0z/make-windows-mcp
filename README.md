@@ -1660,10 +1660,9 @@ npm run setup check
 | 状況 | 使用するスクリプト |
 |------|-------------------|
 | 新規インストール | `windows-setup.ps1` |
-| 定期アップデート | `npm run update` または `update-from-git.ps1` |
+| アップデート（完全リフレッシュ） | `npm run update` または `update-from-git.ps1` |
 | ローカルファイル更新 | `update-server.ps1` |
 | クライアント設定 | `production-setup.js` |
-| サーバーパス修正 | `fix-server-path.ps1` |
 
 ## トラブルシューティング
 
