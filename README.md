@@ -132,6 +132,31 @@ SSH経由でリモートWindowsでコマンドを実行します
 @windows-build-server ssh_command host="10.5.0.2" username="Administrator" password="your_password" command="dotnet build C:\\projects\\MyApp.csproj"
 ```
 
+### 5. run_batch - バッチファイル実行
+
+特定ディレクトリ内のバッチファイルを安全に実行します
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `batchFile` | はい | バッチファイルのパス（C:\builds\配下のみ） |
+| `workingDirectory` | いいえ | 作業ディレクトリ（省略時はバッチファイルのディレクトリ） |
+
+```bash
+# アプリケーション起動スクリプトの実行
+@windows-build-server run_batch batchFile="C:\\builds\\AIServer\\release\\start.bat"
+
+# 作業ディレクトリを指定して実行
+@windows-build-server run_batch batchFile="C:\\builds\\setup.bat" workingDirectory="C:\\builds\\AIServer"
+
+# デプロイスクリプトの実行
+@windows-build-server run_batch batchFile="C:\\builds\\AIServer\\deploy.bat"
+```
+
+**セキュリティ制限**：
+- バッチファイルは`C:\builds\`ディレクトリ配下のみ実行可能
+- 実行時間は5分（COMMAND_TIMEOUT）でタイムアウト
+- すべての実行がログに記録されます
+
 ---
 
 ## 必要要件
@@ -455,7 +480,11 @@ DEV_COMMAND_PATHS=C:\\builds\\,C:\\projects\\,C:\\dev\\
 
 # バッチファイルの実行（許可されたパス内のみ）
 @windows-build-server run_powershell command="cd C:\\builds\\AIServer\\release && start.bat"
-@windows-build-server run_powershell command="call C:\\builds\\setup.bat && echo Setup completed"
+@windows-build-server run_powershell command="Set-Location C:\\builds\\AIServer\\release; .\\start.bat"
+@windows-build-server run_powershell command="& 'C:\\builds\\AIServer\\release\\start.bat'"
+
+# またはrun_batchツールを使用（推奨）
+@windows-build-server run_batch batchFile="C:\\builds\\AIServer\\release\\start.bat"
 
 # ファイル内容の確認
 @windows-build-server run_powershell command="type C:\\builds\\AIServer\\release\\config.json"

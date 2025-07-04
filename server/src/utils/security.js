@@ -7,19 +7,20 @@ class SecurityValidator {
       'get-process', 'get-service', 'get-childitem', 'get-winevent',
       'test-connection', 'get-vm', 'start-vm', 'stop-vm', 'checkpoint-vm',
       'docker', 'kubectl', 'git', 'echo', 'write-host', 'write-output',
-      'find-regkey', 'format-table', 'remove-item'
+      'find-regkey', 'format-table', 'remove-item', 'set-location',
+      'invoke-command', 'start-process'
     ];
     
     // Development mode commands (loaded from environment)
     this.devCommands = process.env.ALLOWED_DEV_COMMANDS ? 
       process.env.ALLOWED_DEV_COMMANDS.split(',').map(cmd => cmd.trim().toLowerCase()) :
-      ['tasklist', 'netstat', 'type', 'python', 'pip', 'node', 'npm', 'git', 'if', 'for', 'findstr', 'echo', 'set', 'call', 'start', 'cd'];
+      ['tasklist', 'netstat', 'type', 'python', 'pip', 'node', 'npm', 'git', 'if', 'for', 'findstr', 'echo', 'set', 'call', 'start', 'cd', 'cmd', '&'];
     
     // Allowed operators in development mode
-    this.devOperators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1'];
+    this.devOperators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1', ';', '&'];
     
     this.dangerousPatterns = [
-      /[\&\`]/g,                     // Command substitution (allow ; and | for PowerShell)
+      /[\`]/g,                       // Backtick command substitution only
       /rm\s+-rf/gi,                  // Dangerous delete commands
       /del\s+\/[sf]/gi,              // Windows delete commands
       /format\s+[c-z]:/gi,           // Format commands
@@ -180,7 +181,7 @@ class SecurityValidator {
    */
   parseCommandChain(command) {
     const parts = [];
-    const operators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1'];
+    const operators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1', ';'];
     let currentPart = '';
     let i = 0;
     
@@ -225,9 +226,12 @@ class SecurityValidator {
     // Remove .exe extension for comparison
     const baseCommand = firstWord.replace(/\.exe$/i, '');
     
-    // Check if it's an allowed dev command
-    if (!this.devCommands.includes(baseCommand)) {
-      // Check if it's a batch file execution
+    // Check if it's a direct batch file execution
+    const isBatchFile = firstWord.toLowerCase().endsWith('.bat') || firstWord.toLowerCase().endsWith('.cmd');
+    
+    // Check if it's an allowed dev command or a batch file
+    if (!this.devCommands.includes(baseCommand) && !isBatchFile) {
+      // Check if it's a batch file execution with a command
       if (cleanCommand.toLowerCase().includes('.bat') || cleanCommand.toLowerCase().includes('.cmd')) {
         // Batch files are allowed if 'call' or 'start' is in devCommands
         if (!this.devCommands.includes('call') && !this.devCommands.includes('start')) {

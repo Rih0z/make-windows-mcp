@@ -278,6 +278,25 @@ app.post('/mcp', async (req, res) => {
               },
               required: ['host', 'username', 'password', 'command']
             }
+          },
+          {
+            name: 'run_batch',
+            description: 'Execute batch file in specific directory',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                batchFile: { 
+                  type: 'string',
+                  pattern: '^C:\\\\builds\\\\.*\\.bat$',
+                  description: 'Path to batch file (must be in C:\\builds\\)'
+                },
+                workingDirectory: {
+                  type: 'string',
+                  description: 'Working directory for batch execution'
+                }
+              },
+              required: ['batchFile']
+            }
           }
         ]
       });
@@ -428,6 +447,37 @@ app.post('/mcp', async (req, res) => {
             });
           } catch (error) {
             result = handleValidationError(error, 'SSH', logger, clientIP, { host: args.host });
+          }
+          break;
+          
+        case 'run_batch':
+          try {
+            // Validate batch file path
+            if (!args.batchFile || typeof args.batchFile !== 'string') {
+              throw new Error('Batch file path is required');
+            }
+            
+            // Check if path matches the pattern
+            const batchPattern = /^C:\\builds\\.*\.bat$/i;
+            if (!batchPattern.test(args.batchFile)) {
+              throw new Error('Batch file must be in C:\\builds\\ directory');
+            }
+            
+            // Validate the path
+            const validatedPath = security.validatePath(args.batchFile);
+            const workingDir = args.workingDirectory || validatedPath.substring(0, validatedPath.lastIndexOf('\\'));
+            
+            // Execute the batch file
+            const command = `cmd.exe /c "${validatedPath}"`;
+            result = await executeBuild('cmd.exe', ['/c', `cd /d "${workingDir}" && "${validatedPath}"`]);
+            
+            logger.info('Batch file executed', { 
+              clientIP, 
+              batchFile: validatedPath,
+              workingDirectory: workingDir 
+            });
+          } catch (error) {
+            result = handleValidationError(error, 'Batch execution', logger, clientIP, { batchFile: args.batchFile });
           }
           break;
           
