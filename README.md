@@ -170,7 +170,15 @@ cd C:\mcp-server
 
 # サーバーファイルをコピー
 copy Z:\windows\server\src\*.* . /Y
+mkdir utils
 copy Z:\windows\server\src\utils\*.* utils\ /Y
+
+# アップデートスクリプトもコピー（今後のアップデート用）
+mkdir setup
+copy Z:\windows\server\setup\update-from-git.ps1 setup\ /Y
+
+# package.jsonを更新（npmスクリプトを追加）
+copy Z:\windows\server\package.json . /Y
 
 # サーバーを起動
 npm start
@@ -299,6 +307,15 @@ npm start
 
 # バックグラウンドで実行する場合
 Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory "C:\mcp-server" -WindowStyle Hidden
+```
+
+#### npmスクリプト一覧
+```powershell
+npm start          # 通常モードで起動
+npm run dev        # 開発モード（詳細ログ）
+npm run dangerous  # ⚠️危険モード（全制限解除）
+npm run update     # GitHubから最新版に更新
+npm run update-local # ローカルファイルから更新
 ```
 
 #### サーバーの停止
