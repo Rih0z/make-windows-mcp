@@ -234,6 +234,9 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `MAX_LOG_FILES` | 保持するログファイル数 | いいえ | 5 |
 | `COMMAND_TIMEOUT` | コマンド実行タイムアウト（ms） | いいえ | 300000 |
 | `MAX_SSH_CONNECTIONS` | 最大SSH同時接続数 | いいえ | 5 |
+| `ENABLE_DEV_COMMANDS` | 開発コマンドモード有効化 | いいえ | false |
+| `ALLOWED_DEV_COMMANDS` | 許可する開発コマンド（カンマ区切り） | いいえ | tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd |
+| `DEV_COMMAND_PATHS` | 開発コマンド実行許可パス（カンマ区切り） | いいえ | C:\\builds\\,C:\\projects\\,C:\\dev\\ |
 | `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除） | いいえ | false |
 
 ## 使い方
@@ -417,6 +420,59 @@ ENABLE_DANGEROUS_MODE=true npm start
 ```powershell
 npm run dev
 ```
+
+#### 開発コマンドモード（安全な開発用コマンド実行）
+
+開発コマンドモードは、危険モードよりも安全に、特定の開発用コマンドを許可するモードです。
+
+**設定方法**：
+```env
+# .envファイルに追加
+ENABLE_DEV_COMMANDS=true
+ALLOWED_DEV_COMMANDS=tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd
+DEV_COMMAND_PATHS=C:\\builds\\,C:\\projects\\,C:\\dev\\
+```
+
+**利用可能なコマンド**：
+| カテゴリ | コマンド | 説明 |
+|---------|----------|------|
+| **プロセス管理** | `tasklist`, `tasklist \| findstr` | プロセスの確認・検索 |
+| **ネットワーク** | `netstat`, `netstat -an \| findstr` | ポート状態の確認 |
+| **ファイル操作** | `type`, `cd`, `echo` | ファイル内容表示、ディレクトリ移動 |
+| **開発ツール** | `python`, `pip`, `node`, `npm`, `git` | 各種開発ツールの実行 |
+| **バッチ処理** | `if`, `for`, `set`, `call`, `start` | バッチファイル実行、条件分岐 |
+| **コマンド連結** | `&&`, `\|\|`, `\|` | 複数コマンドの連結実行 |
+
+**使用例**：
+```bash
+# プロセスの確認
+@windows-build-server run_powershell command="tasklist | findstr python"
+@windows-build-server run_powershell command="tasklist | findstr AIServer"
+
+# ポート状態の確認
+@windows-build-server run_powershell command="netstat -an | findstr :8080"
+@windows-build-server run_powershell command="netstat -an | findstr LISTENING"
+
+# バッチファイルの実行（許可されたパス内のみ）
+@windows-build-server run_powershell command="cd C:\\builds\\AIServer\\release && start.bat"
+@windows-build-server run_powershell command="call C:\\builds\\setup.bat && echo Setup completed"
+
+# ファイル内容の確認
+@windows-build-server run_powershell command="type C:\\builds\\AIServer\\release\\config.json"
+@windows-build-server run_powershell command="type C:\\builds\\logs\\latest.log | findstr ERROR"
+
+# Python実行
+@windows-build-server run_powershell command="python --version"
+@windows-build-server run_powershell command="python C:\\builds\\scripts\\deploy.py"
+
+# 条件付き実行
+@windows-build-server run_powershell command="if exist C:\\builds\\ready.txt (echo Build is ready) else (echo Build not ready)"
+```
+
+**セキュリティ制限**：
+- コマンドは`DEV_COMMAND_PATHS`で指定されたディレクトリ内でのみ実行可能
+- システムファイルの削除、ユーザー管理、レジストリ変更などの危険なコマンドは引き続き制限
+- バッチファイル（.bat, .cmd）も許可されたパス内のみ実行可能
 
 ### アップデート後にDangerousモードで起動する手順
 

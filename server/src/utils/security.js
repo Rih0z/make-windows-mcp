@@ -10,6 +10,14 @@ class SecurityValidator {
       'find-regkey', 'format-table', 'remove-item'
     ];
     
+    // Development mode commands (loaded from environment)
+    this.devCommands = process.env.ALLOWED_DEV_COMMANDS ? 
+      process.env.ALLOWED_DEV_COMMANDS.split(',').map(cmd => cmd.trim().toLowerCase()) :
+      ['tasklist', 'netstat', 'type', 'python', 'pip', 'node', 'npm', 'git', 'if', 'for', 'findstr', 'echo', 'set', 'call', 'start', 'cd'];
+    
+    // Allowed operators in development mode
+    this.devOperators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1'];
+    
     this.dangerousPatterns = [
       /[\&\`]/g,                     // Command substitution (allow ; and | for PowerShell)
       /rm\s+-rf/gi,                  // Dangerous delete commands
@@ -36,7 +44,32 @@ class SecurityValidator {
       throw new Error('Command too long: maximum 2048 characters allowed');
     }
 
-    // Check for dangerous patterns
+    // Check if development mode is enabled
+    const isDevelopmentMode = process.env.ENABLE_DEV_COMMANDS === 'true';
+    
+    // Handle command chaining (&&, ||, |) in development mode
+    if (isDevelopmentMode) {
+      // Split command by operators while preserving them
+      const commandParts = this.parseCommandChain(command);
+      
+      // Validate each part of the command chain
+      for (const part of commandParts) {
+        if (part.type === 'command') {
+          this.validateDevCommand(part.value);
+        }
+      }
+      
+      // Return sanitized command
+      return this.sanitizeCommand(command);
+    }
+    
+    // Extract the base command for non-dev mode
+    const cleanCommand = command.trim().replace(/^[\$\(]+/, '');
+    const firstWord = cleanCommand.split(/\s+/)[0].toLowerCase();
+    
+    // Already handled in development mode above
+
+    // Check for dangerous patterns (for non-dev commands)
     for (const pattern of this.dangerousPatterns) {
       if (pattern.test(command)) {
         throw new Error(`Dangerous command detected: ${pattern.source}`);
@@ -44,9 +77,6 @@ class SecurityValidator {
     }
 
     // Check if command starts with allowed commands
-    // Handle PowerShell variables and expressions
-    const cleanCommand = command.trim().replace(/^[\$\(]+/, '');
-    const firstWord = cleanCommand.split(/\s+/)[0].toLowerCase();
     const isAllowed = this.allowedCommands.some(cmd => 
       firstWord === cmd.toLowerCase() || 
       firstWord.startsWith(cmd.toLowerCase() + '.') ||
@@ -143,6 +173,106 @@ class SecurityValidator {
     }
 
     return ip;
+  }
+
+  /**
+   * Parse command chain into parts
+   */
+  parseCommandChain(command) {
+    const parts = [];
+    const operators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1'];
+    let currentPart = '';
+    let i = 0;
+    
+    while (i < command.length) {
+      let foundOperator = false;
+      
+      // Check for operators
+      for (const op of operators) {
+        if (command.substr(i, op.length) === op) {
+          if (currentPart.trim()) {
+            parts.push({ type: 'command', value: currentPart.trim() });
+            currentPart = '';
+          }
+          parts.push({ type: 'operator', value: op });
+          i += op.length;
+          foundOperator = true;
+          break;
+        }
+      }
+      
+      if (!foundOperator) {
+        currentPart += command[i];
+        i++;
+      }
+    }
+    
+    if (currentPart.trim()) {
+      parts.push({ type: 'command', value: currentPart.trim() });
+    }
+    
+    return parts;
+  }
+
+  /**
+   * Validate a single development command
+   */
+  validateDevCommand(command) {
+    // Extract the base command
+    const cleanCommand = command.trim().replace(/^[\$\(]+/, '');
+    const firstWord = cleanCommand.split(/\s+/)[0].toLowerCase();
+    
+    // Remove .exe extension for comparison
+    const baseCommand = firstWord.replace(/\.exe$/i, '');
+    
+    // Check if it's an allowed dev command
+    if (!this.devCommands.includes(baseCommand)) {
+      // Check if it's a batch file execution
+      if (cleanCommand.toLowerCase().includes('.bat') || cleanCommand.toLowerCase().includes('.cmd')) {
+        // Batch files are allowed if 'call' or 'start' is in devCommands
+        if (!this.devCommands.includes('call') && !this.devCommands.includes('start')) {
+          throw new Error(`Command not allowed in development mode: ${firstWord}`);
+        }
+      } else {
+        throw new Error(`Command not allowed in development mode: ${firstWord}`);
+      }
+    }
+    
+    // Check paths
+    const devPaths = process.env.DEV_COMMAND_PATHS ?
+      process.env.DEV_COMMAND_PATHS.split(',').map(p => p.trim().toLowerCase()) :
+      ['c:\\builds\\', 'c:\\projects\\', 'c:\\dev\\'];
+    
+    // Extract paths from the command
+    const pathPattern = /[a-zA-Z]:\\[^"\s]*/g;
+    const commandPaths = command.match(pathPattern) || [];
+    
+    // If command contains paths, verify they're within allowed dev paths
+    if (commandPaths.length > 0) {
+      const allPathsAllowed = commandPaths.every(cmdPath => {
+        const normalizedCmdPath = cmdPath.toLowerCase();
+        return devPaths.some(devPath => normalizedCmdPath.startsWith(devPath));
+      });
+      
+      if (!allPathsAllowed) {
+        throw new Error(`Development command must operate within allowed paths: ${process.env.DEV_COMMAND_PATHS}`);
+      }
+    }
+    
+    // Validate batch files are in allowed paths
+    if (command.toLowerCase().includes('.bat') || command.toLowerCase().includes('.cmd')) {
+      const batchPattern = /([a-zA-Z]:\\[^"\s]*\.(bat|cmd))/gi;
+      const batchFiles = command.match(batchPattern) || [];
+      
+      const allBatchFilesAllowed = batchFiles.every(batchFile => {
+        const normalizedPath = batchFile.toLowerCase();
+        return devPaths.some(devPath => normalizedPath.startsWith(devPath));
+      });
+      
+      if (!allBatchFilesAllowed) {
+        throw new Error('Batch files must be within allowed development paths');
+      }
+    }
   }
 
   /**
