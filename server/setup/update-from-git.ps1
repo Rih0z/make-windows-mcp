@@ -1,14 +1,13 @@
-# Windows MCP Server Update Script (Legacy - for local file updates)
-# For Git-based updates, use update-from-git.ps1 instead
+# Windows MCP Server Update Script (from Git repository)
 # Run this script in PowerShell as Administrator
 
 param(
     [string]$InstallPath = "C:\mcp-server",
+    [string]$TempDir = "$env:TEMP\mcp-update-$(Get-Date -Format 'yyyyMMddHHmmss')",
     [switch]$Force = $false
 )
 
-Write-Host "=== Windows MCP Server Update (Local Files) ===" -ForegroundColor Cyan
-Write-Host "Note: This script updates from local files. For Git updates, use update-from-git.ps1" -ForegroundColor Yellow
+Write-Host "=== Windows MCP Server Git Update ===" -ForegroundColor Cyan
 Write-Host "Update path: $InstallPath" -ForegroundColor Yellow
 
 # Check if running as Administrator
@@ -24,7 +23,24 @@ if (!(Test-Path $InstallPath)) {
     exit 1
 }
 
-Write-Host "`n[1/5] Backing up current configuration..." -ForegroundColor Yellow
+# Function to test command availability
+function Test-Command($cmdname) {
+    return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
+}
+
+# Check if Git is installed
+if (!(Test-Command git)) {
+    Write-Host "Error: Git is not installed. Installing Git..." -ForegroundColor Yellow
+    choco install git -y
+    refreshenv
+    
+    if (!(Test-Command git)) {
+        Write-Host "Error: Failed to install Git. Please install manually." -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "`n[1/6] Backing up current configuration..." -ForegroundColor Yellow
 $backupPath = "$InstallPath\backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 New-Item -ItemType Directory -Force -Path $backupPath | Out-Null
 
@@ -38,25 +54,35 @@ if (Test-Path "$InstallPath\package.json") {
     Write-Host "Backed up package.json" -ForegroundColor Green
 }
 
-Write-Host "`n[2/5] Updating server files..." -ForegroundColor Yellow
+Write-Host "`n[2/6] Cloning latest version from GitHub..." -ForegroundColor Yellow
+# Create temp directory
+New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
+
+# Clone the repository
+$gitUrl = "https://github.com/Rih0z/make-windows-mcp.git"
+git clone $gitUrl $TempDir
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: Failed to clone repository" -ForegroundColor Red
+    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+    exit 1
+}
+
+Write-Host "`n[3/6] Updating server files..." -ForegroundColor Yellow
 Set-Location $InstallPath
 
-# Copy new server files from repository
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent $scriptDir
-$serverSrcDir = Join-Path $projectRoot "src"
-
 # Update main server file
-if (Test-Path "$serverSrcDir\server.js") {
-    Copy-Item "$serverSrcDir\server.js" -Destination "$InstallPath\server.js" -Force
+$sourceServerFile = "$TempDir\server\src\server.js"
+if (Test-Path $sourceServerFile) {
+    Copy-Item $sourceServerFile -Destination "$InstallPath\server.js" -Force
     Write-Host "Updated server.js" -ForegroundColor Green
 } else {
-    Write-Host "Warning: server.js not found in source" -ForegroundColor Yellow
+    Write-Host "Warning: server.js not found in repository" -ForegroundColor Yellow
 }
 
 # Update utils directory
-$utilsSource = Join-Path $serverSrcDir "utils"
-$utilsDest = Join-Path $InstallPath "utils"
+$utilsSource = "$TempDir\server\src\utils"
+$utilsDest = "$InstallPath\utils"
 if (Test-Path $utilsSource) {
     if (!(Test-Path $utilsDest)) {
         New-Item -ItemType Directory -Force -Path $utilsDest | Out-Null
@@ -65,9 +91,26 @@ if (Test-Path $utilsSource) {
     Write-Host "Updated utils directory" -ForegroundColor Green
 }
 
-Write-Host "`n[3/5] Updating dependencies..." -ForegroundColor Yellow
-# Update package.json dependencies
+# Update setup scripts
+$setupSource = "$TempDir\server\setup"
+$setupDest = "$InstallPath\setup"
+if (Test-Path $setupSource) {
+    if (!(Test-Path $setupDest)) {
+        New-Item -ItemType Directory -Force -Path $setupDest | Out-Null
+    }
+    Copy-Item "$setupSource\*" -Destination $setupDest -Force
+    Write-Host "Updated setup scripts" -ForegroundColor Green
+}
+
+Write-Host "`n[4/6] Updating dependencies..." -ForegroundColor Yellow
+# Update package.json with correct scripts
 $packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+$packageJson.scripts = @{
+    "start" = "node server.js"
+    "dev" = "set NODE_ENV=development && node server.js"
+    "dangerous" = "set ENABLE_DANGEROUS_MODE=true && node server.js"
+    "update" = "powershell -ExecutionPolicy Bypass -File setup\update-from-git.ps1"
+}
 $packageJson.dependencies = @{
     "express" = "^4.18.2"
     "cors" = "^2.8.5"
@@ -81,7 +124,7 @@ $packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding U
 # Update npm packages
 npm install
 
-Write-Host "`n[4/5] Updating environment configuration..." -ForegroundColor Yellow
+Write-Host "`n[5/6] Updating environment configuration..." -ForegroundColor Yellow
 # Update .env file with new settings if they don't exist
 if (Test-Path ".env") {
     $envContent = Get-Content ".env" -Raw
@@ -107,16 +150,10 @@ if (Test-Path ".env") {
     Set-Content -Path ".env" -Value $envContent -Encoding UTF8
 }
 
-Write-Host "`n[5/5] Verifying update..." -ForegroundColor Yellow
-# Test if server can start
-$testProcess = Start-Process -FilePath "node" -ArgumentList "server.js" -NoNewWindow -PassThru
-Start-Sleep -Seconds 3
-if (!$testProcess.HasExited) {
-    Stop-Process -Id $testProcess.Id -Force
-    Write-Host "Server test successful" -ForegroundColor Green
-} else {
-    Write-Host "Warning: Server test failed" -ForegroundColor Yellow
-}
+Write-Host "`n[6/6] Cleaning up..." -ForegroundColor Yellow
+# Remove temporary directory
+Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Write-Host "Cleaned up temporary files" -ForegroundColor Green
 
 # Get IP address for display
 $ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1"}).IPAddress | Select-Object -First 1
@@ -138,8 +175,8 @@ if ($currentEnv -match 'MCP_AUTH_TOKEN=(.+)') {
 }
 
 Write-Host "`nNext steps:" -ForegroundColor Yellow
-Write-Host "1. Start server: cd $InstallPath && npm start" -ForegroundColor White
-Write-Host "2. If issues occur, check backup at: $backupPath" -ForegroundColor White
-Write-Host "3. For new authentication token, run windows-setup.ps1" -ForegroundColor White
+Write-Host "1. Start server: npm start" -ForegroundColor White
+Write-Host "2. Start in dangerous mode: npm run dangerous" -ForegroundColor White
+Write-Host "3. If issues occur, restore from: $backupPath" -ForegroundColor White
 
 Write-Host "`nUpdate completed successfully!" -ForegroundColor Green

@@ -312,38 +312,43 @@ Stop-Process -Name node
 
 ### サーバーのアップデート方法
 
-#### アップデートスクリプトの使用（推奨）
+#### GitHubからの自動アップデート（推奨）
 ```powershell
-# Windows VM上で実行
+# Windows VM上で実行（インターネット接続必須）
 cd C:\mcp-server
 npm run update
 
-# または直接スクリプト実行
-cd server\setup
-.\update-server.ps1
+# アップデート完了後、Dangerousモードで起動
+npm run dangerous
 ```
 
-**アップデートスクリプトの動作**：
+**Gitアップデートスクリプトの動作**：
+- GitHubリポジトリから最新版を自動取得
 - 現在の設定（.env）を自動バックアップ
 - 認証トークンやカスタム設定は**そのまま保持**
 - サーバープログラムのみ最新版に更新
 - 依存関係（node_modules）も自動更新
 - 更新前にバックアップフォルダを作成（例: backup-20250703-213045）
+- Gitがインストールされていない場合は自動インストール
 
-#### 手動アップデート
+#### ローカルファイルからのアップデート
 ```powershell
-# 1. 設定ファイルをバックアップ
-Copy-Item C:\mcp-server\.env C:\mcp-server\.env.backup
-
-# 2. 最新ファイルをコピー
-# GitHubから最新版をダウンロードまたはネットワークドライブから取得
-
-# 3. npmパッケージを更新
+# ネットワークドライブなどからファイルを更新する場合
 cd C:\mcp-server
-npm install
+npm run update-local
 
-# 4. サーバー再起動
-npm start
+# または手動でファイルをコピー
+copy Z:\windows\server\src\server.js . /Y
+copy Z:\windows\server\src\utils\*.js utils\ /Y
+```
+
+#### 初回セットアップ時のスクリプトコピー
+```powershell
+# セットアップ時に必要なスクリプトをコピー
+cd C:\mcp-server
+mkdir setup
+copy Z:\windows\server\setup\update-from-git.ps1 setup\ /Y
+copy Z:\windows\server\setup\update-server.ps1 setup\ /Y
 ```
 
 ### 特殊な起動モード
