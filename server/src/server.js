@@ -246,12 +246,18 @@ app.post('/mcp', async (req, res) => {
           },
           {
             name: 'run_powershell',
-            description: 'Execute PowerShell commands',
+            description: 'Execute PowerShell commands with optional timeout',
             inputSchema: {
               type: 'object',
               properties: {
                 command: { type: 'string' },
-                remoteHost: { type: 'string', description: 'Optional remote host IP (NordVPN mesh)' }
+                remoteHost: { type: 'string', description: 'Optional remote host IP (NordVPN mesh)' },
+                timeout: { 
+                  type: 'number', 
+                  description: 'Command timeout in seconds (default: 300, max: 1800)',
+                  minimum: 1,
+                  maximum: 1800
+                }
               },
               required: ['command']
             }
@@ -1077,19 +1083,29 @@ app.post('/mcp', async (req, res) => {
               const validatedHost = security.validateIPAddress(args.remoteHost);
               result = await executeRemoteCommand(validatedHost, validatedCommand);
             } else {
+              // Get timeout from args or use default
+              const requestedTimeout = args.timeout ? 
+                Math.min(parseInt(args.timeout), 1800) : // Cap at 30 minutes
+                getNumericEnv('COMMAND_TIMEOUT', 300) / 1000; // Default 5 minutes
+              
+              const timeoutMs = requestedTimeout * 1000;
+              
               // Use proper PowerShell arguments without shell
               result = await executeBuild('powershell.exe', [
                 '-NoProfile',
                 '-NonInteractive',
                 '-ExecutionPolicy', 'Bypass',
                 '-Command', validatedCommand
-              ]);
+              ], {
+                timeout: timeoutMs
+              });
             }
             
             logger.info('PowerShell command executed', { 
               clientIP, 
               command: args.command.substring(0, 100),
-              dangerousMode 
+              dangerousMode,
+              timeout: args.timeout || getNumericEnv('COMMAND_TIMEOUT', 300000) / 1000
             });
           } catch (error) {
             result = handleValidationError(error, 'PowerShell', logger, clientIP, { command: args.command });
@@ -2535,7 +2551,10 @@ async function executeBuild(command, args, options = {}) {
             process.kill('SIGKILL');
           }
         }, 5000);
-        reject(new Error(`Command timed out after ${timeout}ms`));
+        const timeoutError = new Error(`Command timed out after ${timeout/1000} seconds`);
+        timeoutError.code = 'ETIMEDOUT';
+        timeoutError.timeout = timeout;
+        reject(timeoutError);
       }
     }, timeout);
 
@@ -2680,13 +2699,13 @@ if (process.env.NODE_ENV !== 'test') {
   
   app.listen(PORT, '0.0.0.0', async () => {
     // Get version from package.json
-    let version = '1.0.10';
+    let version = '1.0.11';
     try {
       const packageJson = require('../../package.json');
-      version = packageJson.version || '1.0.10';
+      version = packageJson.version || '1.0.11';
     } catch (error) {
       // Fallback if package.json is not found
-      version = '1.0.10';
+      version = '1.0.11';
     }
     
     if (isDangerousMode) {

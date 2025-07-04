@@ -8,7 +8,7 @@ class SecurityValidator {
       'test-connection', 'get-vm', 'start-vm', 'stop-vm', 'checkpoint-vm',
       'docker', 'kubectl', 'git', 'echo', 'write-host', 'write-output',
       'find-regkey', 'format-table', 'remove-item', 'set-location',
-      'invoke-command', 'start-process',
+      'invoke-command', 'start-process', 'stop-process', 'wait-process',
       // Enhanced file operations for development workflow
       'new-item', 'set-content', 'add-content', 'get-content', 'test-path',
       'out-file', 'select-string', 'measure-object', 'where-object',
@@ -769,6 +769,40 @@ class SecurityValidator {
     }
     
     return validatedCommands;
+  }
+
+  /**
+   * Validate process management operations
+   */
+  validateProcessManagement(processIdentifier, action) {
+    // Valid actions for process management
+    const validActions = ['stop', 'wait', 'list', 'get'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid process action: ${action}`);
+    }
+
+    // If stopping by name, ensure it's not a critical system process
+    const protectedProcesses = [
+      'system', 'smss', 'csrss', 'wininit', 'winlogon', 
+      'services', 'lsass', 'svchost', 'explorer'
+    ];
+    
+    if (action === 'stop' && typeof processIdentifier === 'string') {
+      const processName = processIdentifier.toLowerCase().replace('.exe', '');
+      if (protectedProcesses.includes(processName)) {
+        throw new Error(`Cannot stop protected system process: ${processIdentifier}`);
+      }
+    }
+
+    // If using process ID, ensure it's a valid number
+    if (action === 'stop' && !isNaN(processIdentifier)) {
+      const pid = parseInt(processIdentifier);
+      if (pid <= 0 || pid > 999999) {
+        throw new Error(`Invalid process ID: ${processIdentifier}`);
+      }
+    }
+
+    return { processIdentifier, action };
   }
 
   /**
