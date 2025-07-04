@@ -118,7 +118,7 @@ describe('Enhanced Integration Tests', () => {
         })
         .expect(200);
       
-      expect(toolsRes.body.tools).toHaveLength(4);
+      expect(toolsRes.body.tools).toHaveLength(5);
       expect(toolsRes.body.tools.map(t => t.name)).toContain('build_dotnet');
       
       // Step 2: Execute build

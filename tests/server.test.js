@@ -38,6 +38,7 @@ describe('MCP Server API', () => {
     security.validatePath = jest.fn((path) => path);
     security.validateIPAddress = jest.fn((ip) => ip);
     security.validateSSHCredentials = jest.fn((host, user, pass) => ({ host, username: user, password: pass }));
+    security.validateBatchFilePath = jest.fn((path) => path);
     
     rateLimiter.checkLimit = jest.fn(() => ({ allowed: true, remaining: 59 }));
     
@@ -81,7 +82,8 @@ describe('MCP Server API', () => {
             { name: 'build_dotnet', description: 'Build a .NET application' },
             { name: 'run_powershell', description: 'Execute PowerShell commands' },
             { name: 'ping_host', description: 'Check connectivity to remote host' },
-            { name: 'ssh_command', description: 'Execute command on remote Windows via SSH' }
+            { name: 'ssh_command', description: 'Execute command on remote Windows via SSH' },
+            { name: 'run_batch', description: 'Execute batch file in specific directory' }
           ]
         });
       } else if (method === 'tools/call') {
@@ -103,6 +105,10 @@ describe('MCP Server API', () => {
             case 'ssh_command':
               security.validateSSHCredentials(args.host, args.username, args.password);
               security.validatePowerShellCommand(args.command);
+              break;
+            case 'run_batch':
+              security.validateBatchFilePath(args.batchFile);
+              logger.info('Batch file executed', { batchFile: args.batchFile, workingDirectory: args.workingDirectory });
               break;
             default:
               logger.warn('Unknown tool requested', { toolName: name });
@@ -178,12 +184,13 @@ describe('MCP Server API', () => {
         .send({ method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toHaveLength(4);
+      expect(response.body.tools).toHaveLength(5);
       expect(response.body.tools.map(t => t.name)).toEqual([
         'build_dotnet',
         'run_powershell',
         'ping_host',
-        'ssh_command'
+        'ssh_command',
+        'run_batch'
       ]);
     });
 
@@ -247,6 +254,57 @@ describe('MCP Server API', () => {
         .expect(200);
 
       expect(security.validateIPAddress).toHaveBeenCalledWith('192.168.1.1');
+    });
+
+    test('should handle batch file execution', async () => {
+      const response = await request(app)
+        .post('/mcp')
+        .set(authHeaders)
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'run_batch',
+            arguments: { 
+              batchFile: 'C:\\builds\\AIServer\\release\\start.bat',
+              workingDirectory: 'C:\\builds\\AIServer\\release'
+            }
+          }
+        })
+        .expect(200);
+
+      expect(security.validateBatchFilePath).toHaveBeenCalledWith('C:\\builds\\AIServer\\release\\start.bat');
+      expect(logger.info).toHaveBeenCalledWith(
+        'Batch file executed',
+        expect.objectContaining({ 
+          batchFile: 'C:\\builds\\AIServer\\release\\start.bat',
+          workingDirectory: 'C:\\builds\\AIServer\\release'
+        })
+      );
+    });
+
+    test('should handle batch file validation errors', async () => {
+      // Mock security validation to throw error
+      security.validateBatchFilePath.mockImplementationOnce(() => {
+        throw new Error('Batch file must be in one of the allowed directories');
+      });
+
+      const response = await request(app)
+        .post('/mcp')
+        .set(authHeaders)
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'run_batch',
+            arguments: { batchFile: 'C:\\Windows\\System32\\malware.bat' }
+          }
+        })
+        .expect(200);
+
+      expect(response.body.content[0].text).toContain('Validation error: Batch file must be in one of the allowed directories');
+      expect(logger.security).toHaveBeenCalledWith(
+        'Validation failed',
+        expect.objectContaining({ error: 'Batch file must be in one of the allowed directories' })
+      );
     });
 
     test('should handle validation errors gracefully', async () => {

@@ -451,17 +451,15 @@ app.post('/mcp', async (req, res) => {
           
         case 'run_batch':
           try {
-            // Validate batch file path
-            if (!args.batchFile || typeof args.batchFile !== 'string') {
-              throw new Error('Batch file path is required');
-            }
-            
             // Check if dangerous mode is enabled
             const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
             let validatedPath;
             
             if (dangerousMode) {
               // In dangerous mode, allow any path
+              if (!args.batchFile || typeof args.batchFile !== 'string') {
+                throw new Error('Batch file path is required');
+              }
               validatedPath = args.batchFile;
               logger.security('DANGEROUS MODE: Unrestricted batch file execution', { 
                 clientIP, 
@@ -469,32 +467,13 @@ app.post('/mcp', async (req, res) => {
                 workingDirectory: args.workingDirectory
               });
             } else {
-              // Get allowed batch directories from environment
-              const allowedBatchDirs = process.env.ALLOWED_BATCH_DIRS ? 
-                process.env.ALLOWED_BATCH_DIRS.split(';').map(dir => dir.trim().toLowerCase()) :
-                ['C:\\builds\\', 'C:\\builds\\AIServer\\', 'C:\\Users\\Public\\', 'C:\\temp\\'];
-              
-              // Check if batch file is in allowed directories
-              const normalizedBatchPath = args.batchFile.toLowerCase();
-              const isAllowedPath = allowedBatchDirs.some(dir => normalizedBatchPath.startsWith(dir.toLowerCase()));
-              
-              if (!isAllowedPath) {
-                throw new Error(`Batch file must be in one of the allowed directories: ${allowedBatchDirs.join(', ')}`);
-              }
-              
-              // Check if it's a .bat file
-              if (!args.batchFile.toLowerCase().endsWith('.bat') && !args.batchFile.toLowerCase().endsWith('.cmd')) {
-                throw new Error('Only .bat and .cmd files are allowed');
-              }
-              
-              // Validate the path through security module
-              validatedPath = security.validatePath(args.batchFile);
+              // Use the new validateBatchFilePath function from security module
+              validatedPath = security.validateBatchFilePath(args.batchFile);
             }
             
             const workingDir = args.workingDirectory || validatedPath.substring(0, validatedPath.lastIndexOf('\\'));
             
             // Execute the batch file
-            const command = `cmd.exe /c "${validatedPath}"`;
             result = await executeBuild('cmd.exe', ['/c', `cd /d "${workingDir}" && "${validatedPath}"`]);
             
             logger.info('Batch file executed', { 

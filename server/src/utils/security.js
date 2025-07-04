@@ -309,6 +309,61 @@ class SecurityValidator {
 
     return { host, username, password };
   }
+
+  /**
+   * Validate batch file path
+   * Used by run_batch tool to ensure batch files are in allowed directories
+   */
+  validateBatchFilePath(filePath) {
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Batch file path is required');
+    }
+
+    // Check if it's a .bat or .cmd file
+    if (!filePath.toLowerCase().endsWith('.bat') && !filePath.toLowerCase().endsWith('.cmd')) {
+      throw new Error('Only .bat and .cmd files are allowed');
+    }
+
+    // First check for directory traversal attempts
+    if (filePath.includes('..') || filePath.includes('~')) {
+      throw new Error('Directory traversal detected in batch file path');
+    }
+
+    // Normalize path to prevent directory traversal
+    const normalized = filePath.replace(/\//g, '\\');
+    const normalizedPath = path.win32.normalize(normalized);
+    
+    // Check again after normalization
+    if (normalizedPath.includes('..') || normalizedPath.includes('~')) {
+      throw new Error('Directory traversal detected in batch file path');
+    }
+
+    // Get allowed batch directories from environment
+    const allowedBatchDirs = process.env.ALLOWED_BATCH_DIRS ? 
+      process.env.ALLOWED_BATCH_DIRS.split(';').map(dir => dir.trim()) :
+      ['C:\\builds\\', 'C:\\builds\\AIServer\\', 'C:\\Users\\Public\\', 'C:\\temp\\'];
+
+    // Check if batch file is in allowed directories (case-insensitive)
+    const normalizedBatchPath = normalizedPath.toLowerCase();
+    let isAllowedPath = false;
+    
+    for (const dir of allowedBatchDirs) {
+      // Ensure directory ends with backslash for proper comparison
+      const normalizedAllowedDir = path.win32.normalize(dir).toLowerCase();
+      const dirWithSlash = normalizedAllowedDir.endsWith('\\') ? normalizedAllowedDir : normalizedAllowedDir + '\\';
+      
+      if (normalizedBatchPath.startsWith(dirWithSlash)) {
+        isAllowedPath = true;
+        break;
+      }
+    }
+
+    if (!isAllowedPath) {
+      throw new Error(`Batch file must be in one of the allowed directories: ${allowedBatchDirs.join(', ')}`);
+    }
+
+    return normalizedPath;
+  }
 }
 
 module.exports = new SecurityValidator();

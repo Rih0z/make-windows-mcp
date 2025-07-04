@@ -195,4 +195,95 @@ describe('Security Validator', () => {
       }).toThrow('Invalid IP address format');
     });
   });
+
+  describe('Batch File Path Validation', () => {
+    beforeEach(() => {
+      process.env.ALLOWED_BATCH_DIRS = 'C:\\builds\\;C:\\builds\\AIServer\\;C:\\temp\\';
+    });
+
+    test('should allow valid batch files in allowed directories', () => {
+      const validBatchFiles = [
+        'C:\\builds\\AIServer\\release\\start.bat',
+        'C:\\builds\\myproject\\build.bat',
+        'C:\\temp\\test.cmd',
+        'C:\\builds\\deploy.bat'
+      ];
+
+      validBatchFiles.forEach(filePath => {
+        expect(() => security.validateBatchFilePath(filePath)).not.toThrow();
+      });
+    });
+
+    test('should reject non-batch files', () => {
+      const nonBatchFiles = [
+        'C:\\builds\\script.ps1',
+        'C:\\builds\\executable.exe',
+        'C:\\builds\\config.txt',
+        'C:\\builds\\data.json'
+      ];
+
+      nonBatchFiles.forEach(filePath => {
+        expect(() => security.validateBatchFilePath(filePath)).toThrow('Only .bat and .cmd files are allowed');
+      });
+    });
+
+    test('should reject batch files outside allowed directories', () => {
+      const unauthorizedBatchFiles = [
+        'C:\\Windows\\System32\\malware.bat',
+        'D:\\private\\secret.cmd',
+        'C:\\Users\\admin\\Desktop\\evil.bat',
+        'E:\\unauthorized\\script.bat'
+      ];
+
+      unauthorizedBatchFiles.forEach(filePath => {
+        expect(() => security.validateBatchFilePath(filePath)).toThrow('Batch file must be in one of the allowed directories');
+      });
+    });
+
+    test('should reject directory traversal attempts in batch file paths', () => {
+      const traversalBatchFiles = [
+        'C:\\builds\\..\\..\\Windows\\System32\\cmd.bat',
+        'C:\\temp\\..\\private\\secret.cmd',
+        'C:\\builds\\~\\unauthorized.bat',
+        '../../../etc/malware.bat'
+      ];
+
+      traversalBatchFiles.forEach(filePath => {
+        expect(() => security.validateBatchFilePath(filePath)).toThrow('Directory traversal detected in batch file path');
+      });
+    });
+
+    test('should reject empty or invalid batch file paths', () => {
+      expect(() => security.validateBatchFilePath('')).toThrow('Batch file path is required');
+      expect(() => security.validateBatchFilePath(null)).toThrow('Batch file path is required');
+      expect(() => security.validateBatchFilePath(undefined)).toThrow('Batch file path is required');
+    });
+
+    test('should normalize paths correctly', () => {
+      const pathWithForwardSlashes = 'C:/builds/AIServer/release/start.bat';
+      const normalizedPath = security.validateBatchFilePath(pathWithForwardSlashes);
+      expect(normalizedPath).toContain('\\');
+      expect(normalizedPath).not.toContain('/');
+    });
+
+    test('should be case-insensitive for directory matching', () => {
+      const mixedCasePaths = [
+        'c:\\builds\\aiserver\\release\\start.bat',
+        'C:\\BUILDS\\test.BAT',
+        'C:\\Temp\\Script.CMD'
+      ];
+
+      mixedCasePaths.forEach(filePath => {
+        expect(() => security.validateBatchFilePath(filePath)).not.toThrow();
+      });
+    });
+
+    test('should respect environment variable configuration', () => {
+      process.env.ALLOWED_BATCH_DIRS = 'C:\\custom\\;D:\\special\\';
+      
+      expect(() => security.validateBatchFilePath('C:\\custom\\test.bat')).not.toThrow();
+      expect(() => security.validateBatchFilePath('D:\\special\\script.cmd')).not.toThrow();
+      expect(() => security.validateBatchFilePath('C:\\builds\\test.bat')).toThrow('Batch file must be in one of the allowed directories');
+    });
+  });
 });
