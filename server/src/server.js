@@ -2699,13 +2699,18 @@ if (process.env.NODE_ENV !== 'test') {
   
   app.listen(PORT, '0.0.0.0', async () => {
     // Get version from package.json
-    let version = '1.0.11';
+    let version = 'unknown';
     try {
       const packageJson = require('../../package.json');
-      version = packageJson.version || '1.0.11';
+      version = packageJson.version || 'unknown';
     } catch (error) {
-      // Fallback if package.json is not found
-      version = '1.0.11';
+      // Try server package.json as fallback
+      try {
+        const serverPackageJson = require('../package.json');
+        version = serverPackageJson.version || 'unknown';
+      } catch (e) {
+        logger.warn('Could not read version from package.json', { error: e.message });
+      }
     }
     
     if (isDangerousMode) {

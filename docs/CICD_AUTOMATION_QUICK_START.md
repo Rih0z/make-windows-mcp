@@ -1,4 +1,4 @@
-# AIServer Enterprise クイックスタートガイド
+# CI/CD自動化クイックスタートガイド
 
 ## 🚀 30秒で始めるCI/CD自動化
 
@@ -18,7 +18,7 @@ npm start
 ### 1️⃣ ファイル作成・編集（既に動作）
 
 ```bash
-# FastAPIサーバーファイルを作成
+# Pythonサーバーファイルを作成（例：FastAPI）
 curl -X POST "http://your-server:8080/mcp" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
@@ -28,7 +28,7 @@ curl -X POST "http://your-server:8080/mcp" \
     "params": {
       "name": "run_powershell",
       "arguments": {
-        "command": "New-Item -Path C:\\builds\\AIServer\\release\\server.py -ItemType File -Force"
+        "command": "New-Item -Path C:\\builds\\YourApp\\release\\server.py -ItemType File -Force"
       }
     }
   }'
@@ -43,7 +43,7 @@ curl -X POST "http://your-server:8080/mcp" \
     "params": {
       "name": "run_powershell",
       "arguments": {
-        "command": "Set-Content -Path C:\\builds\\AIServer\\release\\server.py -Value \"from fastapi import FastAPI\\napp = FastAPI()\\n\\n@app.get(\\\"/health\\\")\\ndef health():\\n    return {\\\"status\\\": \\\"ok\\\"}\""
+        "command": "Set-Content -Path C:\\builds\\YourApp\\release\\server.py -Value \"from fastapi import FastAPI\\napp = FastAPI()\\n\\n@app.get(\\\"/health\\\")\\ndef health():\\n    return {\\\"status\\\": \\\"ok\\\"}\""
       }
     }
   }'
@@ -61,7 +61,7 @@ curl -X POST "http://your-server:8080/mcp" \
     "params": {
       "name": "run_powershell",
       "arguments": {
-        "command": "Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"server:app\", \"--port\", \"8090\" -WorkingDirectory C:\\builds\\AIServer\\release"
+        "command": "Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"server:app\", \"--port\", \"8090\" -WorkingDirectory C:\\builds\\YourApp\\release"
       }
     }
   }'
@@ -93,7 +93,7 @@ curl -X POST "http://your-server:8080/mcp" \
     "params": {
       "name": "run_powershell",
       "arguments": {
-        "command": "@(\"main.py\", \"config.py\", \"models.py\", \"views.py\", \"utils.py\", \"tests.py\", \"requirements.txt\", \"Dockerfile\", \".env\", \"README.md\") | ForEach-Object { New-Item -Path \"C:\\builds\\AIServer\\release\\$_\" -ItemType File -Force }"
+        "command": "@(\"main.py\", \"config.py\", \"models.py\", \"views.py\", \"utils.py\", \"tests.py\", \"requirements.txt\", \"Dockerfile\", \".env\", \"README.md\") | ForEach-Object { New-Item -Path \"C:\\builds\\YourApp\\release\\$_\" -ItemType File -Force }"
       }
     }
   }'
@@ -120,7 +120,7 @@ pipeline {
                     sh '''
                     curl -X POST "${MCP_SERVER}" \
                       -H "Authorization: Bearer ${MCP_TOKEN}" \
-                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"New-Item -Path C:\\\\builds\\\\AIServer\\\\${BUILD_NUMBER} -ItemType Directory -Force"}}}'
+                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"New-Item -Path C:\\\\builds\\\\YourProject\\\\${BUILD_NUMBER} -ItemType Directory -Force"}}}'
                     '''
                 }
             }
@@ -133,7 +133,7 @@ pipeline {
                     sh '''
                     curl -X POST "${MCP_SERVER}" \
                       -H "Authorization: Bearer ${MCP_TOKEN}" \
-                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"Copy-Item -Path C:\\\\builds\\\\AIServer\\\\source\\\\* -Destination C:\\\\builds\\\\AIServer\\\\${BUILD_NUMBER} -Recurse"}}}'
+                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"Copy-Item -Path C:\\\\builds\\\\YourProject\\\\source\\\\* -Destination C:\\\\builds\\\\YourProject\\\\${BUILD_NUMBER} -Recurse"}}}'
                     '''
                 }
             }
@@ -146,7 +146,7 @@ pipeline {
                     sh '''
                     curl -X POST "${MCP_SERVER}" \
                       -H "Authorization: Bearer ${MCP_TOKEN}" \
-                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"cd C:\\\\builds\\\\AIServer\\\\${BUILD_NUMBER}; python -m pytest"}}}'
+                      -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"run_powershell","arguments":{"command":"cd C:\\\\builds\\\\YourProject\\\\${BUILD_NUMBER}; python -m pytest"}}}'
                     '''
                 }
             }
@@ -182,7 +182,7 @@ jobs:
             "params": {
               "name": "run_powershell",
               "arguments": {
-                "command": "New-Item -Path C:\\builds\\AIServer\\release -ItemType Directory -Force"
+                "command": "New-Item -Path C:\\builds\\YourApp\\release -ItemType Directory -Force"
               }
             }
           }'
@@ -200,7 +200,7 @@ jobs:
               \"params\": {
                 \"name\": \"run_powershell\",
                 \"arguments\": {
-                  \"command\": \"Set-Content -Path C:\\\\builds\\\\AIServer\\\\release\\\\$file -Value \\\"$content\\\"\"
+                  \"command\": \"Set-Content -Path C:\\\\builds\\\\YourProject\\\\release\\\\$file -Value \\\"$content\\\"\"
                 }
               }
             }"
@@ -216,7 +216,7 @@ jobs:
             "params": {
               "name": "run_powershell",
               "arguments": {
-                "command": "Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"main:app\", \"--reload\", \"--port\", \"8090\" -WorkingDirectory C:\\builds\\AIServer\\release"
+                "command": "Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"main:app\", \"--reload\", \"--port\", \"8090\" -WorkingDirectory C:\\builds\\YourApp\\release"
               }
             }
           }'
