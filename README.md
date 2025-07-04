@@ -852,36 +852,86 @@ Windows MCPサーバーは3つのセキュリティモードで動作します�
 
 ## クイックスタート
 
-### 1. Windows VMのセットアップ（サーバー側）
+### 方法1: 自動セットアップ（推奨）
+
+#### 1. Windows VMでの初期インストール
+
+```powershell
+# 管理者権限のPowerShellで実行
+
+# 1. セットアップスクリプトをダウンロード
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/windows-setup.ps1" -OutFile "C:\temp\windows-setup.ps1"
+
+# 2. セットアップを実行（自動的にNode.js、Git、依存関係をインストール）
+powershell -ExecutionPolicy Bypass -File "C:\temp\windows-setup.ps1"
+
+# 3. 表示されたMCP_AUTH_TOKENをメモしておく（クライアント設定で必要）
+```
+
+#### 2. サーバーのアップデート（既存インストール）
+
+```powershell
+# サーバーを最新版に更新
+cd C:\mcp-server
+npm run update
+
+# または、緊急修正が必要な場合
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/emergency-fix-v1.0.12.ps1" -OutFile "C:\temp\emergency-fix.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\temp\emergency-fix.ps1"
+```
+
+### 方法2: 手動セットアップ
+
+#### 1. Windows VMのセットアップ（サーバー側）
 
 ```powershell
 # 管理者権限で実行
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# サーバーディレクトリに移動
-cd server\setup
-.\windows-setup.ps1
+# Node.jsとGitをインストール（未インストールの場合）
+choco install nodejs git -y
 
-# サーバーディレクトリに移動
+# サーバーをGitHubからクローン
+git clone https://github.com/Rih0z/make-windows-mcp.git C:\mcp-server-temp
+Copy-Item -Path "C:\mcp-server-temp\server\*" -Destination "C:\mcp-server" -Recurse
+
+# 依存関係をインストール
 cd C:\mcp-server
+npm install
 
-# サーバーファイルをコピー
-copy Z:\windows\server\src\*.* . /Y
-mkdir utils
-copy Z:\windows\server\src\utils\*.* utils\ /Y
-
-# アップデートスクリプトもコピー（今後のアップデート用）
-mkdir setup
-copy Z:\windows\server\setup\update-from-git.ps1 setup\ /Y
-
-# package.jsonを更新（npmスクリプトを追加）
-copy Z:\windows\server\package.json . /Y
+# 環境設定ファイルを作成
+Copy-Item .env.example .env
+notepad .env  # 必要に応じて設定を変更
 
 # サーバーを起動
 npm start
 ```
 
 ### 2. クライアント設定（Mac/Linux）
+
+#### 自動設定（推奨）
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/Rih0z/make-windows-mcp.git
+cd make-windows-mcp
+
+# 全依存関係をインストール
+npm run install:all
+
+# 本番環境用の設定ファイルを生成
+cd client
+npm run setup generate
+
+# 生成された.env.productionを確認・編集
+# 以下の値を設定：
+# - WINDOWS_VM_IP: Windows VMのIPアドレス
+# - MCP_AUTH_TOKEN: Windows側で表示されたトークン
+mv .env.production .env
+nano .env
+```
+
+#### 手動設定
 
 ```bash
 # リポジトリをクローン
@@ -891,12 +941,12 @@ npm install
 
 # 接続設定
 cp .env.example .env
-# .envファイルを編集してWindows VMのIPアドレスを設定
+# .envファイルを編集
 nano .env
 
-# 重要: Windows側でMCP_AUTH_TOKENが設定されている場合
-# Windows側の.envファイルまたはセットアップ完了時に表示されたトークンを
-# クライアント側の.envファイルのMCP_AUTH_TOKENにも設定してください
+# 最低限必要な設定：
+# WINDOWS_VM_IP=192.168.1.100  # あなたのWindows VMのIP
+# MCP_AUTH_TOKEN=xxxxx  # Windows側で生成されたトークン
 
 # MCPクライアントツールに追加
 claude mcp add --user windows-build-server  # Claude Code使用時
@@ -1552,6 +1602,84 @@ LOG_LEVEL=info                      # 詳細ログ
    - SSH認証情報の暗号化保存
    - AES-256-GCM暗号化アルゴリズム
    - 環境変数での安全な保存
+
+## セットアップ・管理スクリプト
+
+### Windows VM側スクリプト
+
+#### 1. 初期セットアップ: `windows-setup.ps1`
+- **用途**: 新規インストール時の完全セットアップ
+- **機能**:
+  - Node.js、Git、OpenSSHの自動インストール
+  - MCPサーバーのダウンロードと設定
+  - 認証トークンの自動生成
+  - ファイアウォール設定
+  - サービスとしての登録（オプション）
+
+```powershell
+# ダウンロードして実行
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/windows-setup.ps1" -OutFile "C:\temp\windows-setup.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\temp\windows-setup.ps1"
+```
+
+#### 2. アップデート: `update-from-git.ps1`
+- **用途**: GitHubから最新版へ更新
+- **機能**:
+  - 現在の設定をバックアップ
+  - GitHubから最新コードを取得
+  - .envファイルと認証トークンを保持
+  - 依存関係の更新
+
+```powershell
+cd C:\mcp-server
+npm run update
+# または直接実行
+powershell -ExecutionPolicy Bypass -File setup\update-from-git.ps1
+```
+
+#### 3. 緊急修正: `emergency-fix-v*.ps1`
+- **用途**: 特定のバグの緊急修正
+- **機能**:
+  - バージョン固有の問題を修正
+  - 最小限の変更で問題解決
+  - バックアップ作成
+
+```powershell
+# 最新の緊急修正を適用（例: v1.0.12）
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/emergency-fix-v1.0.12.ps1" -OutFile "C:\temp\emergency-fix.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\temp\emergency-fix.ps1"
+```
+
+### クライアント側スクリプト
+
+#### 1. 本番環境設定: `production-setup.js`
+- **用途**: 本番環境用の設定ファイル生成と検証
+- **機能**:
+  - セキュアな認証トークン生成
+  - 必須設定の検証
+  - セキュリティ警告の表示
+
+```bash
+cd client
+
+# 設定ファイルを生成
+npm run setup generate
+# → .env.productionが生成される
+
+# 現在の設定を検証
+npm run setup check
+# → セキュリティ設定の確認
+```
+
+### スクリプトの使い分け
+
+| 状況 | 使用するスクリプト |
+|------|-------------------|
+| 新規インストール | `windows-setup.ps1` |
+| 定期アップデート | `npm run update` または `update-from-git.ps1` |
+| 緊急バグ修正 | `emergency-fix-v*.ps1` |
+| クライアント設定 | `production-setup.js` |
+| サーバーパス修正 | `fix-server-path.ps1` |
 
 ## トラブルシューティング
 
