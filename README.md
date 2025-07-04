@@ -216,6 +216,17 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `ALLOWED_IPS` | 許可IPリスト（カンマ区切り） | いいえ | すべて許可 |
 | `ALLOWED_BUILD_PATHS` | ビルド許可パス | いいえ | Z:\,C:\projects\,C:\build |
 | `LOG_LEVEL` | ログレベル | いいえ | info |
+| `RATE_LIMIT_REQUESTS` | 1分間の最大リクエスト数（0で無効化） | いいえ | 60 |
+| `RATE_LIMIT_WINDOW` | レート制限の時間窓（ms） | いいえ | 60000 |
+| `ENABLE_HTTPS` | HTTPS有効化 | いいえ | false |
+| `SSL_CERT_PATH` | SSL証明書パス | HTTPS時必須 | - |
+| `SSL_KEY_PATH` | SSL秘密鍵パス | HTTPS時必須 | - |
+| `ENABLE_SECURITY_MONITORING` | セキュリティ監視有効化 | いいえ | true |
+| `MAX_LOG_SIZE` | ログファイル最大サイズ（バイト） | いいえ | 10485760 |
+| `MAX_LOG_FILES` | 保持するログファイル数 | いいえ | 5 |
+| `COMMAND_TIMEOUT` | コマンド実行タイムアウト（ms） | いいえ | 300000 |
+| `MAX_SSH_CONNECTIONS` | 最大SSH同時接続数 | いいえ | 5 |
+| `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除） | いいえ | false |
 
 ## 使い方
 
@@ -297,6 +308,81 @@ Get-Process node
 
 # プロセスを停止
 Stop-Process -Name node
+```
+
+### サーバーのアップデート方法
+
+#### アップデートスクリプトの使用（推奨）
+```powershell
+# Windows VM上で実行
+cd C:\mcp-server
+npm run update
+
+# または直接スクリプト実行
+cd server\setup
+.\update-server.ps1
+```
+
+**アップデートスクリプトの動作**：
+- 現在の設定（.env）を自動バックアップ
+- 認証トークンやカスタム設定は**そのまま保持**
+- サーバープログラムのみ最新版に更新
+- 依存関係（node_modules）も自動更新
+- 更新前にバックアップフォルダを作成（例: backup-20250703-213045）
+
+#### 手動アップデート
+```powershell
+# 1. 設定ファイルをバックアップ
+Copy-Item C:\mcp-server\.env C:\mcp-server\.env.backup
+
+# 2. 最新ファイルをコピー
+# GitHubから最新版をダウンロードまたはネットワークドライブから取得
+
+# 3. npmパッケージを更新
+cd C:\mcp-server
+npm install
+
+# 4. サーバー再起動
+npm start
+```
+
+### 特殊な起動モード
+
+#### 危険実行モード（⚠️警告：セキュリティ制限を完全にバイパス）
+```powershell
+# 危険モードで起動（全てのコマンドが実行可能）
+cd C:\mcp-server
+npm run dangerous
+
+# または環境変数で設定
+ENABLE_DANGEROUS_MODE=true npm start
+```
+
+**危険モードの機能**：
+- ✅ 全てのPowerShellコマンドが実行可能
+- ✅ システムファイルの削除も可能
+- ✅ レート制限なし（無制限通信）
+- ✅ パス制限なし
+- ⚠️ 完全に信頼できる環境でのみ使用
+
+#### 開発モード（詳細ログ出力）
+```powershell
+npm run dev
+```
+
+### アップデート後にDangerousモードで起動する手順
+
+```powershell
+# 1. アップデートを実行
+cd C:\mcp-server
+npm run update
+
+# 2. アップデート完了後、Dangerousモードで起動
+npm run dangerous
+
+# または.envファイルに設定を追加して通常起動
+echo ENABLE_DANGEROUS_MODE=true >> .env
+npm start
 ```
 
 ### クライアント設定の引き継ぎ（他のプロジェクトで使用する場合）
