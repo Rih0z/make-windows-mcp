@@ -592,13 +592,18 @@ if (process.env.NODE_ENV !== 'test') {
   const isDangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
   
   app.listen(PORT, '0.0.0.0', async () => {
+    // Get version from package.json
+    const packageJson = require('../package.json');
+    const version = packageJson.version || '1.0.0';
+    
     if (isDangerousMode) {
-      console.log('\n🔥🔥🔥 MCP SERVER - DANGEROUS MODE 🔥🔥🔥');
+      console.log('\n🔥🔥🔥 MCP SERVER v' + version + ' - DANGEROUS MODE 🔥🔥🔥');
       console.log(`🔥 Running on http://0.0.0.0:${PORT} (UNRESTRICTED)`);
       console.log(`🔥 Health: http://0.0.0.0:${PORT}/health`);
       console.log(`🔥 Endpoint: http://0.0.0.0:${PORT}/mcp`);
     } else {
-      console.log(`MCP server running on http://0.0.0.0:${PORT}`);
+      console.log(`\nWindows MCP Server v${version}`);
+      console.log(`Running on http://0.0.0.0:${PORT}`);
       console.log(`Health check: http://0.0.0.0:${PORT}/health`);
       console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
     }
