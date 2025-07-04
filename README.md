@@ -1,4 +1,4 @@
-# Windows MCP Build Server
+# Windows MCP Build Server v1.0.4
 
 Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/LinuxからWindows アプリケーションをリモートビルドできるようにするプロジェクトです。
 
@@ -6,12 +6,15 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 
 - **リモート.NETビルド** - どのOSからでも.NETアプリケーションをビルド
 - **PowerShellコマンド実行** - 安全なPowerShellコマンドの実行
+- **バッチファイル実行** - 許可されたディレクトリ内のバッチファイルを安全に実行
 - **NordVPNメッシュネットワーク対応** - 複数のWindowsマシンを統合管理
 - **SSH経由リモート実行** - SSHでWindows間を接続
 - **セキュア通信** - トークンベース認証（本番環境用）
 - **セキュリティ機能** - IPホワイトリスト、レート制限、パス制限
-- **詳細なログ** - リクエスト/レスポンスの記録
+- **3つの実行モード** - 通常モード、開発モード、危険モード
+- **詳細なログ** - リクエスト/レスポンスの記録、セキュリティイベント追跡
 - **簡単セットアップ** - 自動インストールスクリプト付き
+- **自動アップデート** - GitHubから最新版を取得可能
 
 ## 概要
 
@@ -35,9 +38,9 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 MCPクライアント → client/mcp-client.js → Windows VM/server.js → PowerShell/dotnet
 ```
 
-## MCP対応コマンド一覧
+## MCP対応ツール一覧
 
-Windows MCPサーバーでは、以下の4つのMCPツールが利用可能です：
+Windows MCPサーバーでは、以下の5つのMCPツールが利用可能です：
 
 ### 1. build_dotnet - .NETアプリケーションビルド
 
@@ -71,14 +74,34 @@ Windows MCPサーバーでは、以下の4つのMCPツールが利用可能で�
 
 #### 利用可能なコマンド一覧
 
-| カテゴリ | コマンド例 | 説明 |
-|---------|------------|------|
+##### 通常モード（デフォルト）
+| カテゴリ | コマンド | 説明 |
+|---------|----------|------|
 | **開発ツール** | `dotnet`, `git`, `docker`, `kubectl` | 開発環境の管理 |
-| **システム情報** | `Get-Process`, `Get-Service`, `Get-ComputerInfo` | システム状態の確認 |
-| **ファイル操作** | `Get-ChildItem`, `Copy-Item`, `Remove-Item` | ファイル管理 |
+| **PowerShell基本** | `powershell`, `echo`, `Write-Host`, `Write-Output` | 基本的な出力コマンド |
+| **システム情報** | `Get-Process`, `Get-Service`, `Get-WinEvent` | システム状態の確認 |
+| **ファイル操作** | `Get-ChildItem`, `dir`, `ls`, `Remove-Item`, `Set-Location` | ファイル・ディレクトリ管理 |
 | **ネットワーク** | `Test-Connection`, `ping`, `ipconfig` | ネットワーク診断 |
 | **仮想化** | `Get-VM`, `Start-VM`, `Stop-VM`, `Checkpoint-VM` | Hyper-V管理 |
-| **ログ解析** | `Get-WinEvent`, `Get-EventLog` | イベントログの確認 |
+| **プロセス管理** | `Start-Process`, `Invoke-Command` | プロセスとコマンドの実行 |
+| **その他** | `cmd`, `Find-RegKey`, `Format-Table` | その他のユーティリティ |
+
+##### 開発モード（ENABLE_DEV_COMMANDS=true）
+通常モードのコマンドに加えて以下が利用可能：
+
+| カテゴリ | コマンド | 説明 |
+|---------|----------|------|
+| **プロセス監視** | `tasklist` | 実行中のタスク一覧 |
+| **ネットワーク詳細** | `netstat` | ネットワーク接続状態 |
+| **ファイル内容** | `type` | ファイル内容表示 |
+| **プログラミング** | `python`, `pip`, `node`, `npm` | 各種プログラミング環境 |
+| **バッチ処理** | `if`, `for`, `set`, `call`, `start` | バッチスクリプト関連 |
+| **テキスト検索** | `findstr` | ファイル内文字列検索 |
+| **ディレクトリ操作** | `cd` | ディレクトリ変更 |
+| **コマンド連結** | `&&`, `\|\|`, `\|`, `;`, `&` | 複数コマンドの連結 |
+
+##### 危険モード（ENABLE_DANGEROUS_MODE=true）
+⚠️ **すべてのコマンドが制限なく実行可能** - 本番環境では絶対に使用しないでください
 
 ```bash
 # システム情報の取得
@@ -134,28 +157,66 @@ SSH経由でリモートWindowsでコマンドを実行します
 
 ### 5. run_batch - バッチファイル実行
 
-特定ディレクトリ内のバッチファイルを安全に実行します
+許可されたディレクトリ内のバッチファイルを安全に実行します
 
 | パラメータ | 必須 | 説明 |
 |----------|------|------|
-| `batchFile` | はい | バッチファイルのパス（C:\builds\配下のみ） |
+| `batchFile` | はい | バッチファイルのパス（許可されたディレクトリ内のみ） |
 | `workingDirectory` | いいえ | 作業ディレクトリ（省略時はバッチファイルのディレクトリ） |
 
 ```bash
-# アプリケーション起動スクリプトの実行
+# AIServer起動スクリプトの実行
 @windows-build-server run_batch batchFile="C:\\builds\\AIServer\\release\\start.bat"
 
 # 作業ディレクトリを指定して実行
 @windows-build-server run_batch batchFile="C:\\builds\\setup.bat" workingDirectory="C:\\builds\\AIServer"
 
-# デプロイスクリプトの実行
-@windows-build-server run_batch batchFile="C:\\builds\\AIServer\\deploy.bat"
+# パブリックディレクトリのスクリプト実行
+@windows-build-server run_batch batchFile="C:\\Users\\Public\\deploy.bat"
+
+# 一時ディレクトリのセットアップスクリプト
+@windows-build-server run_batch batchFile="C:\\temp\\install.bat"
 ```
 
 **セキュリティ制限**：
-- バッチファイルは`C:\builds\`ディレクトリ配下のみ実行可能
+- バッチファイルは`ALLOWED_BATCH_DIRS`環境変数で定義されたディレクトリ内のみ実行可能
+- デフォルト許可ディレクトリ:
+  - `C:\builds\`
+  - `C:\builds\AIServer\`
+  - `C:\Users\Public\`
+  - `C:\temp\`
+- .batおよび.cmdファイルのみ実行可能
 - 実行時間は5分（COMMAND_TIMEOUT）でタイムアウト
 - すべての実行がログに記録されます
+
+**許可ディレクトリのカスタマイズ**：
+```env
+# .envファイルで設定（セミコロン区切り）
+ALLOWED_BATCH_DIRS=C:\\builds\\;C:\\builds\\AIServer\\;C:\\custom\\scripts\\
+```
+
+---
+
+## セキュリティモード
+
+Windows MCPサーバーは3つのセキュリティモードで動作します：
+
+### 通常モード（デフォルト）
+- 厳格なコマンド検証とパス制限
+- 本番環境での使用を想定
+- 限定された安全なコマンドのみ実行可能
+
+### 開発モード
+- `ENABLE_DEV_COMMANDS=true`で有効化
+- 開発用コマンドを追加で許可
+- パス制限は維持（`DEV_COMMAND_PATHS`で定義）
+- バッチファイルの実行、プログラミング言語の使用が可能
+
+### 危険モード
+- `ENABLE_DANGEROUS_MODE=true`で有効化
+- **すべてのセキュリティ制限をバイパス**
+- レート制限なし、パス制限なし
+- ⚠️ **本番環境では絶対に使用しないでください**
 
 ---
 
@@ -262,6 +323,7 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `ENABLE_DEV_COMMANDS` | 開発コマンドモード有効化 | いいえ | false |
 | `ALLOWED_DEV_COMMANDS` | 許可する開発コマンド（カンマ区切り） | いいえ | tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd |
 | `DEV_COMMAND_PATHS` | 開発コマンド実行許可パス（カンマ区切り） | いいえ | C:\\builds\\,C:\\projects\\,C:\\dev\\ |
+| `ALLOWED_BATCH_DIRS` | バッチファイル実行許可ディレクトリ（セミコロン区切り） | いいえ | C:\\builds\\;C:\\builds\\AIServer\\;C:\\Users\\Public\\;C:\\temp\\ |
 | `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除） | いいえ | false |
 
 ## 使い方
@@ -437,6 +499,10 @@ ENABLE_DANGEROUS_MODE=true npm start
 
 # リモートコマンド実行（SSH経由）
 @windows-build-server ssh_command host="192.168.1.100" username="admin" password="pass" command="shutdown /r /t 0"
+
+# 任意のバッチファイル実行（パス制限なし）
+@windows-build-server run_batch batchFile="C:\\Windows\\System32\\cleanup.bat"
+@windows-build-server run_batch batchFile="D:\\scripts\\dangerous-script.bat"
 ```
 
 ⚠️ **警告**: これらのコマンドはシステムに重大な影響を与える可能性があります。実行前に必ず内容を確認してください。

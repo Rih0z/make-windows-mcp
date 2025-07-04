@@ -128,7 +128,8 @@ if (Test-Path ".env") {
         "MAX_SSH_CONNECTIONS=5",
         "ENABLE_DEV_COMMANDS=false",
         "ALLOWED_DEV_COMMANDS=tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd",
-        "DEV_COMMAND_PATHS=C:\\builds\\,C:\\projects\\,C:\\dev\\"
+        "DEV_COMMAND_PATHS=C:\\builds\\,C:\\projects\\,C:\\dev\\",
+        "ALLOWED_BATCH_DIRS=C:\\builds\\;C:\\builds\\AIServer\\;C:\\Users\\Public\\;C:\\temp\\"
     )
     
     foreach ($var in $newVars) {
