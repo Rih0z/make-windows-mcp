@@ -71,24 +71,29 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "`n[3/6] Updating server files..." -ForegroundColor Yellow
 Set-Location $InstallPath
 
-# Update main server file
+# Update main server file - maintain src directory structure
 $sourceServerFile = "$TempDir\server\src\server.js"
+$destServerDir = "$InstallPath\src"
 if (Test-Path $sourceServerFile) {
-    Copy-Item $sourceServerFile -Destination "$InstallPath\server.js" -Force
-    Write-Host "Updated server.js" -ForegroundColor Green
+    # Create src directory if it doesn't exist
+    if (!(Test-Path $destServerDir)) {
+        New-Item -ItemType Directory -Force -Path $destServerDir | Out-Null
+    }
+    Copy-Item $sourceServerFile -Destination "$destServerDir\server.js" -Force
+    Write-Host "Updated src/server.js" -ForegroundColor Green
 } else {
     Write-Host "Warning: server.js not found in repository" -ForegroundColor Yellow
 }
 
-# Update utils directory
+# Update utils directory - maintain src directory structure
 $utilsSource = "$TempDir\server\src\utils"
-$utilsDest = "$InstallPath\utils"
+$utilsDest = "$InstallPath\src\utils"
 if (Test-Path $utilsSource) {
     if (!(Test-Path $utilsDest)) {
         New-Item -ItemType Directory -Force -Path $utilsDest | Out-Null
     }
     Copy-Item "$utilsSource\*" -Destination $utilsDest -Force
-    Write-Host "Updated utils directory" -ForegroundColor Green
+    Write-Host "Updated src/utils directory" -ForegroundColor Green
 }
 
 # Update setup scripts
@@ -107,6 +112,15 @@ $packageSource = "$TempDir\server\package.json"
 if (Test-Path $packageSource) {
     Copy-Item $packageSource -Destination "$InstallPath\package.json" -Force
     Write-Host "Updated package.json" -ForegroundColor Green
+}
+
+# Clean up old structure (move from root to src)
+if (Test-Path "$InstallPath\server.js") {
+    Write-Host "Cleaning up old file structure..." -ForegroundColor Yellow
+    Remove-Item "$InstallPath\server.js" -Force -ErrorAction SilentlyContinue
+}
+if (Test-Path "$InstallPath\utils" -and (Test-Path "$InstallPath\src\utils")) {
+    Remove-Item "$InstallPath\utils" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "`n[4/6] Updating dependencies..." -ForegroundColor Yellow
