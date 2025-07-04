@@ -1,4 +1,4 @@
-# Windows MCP Build Server v1.0.4
+# Windows MCP Build Server v1.0.5
 
 Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/LinuxからWindows アプリケーションをリモートビルドできるようにするプロジェクトです。
 

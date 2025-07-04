@@ -84,11 +84,25 @@ ai_coding_principles:
       - "ログは`server/src/logs/`に自動保存（手動作成不要）"
       - "APIドキュメントはREADME.mdのMCPツールセクションに記載"
       - "セキュリティ関連の変更は必ずCHANGELOG.mdに記載"
+      - "統合ドキュメントは`docs/`ディレクトリに格納"
     
     version_management:
-      - "バージョン更新時は全package.json（root, server, client）を更新"
-      - "CHANGELOG.mdに変更内容を記載"
-      - "サーバー起動時にバージョンが表示される"
+      principle: "セマンティックバージョニング（MAJOR.MINOR.PATCH）に従う"
+      update_rules:
+        - "MAJOR: 破壊的変更（API変更、互換性なし）"
+        - "MINOR: 新機能追加（後方互換性あり）"
+        - "PATCH: バグ修正、セキュリティ修正"
+      mandatory_updates:
+        - "バージョン更新時は全package.json（root, server, client）を同時更新"
+        - "README.mdのバージョン番号を更新"
+        - "CHANGELOG.mdに変更内容を詳細記載"
+        - "サーバー起動時にバージョンが表示される"
+      version_history:
+        - "v1.0.5: run_batchツール環境変数化とセキュリティ強化"
+        - "v1.0.4: run_batchツール危険モード対応"
+        - "v1.0.3: run_batchツール基本実装"
+        - "v1.0.2: アップデートスクリプト修正"
+        - "v1.0.1: 開発モード追加"
 
   deployment_requirements:
     windows_vm:
