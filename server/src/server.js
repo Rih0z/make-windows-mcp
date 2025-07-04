@@ -104,6 +104,14 @@ app.use((req, res, next) => {
   const maxRequests = getNumericEnv('RATE_LIMIT_REQUESTS', 60);
   const windowMs = getNumericEnv('RATE_LIMIT_WINDOW', 60000);
   
+  // Skip rate limiting if disabled (maxRequests = 0) or dangerous mode is enabled
+  if (maxRequests === 0 || process.env.ENABLE_DANGEROUS_MODE === 'true') {
+    if (process.env.ENABLE_DANGEROUS_MODE === 'true') {
+      logger.security('DANGEROUS MODE: Rate limiting bypassed', { clientIP });
+    }
+    return next();
+  }
+  
   const limitResult = rateLimiter.checkLimit(clientIP, maxRequests, windowMs);
   
   if (!limitResult.allowed) {
