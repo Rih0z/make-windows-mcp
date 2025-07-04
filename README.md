@@ -1,12 +1,49 @@
-# Windows MCP Build Server v1.0.5
+# Windows MCP Build Server v1.0.10
 
 Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/LinuxからWindows アプリケーションをリモートビルドできるようにするプロジェクトです。
 
+## 新機能 v1.0.10
+
+### 🔧 開発ワークフロー最適化: エンジニア要望対応完了
+- **ローカルサーバー接続許可** - localhost:8090-8099でのCI/CDテスト対応
+- **基本ファイル操作コマンド拡張** - New-Item、Set-Content、Get-Content等を許可リストに追加
+- **Here-String構文改善** - バッククォート検出の精度向上でfalse positive解消
+- **コマンド長制限拡張** - 2048文字→8192+文字対応（MAX_COMMAND_LENGTH環境変数）
+- **バッチ実行機能** - 複数コマンドの一括検証・実行サポート
+- **詳細エラー情報** - 具体的な改善提案付きエラーメッセージ
+- **開発モード拡張** - プロジェクト固有の操作許可とワークフロー検証
+
+### 前回リリース v1.0.9
+
+### 🚀 TDD第3フェーズ: モバイル・Web言語ビルドツール実装完了
+- **4つの新ビルドツール**を完全実装（Kotlin、Swift、PHP、Ruby）
+- **全11言語**のビルドツールサポート達成
+- **モバイル開発**（Android、iOS）完全対応
+- **Web開発**（Laravel、Rails）エコシステム統合
+
+#### 新実装ツール（TDDアプローチ）
+1. **build_kotlin** - Kotlin/Android完全対応（APK署名、Native、Multiplatform）
+2. **build_swift** - Swift/iOS完全対応（SPM、マルチプラットフォーム、カバレッジ）
+3. **build_php** - PHP/Laravel完全対応（Composer、PHPUnit、Artisan）
+4. **build_ruby** - Ruby/Rails完全対応（Bundler、RSpec、Rails環境管理）
+
+#### 技術的強化
+- **暗号化サポート**: Android署名情報のAES-256-GCM暗号化
+- **動的コマンド選択**: Gradle Wrapper、vendor/bin自動検出
+- **環境管理**: Rails環境、PHP開発/本番モード切り替え
+- **並列実行**: RSpec並列テスト、Swift並列ビルド
+
+⚠️ **注意**: v1.0.9のツールはソースコード実装済み、サーバー更新後に利用可能です。
+
 ## 機能
 
+### 🟢 現在利用可能
 - **リモート.NETビルド** - どのOSからでも.NETアプリケーションをビルド
 - **PowerShellコマンド実行** - 安全なPowerShellコマンドの実行
 - **バッチファイル実行** - 許可されたディレクトリ内のバッチファイルを安全に実行
+- **プロセス管理** - Windowsプロセス・サービスの起動・停止・監視（デプロイ待ち）
+- **ファイル同期** - 大容量ファイルの高速・確実な転送（デプロイ待ち）
+- **自己管理機能** - MCPサーバー自体のビルド・テスト・更新（デプロイ待ち）
 - **NordVPNメッシュネットワーク対応** - 複数のWindowsマシンを統合管理
 - **SSH経由リモート実行** - SSHでWindows間を接続
 - **セキュア通信** - トークンベース認証（本番環境用）
@@ -15,6 +52,29 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 - **詳細なログ** - リクエスト/レスポンスの記録、セキュリティイベント追跡
 - **簡単セットアップ** - 自動インストールスクリプト付き
 - **自動アップデート** - GitHubから最新版を取得可能
+
+### 🔄 将来の実装計画
+
+#### 多言語・多環境ビルドサポート
+- **Java/Maven/Gradle** - Spring Boot、Android アプリケーションのビルド
+- **Python** - pip、conda、Poetry環境でのパッケージビルド・テスト
+- **Node.js/npm/yarn** - TypeScript、React、Vue.js プロジェクトのビルド
+- **Go** - モジュール管理とクロスコンパイル対応
+- **Rust** - Cargoを使用したバイナリ・ライブラリビルド
+- **C/C++** - Visual Studio、MinGW、MSBuild環境
+- **Docker** - コンテナイメージのビルド・テスト・デプロイ
+
+#### クラウド・デプロイメント統合
+- **Azure DevOps** - パイプライン統合とデプロイメント
+- **AWS CodeBuild/CodeDeploy** - クラウドビルド・デプロイ
+- **GitHub Actions** - CI/CDワークフロー自動化
+- **Docker Hub/Azure Container Registry** - コンテナレジストリ連携
+
+#### 高度な開発ツール
+- **静的解析** - SonarQube、ESLint、RuboCop統合
+- **テスト自動化** - Playwright、Selenium、Jest、pytest
+- **パフォーマンス監視** - メトリクス収集とモニタリング
+- **セキュリティスキャン** - 脆弱性検出とコンプライアンス
 
 ## 概要
 
@@ -40,7 +100,10 @@ MCPクライアント → client/mcp-client.js → Windows VM/server.js → Powe
 
 ## MCP対応ツール一覧
 
-Windows MCPサーバーでは、以下の5つのMCPツールが利用可能です：
+Windows MCPサーバーでは、以下のMCPツールが利用可能です：
+
+### 🟢 運用中（5つのツール）
+現在のサーバーで利用可能：
 
 ### 1. build_dotnet - .NETアプリケーションビルド
 
@@ -197,6 +260,439 @@ ALLOWED_BATCH_DIRS=C:\\builds\\;C:\\builds\\AIServer\\;C:\\custom\\scripts\\
 
 ---
 
+### 🟡 開発完了・デプロイ待ち（11つのツール）
+ソースコードに実装済み、サーバー更新後に利用可能：
+
+### 6. mcp_self_build - MCPサーバー自己管理
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+MCPサーバー自体のビルド・テスト・インストール・更新を管理します
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `action` | はい | 実行するアクション（build/test/install/update/start/stop/status） |
+| `targetPath` | いいえ | インストール先パス（デフォルト: C:\\mcp-server） |
+| `options` | いいえ | オプション設定 |
+
+```bash
+# MCPサーバーをビルド
+@windows-build-server mcp_self_build action="build"
+
+# テスト実行（カバレッジ付き）
+@windows-build-server mcp_self_build action="test"
+
+# GitHubから最新版を取得してアップデート
+@windows-build-server mcp_self_build action="update" targetPath="C:\\mcp-server" options='{"autoStart": true}'
+
+# ステータス確認
+@windows-build-server mcp_self_build action="status"
+```
+
+### 7. process_manager - プロセス管理
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Windowsプロセスとサービスの包括的な管理を行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `action` | はい | 実行するアクション（start/stop/restart/status/list/kill） |
+| `processName` | 条件付き | プロセス名またはサービス名（kill時はPID） |
+| `options` | いいえ | オプション設定 |
+
+```bash
+# プロセス起動
+@windows-build-server process_manager action="start" processName="notepad"
+
+# サービス停止
+@windows-build-server process_manager action="stop" processName="TestService" options='{"asService": true}'
+
+# 全プロセス一覧
+@windows-build-server process_manager action="list"
+
+# PIDで強制終了
+@windows-build-server process_manager action="kill" processName="1234" options='{"force": true}'
+```
+
+### 8. file_sync - ファイル同期
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+大容量ファイル・ディレクトリの高速同期を行います（robocopy統合）
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `source` | はい | 同期元パス（ファイルまたはディレクトリ） |
+| `destination` | はい | 同期先パス |
+| `options` | いいえ | 同期オプション |
+
+```bash
+# ディレクトリ同期
+@windows-build-server file_sync source="C:\\builds\\AIServer" destination="D:\\production\\AIServer" options='{"recursive": true, "verify": true}'
+
+# 特定パターンのファイルのみ同期
+@windows-build-server file_sync source="C:\\models" destination="D:\\models" options='{"pattern": "*.onnx", "overwrite": true}'
+
+# 除外パターン付き同期
+@windows-build-server file_sync source="C:\\source" destination="C:\\backup" options='{"recursive": true, "excludePattern": "*.tmp"}'
+```
+
+**file_syncの特徴**：
+- robocopy統合による信頼性の高い転送
+- 大容量ファイル対応
+- 転送後の整合性検証オプション
+- 自動リトライ機能（3回/10秒間隔）
+- パターンフィルタと除外パターン対応
+
+---
+
+### 🟢 v1.0.8実装済み・デプロイ待ち（4つのツール）
+
+#### 9. build_go - Go言語ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Go言語プロジェクトの包括的なビルド・テスト・管理を行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | Goプロジェクトのパス（go.modディレクトリ） |
+| `action` | はい | 実行するアクション（build/test/run/install/clean/mod/vet/fmt） |
+| `outputPath` | いいえ | ビルド出力パス |
+| `targetOS` | いいえ | クロスコンパイル用OS（windows/linux/darwin/freebsd） |
+| `targetArch` | いいえ | クロスコンパイル用アーキテクチャ（amd64/arm64/386/arm） |
+| `buildFlags` | いいえ | ビルドフラグ配列 |
+| `tags` | いいえ | ビルドタグ配列 |
+| `coverage` | いいえ | テスト時のカバレッジ測定（true/false） |
+| `verbose` | いいえ | 詳細出力（true/false） |
+| `modAction` | いいえ | go modアクション（download/tidy/verify/vendor） |
+
+```bash
+# Go プロジェクトビルド
+@windows-build-server build_go projectPath="C:\\projects\\mygoapp" action="build" outputPath="C:\\builds\\myapp.exe"
+
+# クロスコンパイル（Linux用）
+@windows-build-server build_go projectPath="C:\\projects\\mygoapp" action="build" targetOS="linux" targetArch="amd64" outputPath="C:\\builds\\myapp-linux"
+
+# テスト実行（カバレッジ付き）
+@windows-build-server build_go projectPath="C:\\projects\\mygoapp" action="test" coverage=true verbose=true
+
+# Go modules管理
+@windows-build-server build_go projectPath="C:\\projects\\mygoapp" action="mod" modAction="tidy"
+
+# コードフォーマット
+@windows-build-server build_go projectPath="C:\\projects\\mygoapp" action="fmt"
+```
+
+#### 10. build_rust - Rust/Cargoビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Rust/Cargoプロジェクトの包括的なビルド・テスト・管理を行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | Rustプロジェクトのパス（Cargo.tomlディレクトリ） |
+| `action` | はい | 実行するアクション（build/test/run/check/clippy/fmt/doc/clean/update） |
+| `release` | いいえ | リリースビルド（true/false） |
+| `features` | いいえ | 有効にするフィーチャー配列 |
+| `allFeatures` | いいえ | 全フィーチャー有効化（true/false） |
+| `noDefaultFeatures` | いいえ | デフォルトフィーチャー無効化（true/false） |
+| `target` | いいえ | ターゲットトリプル |
+| `testName` | いいえ | 特定のテスト名 |
+| `allTargets` | いいえ | 全ターゲット対象（true/false） |
+| `denyWarnings` | いいえ | 警告をエラーとして扱う（true/false） |
+
+```bash
+# Cargo リリースビルド
+@windows-build-server build_rust projectPath="C:\\projects\\myrust-app" action="build" release=true features='["feature1", "feature2"]'
+
+# Cargo テスト
+@windows-build-server build_rust projectPath="C:\\projects\\myrust-app" action="test" target="x86_64-pc-windows-msvc" testName="integration_tests"
+
+# Clippy リンティング
+@windows-build-server build_rust projectPath="C:\\projects\\myrust-app" action="clippy" allTargets=true denyWarnings=true
+
+# コードフォーマット
+@windows-build-server build_rust projectPath="C:\\projects\\myrust-app" action="fmt"
+
+# ドキュメント生成
+@windows-build-server build_rust projectPath="C:\\projects\\myrust-app" action="doc"
+```
+
+#### 11. build_cpp - C/C++ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+C/C++プロジェクトの複数ビルドシステム対応ビルドを行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | C++プロジェクトのパス |
+| `buildSystem` | はい | ビルドシステム（cmake/msbuild/make/ninja） |
+| `buildType` | いいえ | ビルドタイプ（Debug/Release/RelWithDebInfo/MinSizeRel） |
+| `configuration` | いいえ | MSBuild用構成（Debug/Release） |
+| `platform` | いいえ | MSBuild用プラットフォーム（Win32/x64/ARM/ARM64） |
+| `generator` | いいえ | CMake用ジェネレータ |
+| `buildDir` | いいえ | CMake用ビルドディレクトリ |
+| `target` | いいえ | Make/Ninja用ターゲット |
+| `parallel` | いいえ | 並列ビルド（true/false） |
+| `jobs` | いいえ | 並列ジョブ数 |
+
+```bash
+# CMake ビルド
+@windows-build-server build_cpp projectPath="C:\\projects\\mycpp-app" buildSystem="cmake" buildType="Release" generator="Visual Studio 17 2022" parallel=true
+
+# MSBuild Visual Studioソリューション
+@windows-build-server build_cpp projectPath="C:\\projects\\mycpp-app\\MyApp.sln" buildSystem="msbuild" configuration="Release" platform="x64" parallel=true
+
+# Make ビルド
+@windows-build-server build_cpp projectPath="C:\\projects\\mycpp-app" buildSystem="make" target="all" parallel=true jobs=8
+
+# Ninja ビルド
+@windows-build-server build_cpp projectPath="C:\\projects\\mycpp-app" buildSystem="ninja" buildType="Release" parallel=true
+```
+
+#### 12. build_docker - Dockerビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Dockerイメージの高度なビルド機能を提供します
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `contextPath` | はい | Dockerビルドコンテキストのパス |
+| `imageName` | はい | 作成するイメージ名（タグ付き） |
+| `dockerfile` | いいえ | Dockerfileのパス（デフォルト: Dockerfile） |
+| `buildArgs` | いいえ | ビルド引数オブジェクト |
+| `target` | いいえ | マルチステージビルドのターゲット |
+| `platform` | いいえ | ターゲットプラットフォーム |
+| `noCache` | いいえ | キャッシュ無効化（true/false） |
+| `secrets` | いいえ | BuildKitシークレット配列 |
+| `labels` | いいえ | イメージラベルオブジェクト |
+| `progress` | いいえ | プログレス表示（auto/plain/tty） |
+
+```bash
+# Docker イメージビルド
+@windows-build-server build_docker contextPath="C:\\projects\\myapp" imageName="myapp:latest" dockerfile="Dockerfile.prod" buildArgs='{"NODE_ENV": "production", "VERSION": "1.0.0"}' noCache=true
+
+# マルチステージビルド
+@windows-build-server build_docker contextPath="C:\\projects\\myapp" imageName="myapp:dev" target="development" platform="linux/amd64"
+
+# BuildKitシークレット使用
+@windows-build-server build_docker contextPath="C:\\projects\\myapp" imageName="myapp:secure" secrets='["id=mysecret,src=/path/to/secret"]' labels='{"version": "1.0.0", "maintainer": "dev-team"}'
+
+# マルチプラットフォームビルド
+@windows-build-server build_docker contextPath="C:\\projects\\myapp" imageName="myapp:multi" platform="linux/amd64,linux/arm64"
+```
+
+#### 13. build_kotlin - Kotlin/Android ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Kotlin/Android プロジェクトの包括的なビルド・デプロイを行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | Kotlin/Android プロジェクトのパス |
+| `projectType` | はい | プロジェクトタイプ（android/jvm/native/multiplatform） |
+| `buildVariant` | いいえ | Android ビルドバリアント（debug/release） |
+| `tasks` | いいえ | 実行するGradleタスク配列 |
+| `buildType` | いいえ | ネイティブビルドタイプ |
+| `target` | いいえ | ターゲットプラットフォーム |
+| `signingConfig` | いいえ | Android署名設定オブジェクト |
+| `gradleOptions` | いいえ | 追加Gradleオプション配列 |
+
+```bash
+# Android リリースビルド
+@windows-build-server build_kotlin projectPath="C:\\projects\\AndroidApp" projectType="android" buildVariant="release" tasks='["assembleRelease"]'
+
+# Android署名付きAPK
+@windows-build-server build_kotlin projectPath="C:\\projects\\AndroidApp" projectType="android" buildVariant="release" signingConfig='{"storeFile": "C:\\keys\\release.keystore", "storePassword": "encrypted:xxx", "keyAlias": "release", "keyPassword": "encrypted:yyy"}'
+
+# Kotlin/Native クロスコンパイル
+@windows-build-server build_kotlin projectPath="C:\\projects\\KotlinNative" projectType="native" target="mingwX64" buildType="release"
+
+# Kotlin Multiplatform
+@windows-build-server build_kotlin projectPath="C:\\projects\\KMP" projectType="multiplatform" tasks='["publishAllPublicationsToMavenLocalRepository"]'
+```
+
+#### 14. build_swift - Swift/iOS ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Swift Package Manager および iOS/macOS アプリのビルドを行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | Swift プロジェクトのパス |
+| `action` | はい | 実行するアクション（build/test/run/package/clean） |
+| `configuration` | いいえ | ビルド構成（debug/release） |
+| `platform` | いいえ | ターゲットプラットフォーム |
+| `arch` | いいえ | ターゲットアーキテクチャ |
+| `enableCodeCoverage` | いいえ | テストカバレッジ有効化 |
+| `parallel` | いいえ | 並列テスト実行 |
+| `package` | いいえ | 特定パッケージ指定 |
+
+```bash
+# Swift パッケージビルド
+@windows-build-server build_swift projectPath="C:\\projects\\SwiftPackage" action="build" configuration="release"
+
+# Swift テスト（カバレッジ付き）
+@windows-build-server build_swift projectPath="C:\\projects\\SwiftPackage" action="test" enableCodeCoverage=true parallel=true
+
+# Swift パッケージ作成
+@windows-build-server build_swift projectPath="C:\\projects\\SwiftLib" action="package" configuration="release"
+
+# マルチプラットフォームビルド
+@windows-build-server build_swift projectPath="C:\\projects\\SwiftApp" action="build" platform="windows" arch="x86_64"
+```
+
+#### 15. build_php - PHP/Laravel ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+PHP アプリケーションと Laravel プロジェクトの包括的な管理を行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | PHP プロジェクトのパス |
+| `action` | はい | 実行するアクション（install/update/test/build/artisan/serve） |
+| `packageManager` | いいえ | パッケージマネージャー（composer/pear） |
+| `noDev` | いいえ | 開発依存関係をスキップ |
+| `optimize` | いいえ | オートローダー最適化 |
+| `testFramework` | いいえ | テストフレームワーク（phpunit/phpspec/codeception/behat） |
+| `coverage` | いいえ | コードカバレッジ生成 |
+| `testSuite` | いいえ | 特定テストスイート |
+| `artisanCommand` | いいえ | Laravel Artisan コマンド |
+
+```bash
+# Composer 本番インストール
+@windows-build-server build_php projectPath="C:\\projects\\PHPApp" action="install" noDev=true optimize=true
+
+# PHPUnit テスト（カバレッジ付き）
+@windows-build-server build_php projectPath="C:\\projects\\PHPApp" action="test" testFramework="phpunit" coverage=true testSuite="unit"
+
+# Laravel Artisan コマンド
+@windows-build-server build_php projectPath="C:\\projects\\LaravelApp" action="artisan" artisanCommand="migrate:fresh --seed"
+
+# Laravel 開発サーバー起動
+@windows-build-server build_php projectPath="C:\\projects\\LaravelApp" action="serve"
+```
+
+#### 16. build_ruby - Ruby/Rails ビルド
+
+⚠️ **デプロイ待ち**: サーバー更新後に利用可能
+
+Ruby/Rails アプリケーションの包括的なビルド・テスト・デプロイを行います
+
+| パラメータ | 必須 | 説明 |
+|----------|------|------|
+| `projectPath` | はい | Ruby プロジェクトのパス |
+| `action` | はい | 実行するアクション（install/update/exec/test/build/rails/rake） |
+| `withoutGroups` | いいえ | 除外するBundlerグループ配列 |
+| `deployment` | いいえ | デプロイメントモード |
+| `railsCommand` | いいえ | Rails コマンド |
+| `railsEnv` | いいえ | Rails 環境（development/test/production） |
+| `rakeTask` | いいえ | Rake タスク |
+| `testFramework` | いいえ | テストフレームワーク（rspec/minitest/test-unit） |
+| `parallel` | いいえ | 並列テスト実行 |
+| `format` | いいえ | テスト出力フォーマット |
+| `gemspec` | いいえ | Gemspec ファイル |
+
+```bash
+# Bundle 本番インストール
+@windows-build-server build_ruby projectPath="C:\\projects\\RubyApp" action="install" withoutGroups='["development", "test"]' deployment=true
+
+# Rails マイグレーション
+@windows-build-server build_ruby projectPath="C:\\projects\\RailsApp" action="rails" railsCommand="db:migrate" railsEnv="production"
+
+# RSpec テスト（並列実行）
+@windows-build-server build_ruby projectPath="C:\\projects\\RailsApp" action="test" testFramework="rspec" parallel=true format="documentation"
+
+# Ruby Gem ビルド
+@windows-build-server build_ruby projectPath="C:\\projects\\MyGem" action="build" gemspec="mygem.gemspec"
+```
+
+---
+
+### 🔮 将来実装予定ツール
+
+#### 17. build_java - Java/Kotlinビルド
+```bash
+# Maven プロジェクトビルド
+@windows-build-server build_java projectPath="C:\\projects\\MyApp\\pom.xml" buildTool="maven" profile="production"
+
+# Gradle プロジェクトビルド
+@windows-build-server build_java projectPath="C:\\projects\\MyApp\\build.gradle" buildTool="gradle" tasks="build,test"
+
+# Android アプリビルド
+@windows-build-server build_java projectPath="C:\\projects\\MyAndroidApp" buildTool="gradle" variant="release"
+```
+
+#### 18. build_python - Python環境ビルド
+```bash
+# pip環境でのパッケージビルド
+@windows-build-server build_python projectPath="C:\\projects\\MyPythonApp" packageManager="pip" requirements="requirements.txt"
+
+# conda環境でのビルド
+@windows-build-server build_python projectPath="C:\\projects\\MLProject" packageManager="conda" environment="environment.yml"
+
+# Poetry プロジェクトビルド
+@windows-build-server build_python projectPath="C:\\projects\\MyPoetryApp" packageManager="poetry" target="wheel"
+```
+
+#### 19. build_node - Node.js/TypeScriptビルド
+```bash
+# npm プロジェクトビルド
+@windows-build-server build_node projectPath="C:\\projects\\MyReactApp" packageManager="npm" script="build"
+
+# yarn プロジェクトビルド
+@windows-build-server build_node projectPath="C:\\projects\\MyVueApp" packageManager="yarn" script="build:production"
+
+# TypeScript プロジェクトビルド
+@windows-build-server build_node projectPath="C:\\projects\\MyTSApp" packageManager="npm" script="build" typecheck="true"
+```
+
+#### 20. deploy_cloud - クラウドデプロイメント
+```bash
+# Azure Web Apps デプロイ
+@windows-build-server deploy_cloud provider="azure" service="webapp" resourceGroup="myapp-rg" appName="myapp"
+
+# AWS Lambda デプロイ
+@windows-build-server deploy_cloud provider="aws" service="lambda" functionName="myfunction" runtime="python3.9"
+
+# GitHub Actions トリガー
+@windows-build-server deploy_cloud provider="github" repository="myorg/myapp" workflow="deploy.yml" ref="main"
+```
+
+#### 21. test_automation - テスト自動化
+```bash
+# Playwright テスト実行
+@windows-build-server test_automation framework="playwright" projectPath="C:\\projects\\e2e-tests" browser="chromium"
+
+# Jest ユニットテスト
+@windows-build-server test_automation framework="jest" projectPath="C:\\projects\\MyApp" coverage="true"
+
+# pytest テスト実行
+@windows-build-server test_automation framework="pytest" projectPath="C:\\projects\\MyPythonApp" markers="integration"
+```
+
+#### 22. security_scan - セキュリティスキャン
+```bash
+# 依存関係脆弱性スキャン
+@windows-build-server security_scan type="dependency" projectPath="C:\\projects\\MyApp" tool="npm-audit"
+
+# コード脆弱性スキャン
+@windows-build-server security_scan type="code" projectPath="C:\\projects\\MyApp" tool="sonarqube"
+
+# コンテナイメージスキャン
+@windows-build-server security_scan type="container" image="myapp:latest" tool="trivy"
+```
+
+---
+
 ## セキュリティモード
 
 Windows MCPサーバーは3つのセキュリティモードで動作します：
@@ -212,21 +708,46 @@ Windows MCPサーバーは3つのセキュリティモードで動作します�
 - パス制限は維持（`DEV_COMMAND_PATHS`で定義）
 - バッチファイルの実行、プログラミング言語の使用が可能
 
-### 危険モード
+### 危険モード（v1.0.6で機能強化）
 - `ENABLE_DANGEROUS_MODE=true`で有効化
 - **すべてのセキュリティ制限をバイパス**
-- レート制限なし、パス制限なし
+- **レート制限完全無効化** - 大量ファイル操作制限なし
+- **パス制限なし** - 全ディレクトリアクセス可能
+- **プロセス管理無制限** - 任意のプロセス制御
+- **ファイル同期無制限** - 任意の場所への同期
 - ⚠️ **本番環境では絶対に使用しないでください**
+
+**v1.0.6の改善点**：
+- アプリエンジニアからの要望により、レート制限を完全無効化
+- 大量ファイル操作やバックグラウンドプロセス管理の制限を解除
+- AIServer Enterprise v2のような大規模開発に対応
 
 ---
 
 ## 必要要件
 
+### 基本要件
 - **Windows VM**: Windows 10/11、PowerShell 5.1以上
 - **クライアント**: MCP対応ツール（Claude Code、Gemini-CLI等）がインストールされたmacOS/Linux
 - **ネットワーク**: クライアントとWindows VM間の接続
 - **権限**: Windows VMの管理者アクセス
 - **オプション**: NordVPNメッシュネットワーク（リモートWindows用）
+
+### 現在サポート中の開発環境
+- **.NET**: .NET 6.0+、Visual Studio 2022、MSBuild
+- **PowerShell**: PowerShell 5.1+、PowerShell Core 7+
+- **SSH**: OpenSSH for Windows
+- **Git**: Git for Windows
+
+### 将来サポート予定の開発環境
+- **Java**: JDK 8/11/17/21、Maven 3.6+、Gradle 7+
+- **Python**: Python 3.8+、pip、conda、Poetry
+- **Node.js**: Node.js 16+、npm、yarn、pnpm
+- **Go**: Go 1.19+、Go modules
+- **Rust**: Rust 1.65+、Cargo
+- **Docker**: Docker Desktop、Docker Compose
+- **C/C++**: Visual Studio Build Tools、MinGW、Clang
+- **クラウドCLI**: Azure CLI、AWS CLI、GitHub CLI
 
 ### クライアントツール
 
@@ -324,7 +845,17 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `ALLOWED_DEV_COMMANDS` | 許可する開発コマンド（カンマ区切り） | いいえ | tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd |
 | `DEV_COMMAND_PATHS` | 開発コマンド実行許可パス（カンマ区切り） | いいえ | C:\\builds\\,C:\\projects\\,C:\\dev\\ |
 | `ALLOWED_BATCH_DIRS` | バッチファイル実行許可ディレクトリ（セミコロン区切り） | いいえ | C:\\builds\\;C:\\builds\\AIServer\\;C:\\Users\\Public\\;C:\\temp\\ |
-| `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除） | いいえ | false |
+| `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除・レート制限無効化） | いいえ | false |
+
+### v1.0.6で追加された環境変数
+
+| 変数名 | 説明 | 必須 | デフォルト値 |
+|--------|------|------|-------------|
+| `MCP_SELF_BUILD_PATH` | mcp_self_buildツールの対象パス | いいえ | 現在のディレクトリ |
+| `PROCESS_MANAGER_TIMEOUT` | プロセス管理操作のタイムアウト（秒） | いいえ | 30 |
+| `FILE_SYNC_MAX_SIZE` | file_sync最大ファイルサイズ（バイト） | いいえ | 無制限 |
+| `ROBOCOPY_RETRIES` | robocopyリトライ回数 | いいえ | 3 |
+| `ROBOCOPY_WAIT_TIME` | robocopy待機時間（秒） | いいえ | 10 |
 
 ## 使い方
 
@@ -427,6 +958,46 @@ npm run update
 
 # アップデート完了後、Dangerousモードで起動
 npm run dangerous
+```
+
+### v1.0.6 新機能の使用例
+
+#### MCPサーバー自己管理
+```bash
+# MCPサーバー自体をテスト
+@windows-build-server mcp_self_build action="test"
+
+# 自己アップデート
+@windows-build-server mcp_self_build action="update" targetPath="C:\\mcp-server" options='{"autoStart": true}'
+```
+
+#### プロセス管理
+```bash
+# AIServerバックエンドの起動
+@windows-build-server process_manager action="start" processName="AIServer.Backend" options='{"asService": true}'
+
+# プロセス状況確認
+@windows-build-server process_manager action="list"
+```
+
+#### 大容量ファイル同期
+```bash
+# AIServerモデルファイルの同期
+@windows-build-server file_sync source="C:\\builds\\AIServer\\models" destination="D:\\production\\models" options='{"recursive": true, "pattern": "*.onnx", "verify": true}'
+
+# バックアップ作成
+@windows-build-server file_sync source="C:\\production\\data" destination="C:\\backup\\data" options='{"recursive": true, "excludePattern": "*.tmp"}'
+```
+
+#### 危険モードでの無制限操作
+```powershell
+# 危険モード起動
+set ENABLE_DANGEROUS_MODE=true
+npm start
+
+# 大量ファイル操作もレート制限なし
+# 任意のディレクトリアクセス可能
+# プロセス管理無制限
 ```
 
 **Gitアップデートスクリプトの動作**：

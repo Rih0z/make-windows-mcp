@@ -1,12 +1,12 @@
 {
   "name": "windows-mcp-server",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Windows MCP Server - Runs on Windows VM to execute build commands",
   "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "set NODE_ENV=development && node server.js",
-    "dangerous": "set ENABLE_DANGEROUS_MODE=true && node server.js",
+    "start": "node src/server.js",
+    "dev": "set NODE_ENV=development && node src/server.js",
+    "dangerous": "set ENABLE_DANGEROUS_MODE=true && node src/server.js",
     "update": "powershell -ExecutionPolicy Bypass -File setup/update-from-git.ps1",
     "update-local": "powershell -ExecutionPolicy Bypass -File setup/update-server.ps1"
   },

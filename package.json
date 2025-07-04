@@ -1,10 +1,11 @@
 {
   "name": "windows-mcp",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Windows MCP - Connect Claude Code to Windows build environments",
   "private": true,
   "scripts": {
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build:all": "echo 'Building MCP server components...' && npm run install:all",
     "server:start": "cd server && npm start",
     "server:dev": "cd server && npm run dev",
     "client:start": "cd client && npm start",

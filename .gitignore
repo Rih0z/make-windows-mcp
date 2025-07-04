@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 .env.test
+test.env
 
 # Windows MCP server config with sensitive data
 claude-code-config.json

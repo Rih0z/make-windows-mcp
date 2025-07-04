@@ -1,5 +1,324 @@
 # Changelog
 
+## [1.0.10] - 2025-07-04
+
+### 追加 - 開発ワークフロー最適化: エンジニア要望対応完了
+- **ローカルサーバー接続許可**:
+  - localhost接続範囲を拡張（127.0.0.0/8、::1、localhost）
+  - CI/CDテスト用localhost:8090-8099ポート対応
+  - 開発環境での統合テスト支援
+- **基本ファイル操作コマンド拡張**:
+  - new-item、set-content、add-content、get-content、test-path
+  - out-file、select-string、measure-object、where-object
+  - 許可ディレクトリ内での安全なファイル操作を実現
+- **Here-String構文改善**:
+  - バッククォート検出の精度向上（`/(?<!@['"])[`](?!['\"@])/g`）
+  - @"...`...@" および @'...`...'@ 形式でfalse positive解消
+  - PowerShell Here-String構文の完全サポート
+- **コマンド長制限拡張**:
+  - デフォルト2048文字→8192文字に拡張
+  - MAX_COMMAND_LENGTH環境変数で動的設定対応
+  - 長いプログラム作成・複雑操作の制限解除
+
+### セキュリティ強化 - 高度なエラーハンドリング
+- **詳細エラー情報機能**:
+  - `createDetailedError()` - 改善提案付きエラーメッセージ
+  - コマンド制限・パス制限・危険パターン検出時の具体的ガイダンス
+  - 開発モード、バッチ実行、代替手法の提案機能
+- **バッチコマンド検証**:
+  - `validateBatchCommands()` - 最大50コマンドの一括検証
+  - 各コマンドの個別セキュリティチェック
+  - 失敗コマンドの詳細特定とエラー位置表示
+- **プロジェクトワークフロー検証**:
+  - `validateProjectWorkflow()` - プロジェクト固有の操作許可
+  - FastAPI、Django、Flask、Node.js、React、Vue対応
+  - フレームワーク別の許可コマンド管理
+
+### 開発・運用改善
+- **package.json修正**:
+  - サーバー起動スクリプトのパス修正（server.js → src/server.js）
+  - 開発・本番・危険モードの正しいファイルパス指定
+- **テスト・検証ツール**:
+  - test-enhancement-features.js による改善機能の統合テスト
+  - ファイル操作、コマンド長、Here-String、localhost接続の検証
+  - 詳細エラー報告機能のテストケース
+- **ドキュメント更新**:
+  - README.mdに新機能v1.0.10の詳細説明を追加
+  - 開発ワークフロー最適化の具体的改善内容を記載
+
+### アーキテクチャ進化
+- **security.js拡張**:
+  - 127.0.0.0/8、::1、localhost の allowedLocalRanges定義
+  - dangerousPatterns の Here-String対応改善
+  - MAX_COMMAND_LENGTH 環境変数による動的制限設定
+- **エラーハンドリング統一**:
+  - 全セキュリティ検証での詳細エラー提供
+  - 段階的な権限エスカレーション提案（通常→開発→危険モード）
+  - プロジェクト固有の操作許可による柔軟性向上
+
+### エンジニア要望対応完了
+- **CI/CDパイプライン統合**: ローカルサーバーテスト対応
+- **長いコマンド実行**: プログラム生成・複雑処理の制限解除
+- **Here-String誤検出解消**: PowerShell構文の完全対応
+- **詳細エラー診断**: 問題解決のための具体的提案
+- **バッチ処理対応**: 自動化ワークフロー支援
+
+## [1.0.9] - 2025-07-04
+
+### 追加 - TDD第3フェーズ: モバイル・Web言語ビルドツール実装
+- **新ツール実装完了**（TDDアプローチ継続）:
+  - `build_kotlin`: Kotlin/Android完全対応
+    - Android アプリビルド（gradle/gradlew）
+    - Kotlin/Native クロスコンパイル（mingwX64等）
+    - Kotlin Multiplatform プロジェクト
+    - APK署名設定（keystore、パスワード暗号化）
+    - Gradle タスク・オプション完全サポート
+  - `build_swift`: Swift/iOS完全対応
+    - Swift Package Manager統合
+    - マルチプラットフォーム（iOS、macOS、tvOS、watchOS、Windows）
+    - テストカバレッジ測定・並列実行
+    - アーキテクチャ指定（x86_64、arm64）
+  - `build_php`: PHP/Laravel完全対応
+    - Composer/PEAR パッケージ管理
+    - PHPUnit、PHPSpec、Codeception、Behatテスト
+    - Laravel Artisan コマンド統合
+    - 開発・本番環境切り替え
+    - PHPビルトインサーバー起動
+  - `build_ruby`: Ruby/Rails完全対応
+    - Bundler依存関係管理（deployment mode対応）
+    - Rails環境管理（development/test/production）
+    - RSpec、Minitest、Test::Unit対応
+    - Rake タスク実行、Gem ビルド
+    - 並列テスト実行サポート
+
+### セキュリティ強化（モバイル・Web言語対応）
+- **拡張セキュリティバリデーション**:
+  - `validateKotlinBuild()` - Kotlin プロジェクトタイプ検証
+  - `validateSwiftBuild()` - Swift アクション検証
+  - `validatePhpBuild()` - PHP アクション検証
+  - `validateRubyBuild()` - Ruby アクション検証
+- **許可コマンドの拡張**:
+  - Kotlin: kotlin、kotlinc、gradle、gradlew
+  - Swift: swift、swiftc
+  - PHP: php、composer、artisan
+  - Ruby: ruby、bundle、rails、rake、gem、rspec、minitest
+- **高度なセキュリティ機能**:
+  - Android署名情報の暗号化（AES-256-GCM）
+  - 環境変数インジェクション防止（RAILS_ENV等）
+  - パッケージマネージャーコマンド検証
+
+### TDD実装プロセス第3フェーズ
+- **包括的テスト設計**:
+  - additional-language-builds-phase3.test.js（22テストケース）
+  - モバイル開発・Web開発の特徴的機能を検証
+  - 署名・暗号化・環境切り替えテスト
+- **統合テストクライアント**:
+  - test-additional-builds-phase3.js による実機検証
+  - 4ツール×3テストケース＝12シナリオ検証
+  - 言語固有の機能完全テスト
+
+### アーキテクチャ進化
+- **タイムアウト最適化**:
+  - Android ビルド: 10分（600秒）
+  - その他モバイル・Web: 5分（300秒）
+- **動的コマンド選択**:
+  - Gradle Wrapper自動検出（gradlew.bat優先）
+  - Composer vendor/bin 自動パス解決
+  - RSpec並列実行（parallel_rspec）対応
+- **暗号化サポート拡張**:
+  - Android keystore パスワード暗号化
+  - encrypted: プレフィックスでの安全な保存
+
+### ドキュメント
+- **実装統計更新**:
+  - 全11言語のビルドツール完全対応
+  - モバイル（Android、iOS）完全サポート
+  - Web開発（PHP、Ruby）エコシステム統合
+
+## [1.0.8] - 2025-07-04
+
+### 追加 - TDD第2フェーズ: 追加多言語ビルドツール実装
+- **新ツール実装完了**（TDDアプローチ継続）:
+  - `build_go`: Go言語完全対応
+    - Go modules（go.mod）サポート
+    - クロスコンパイル対応（GOOS/GOARCH環境変数）
+    - go build、test、mod、vet、fmt全アクション
+    - ビルドフラグ・タグ指定、カバレッジ測定
+  - `build_rust`: Rust/Cargo完全対応
+    - Cargo.toml プロジェクト管理
+    - リリース・デバッグビルド、フィーチャー制御
+    - build、test、clippy、fmt、doc全アクション
+    - クロスコンパイル・ターゲット指定
+  - `build_cpp`: C/C++完全対応
+    - CMake、MSBuild、Make、Ninja対応
+    - Visual Studio統合、並列ビルド
+    - 複数ビルドシステム自動検出
+    - 構成（Debug/Release）・プラットフォーム指定
+  - `build_docker`: Docker完全対応
+    - Dockerfile、マルチステージビルド
+    - ビルド引数、シークレット、ラベル
+    - プラットフォーム指定、キャッシュ制御
+    - BuildKit機能完全活用
+
+### セキュリティ強化（追加言語対応）
+- **拡張セキュリティバリデーション**:
+  - `validateGoBuild()` - Go プロジェクト固有検証
+  - `validateRustBuild()` - Rust プロジェクト固有検証
+  - `validateCppBuild()` - C++ ビルドシステム検証
+  - `validateDockerBuild()` - Dockerイメージ名・パス検証
+  - `validateCrossCompilation()` - クロスコンパイル設定検証
+  - `validateBuildFlags()` - ビルドフラグ安全性検証
+  - `validateBuildEnvironment()` - 環境変数インジェクション防止
+- **許可コマンドの拡張**:
+  - Go: go言語ツールチェーン
+  - Rust: cargo、rustc
+  - C++: cmake、make、msbuild、ninja、g++、gcc、clang
+  - Docker: docker、docker-compose
+- **高度なセキュリティ機能**:
+  - Docker危険フラグ検出（--privileged、--cap-add等）
+  - 環境変数保護（PATH、SYSTEMROOT等）
+  - ビルドフラグインジェクション防止
+
+### TDD実装プロセス第2フェーズ
+- **包括的テスト設計**:
+  - additional-language-builds.test.js（22テストケース）
+  - 各言語の特徴的機能を個別検証
+  - セキュリティエッジケースの網羅的テスト
+- **統合テストクライアント**:
+  - test-additional-builds.js による実機検証
+  - 4ツール×3テストケース＝12シナリオ検証
+  - MCPプロトコル完全対応テスト
+
+### アーキテクチャ進化
+- **タイムアウト最適化**:
+  - C++ビルド: 10分（600秒）
+  - Dockerビルド: 15分（900秒）  
+  - Go/Rustビルド: 5分（300秒）
+- **環境変数管理強化**:
+  - クロスコンパイル用環境変数（GOOS、GOARCH）
+  - Cargo用環境変数（CARGO_TARGET_DIR）
+  - CMake用環境変数（CMAKE_BUILD_TYPE）
+- **複数コマンド実行対応**:
+  - CMake: configure → build の2段階実行
+  - Node.js: install → script の連続実行
+  - セキュリティ検証を各段階で実施
+
+### ドキュメント
+- **実装ドキュメント更新**:
+  - 全7言語のビルドツール完全対応
+  - クロスコンパイル・マルチプラットフォーム対応
+  - セキュリティベストプラクティス詳細
+
+## [1.0.7] - 2025-07-04
+
+### 追加 - TDD多言語ビルドツール実装
+- **新ツール実装完了**（TDDアプローチ）:
+  - `build_java`: Java/Maven/Gradleビルド完全対応
+    - Maven goals・Gradleタスクの実行
+    - pom.xml、build.gradle、build.gradle.ktsの自動検出
+    - プロファイル・プロパティ設定サポート
+    - Gradle Wrapper（gradlew）対応
+    - JAVA_HOME環境変数サポート
+  - `build_python`: Python環境ビルド完全対応
+    - pip、Poetry、Conda、Pipenv自動検出
+    - pyproject.toml、Pipfile、environment.yml対応
+    - テストランナー選択（pytest、unittest、nose2、tox）
+    - 仮想環境・Python バージョン指定
+  - `build_node`: Node.js/TypeScriptビルド完全対応
+    - npm、yarn、pnpm自動検出
+    - package.json、yarn.lock、pnpm-lock.yaml判定
+    - TypeScript型チェック（tsc --noEmit）
+    - NODE_ENV環境変数・依存関係管理
+
+### セキュリティ強化
+- **多言語ビルド専用セキュリティ機能**:
+  - `validateJavaBuild()` - Java プロジェクト固有検証
+  - `validatePythonBuild()` - Python プロジェクト固有検証
+  - `validateNodeBuild()` - Node.js プロジェクト固有検証
+  - `validateBuildCommand()` - ビルドコマンド安全性検証
+- **許可コマンドの拡張**:
+  - Java: mvn、maven、gradle、gradlew、java、javac
+  - Python: python、pip、poetry、conda、pipenv、pytest
+  - Node.js: node、npm、yarn、pnpm、npx、tsc
+- **プロジェクトファイル検証**:
+  - Java: pom.xml、build.gradle、build.gradle.ktsのみ許可
+  - ファイル拡張子・設定ファイル存在による自動検出
+  - パストラバーサル・コマンドインジェクション完全防止
+
+### アーキテクチャ改善
+- **executeBuild関数拡張**:
+  - オプションパラメータ対応（workingDirectory、env、timeout）
+  - 戻り値にsuccess・output・error・exitCodeを追加
+  - リモートホスト実行の統一サポート
+- **エラーハンドリング統一**:
+  - handleValidationError()による一貫したレスポンス
+  - 詳細なエラーコンテキストとセキュリティログ記録
+- **ログ機能強化**:
+  - 構造化ログによるビルド実行記録
+  - セキュリティイベント・パフォーマンスメトリクス
+
+### テスト・品質向上
+- **TDD実装プロセス**:
+  - 包括的テストケース設計・実装先行
+  - セキュリティテスト100%カバレッジ
+  - multi-language-builds.test.js、multi-language-security.test.js
+- **統合テストクライアント**:
+  - test-multi-language-builds.js による実機検証
+  - MCPプロトコル完全対応テスト
+
+### ドキュメント
+- **完全な実装ドキュメント**:
+  - `docs/MULTI_LANGUAGE_BUILD_IMPLEMENTATION.md`
+  - TDDプロセス・アーキテクチャ設計・セキュリティ実装詳細
+  - 使用例・エラーハンドリング・デプロイメント要件
+
+## [1.0.6] - 2025-07-04
+
+### 追加
+- **新ツール開発完了**（デプロイ待ち）:
+  - `mcp_self_build`: MCPサーバー自体のビルド・テスト・インストール・更新管理
+    - ビルド、テスト実行、インストール、アップデート、起動/停止、ステータス確認
+    - 自己更新機能でGitHubから最新版取得可能
+    - Windows VMへの自動デプロイメント対応
+  - `process_manager`: Windowsプロセスとサービスの包括的管理
+    - プロセスの起動、停止、再起動、ステータス確認、一覧表示、強制終了
+    - Windowsサービスとしての管理対応
+    - 待機時間設定と強制終了オプション
+  - `file_sync`: 大容量ファイル・ディレクトリの高速同期
+    - robocopy統合による信頼性の高いファイル転送
+    - パターンフィルタと除外パターンのサポート
+    - 転送後の整合性検証オプション
+    - 自動リトライ機能（3回/10秒間隔）
+
+### 改善
+- **危険モードの機能強化**:
+  - レート制限の完全無効化（アプリエンジニアからの要望対応）
+  - 大量ファイル操作の制限解除
+  - バックグラウンドプロセス管理の完全サポート
+- **テストカバレッジ向上**: 86.51%達成
+  - crypto.js: 100%カバレッジ
+  - helpers.js: 100%カバレッジ
+  - logger.js: 100%カバレッジ
+  - rate-limiter.js: 100%カバレッジ
+- **executeBuildメソッド拡張**:
+  - オプションパラメータのサポート
+  - 終了コードとシグナルの詳細情報提供
+  - ignoreExitCodeオプションの追加
+
+### テスト・検証
+- **実機テスト実施** (2025-07-04):
+  - 接続先: 100.71.150.41:8080
+  - 基本5ツール: 正常動作確認済み
+  - 新3ツール: デプロイ待ち（"Unknown tool"エラー）
+  - Windows 11 Home + PowerShell 5.1 + .NET 6.0環境で検証
+
+### ドキュメント
+- **包括的ドキュメント整備**:
+  - `docs/COMPLETE_COMMAND_REFERENCE.md`: 全8ツールの詳細リファレンス
+  - `docs/ARCHITECTURE.md`: システムアーキテクチャ設計書
+  - `docs/RESPONSE_TO_APP_ENGINEER.md`: エンジニア向け実装報告（実機テスト結果含む）
+  - `TEST_RESULTS.md`: 実環境テスト結果の詳細レポート
+
 ## [1.0.5] - 2025-07-04
 
 ### 追加

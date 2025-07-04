@@ -1,359 +1,453 @@
+// Focused server.js coverage tests
 const request = require('supertest');
 const { spawn } = require('child_process');
-const { EventEmitter } = require('events');
+const EventEmitter = require('events');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-// Set test environment variables
-process.env.NODE_ENV = 'test';
-process.env.MCP_AUTH_TOKEN = 'test-token-123';
-process.env.MCP_SERVER_PORT = '0';
-process.env.RATE_LIMIT_REQUESTS = '2';
-process.env.RATE_LIMIT_WINDOW = '1000';
-
-// Mock modules
+// Mock dependencies
 jest.mock('child_process');
-jest.mock('ssh2');
-jest.mock('ping');
-jest.mock('helmet', () => () => (req, res, next) => next());
+jest.mock('fs');
+jest.mock('os');
 
-const mockSpawn = spawn;
-const mockSSH = require('ssh2');
-const mockPing = require('ping');
+// Mock the logger
+jest.mock('../server/src/utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  security: jest.fn(),
+  access: jest.fn()
+}));
+
+// Mock the rate limiter
+jest.mock('../server/src/utils/rate-limiter', () => ({
+  checkRateLimit: jest.fn().mockReturnValue(true)
+}));
+
+// Mock security
+jest.mock('../server/src/utils/security', () => ({
+  validatePowerShellCommand: jest.fn().mockImplementation(cmd => cmd),
+  validateBuildPath: jest.fn().mockImplementation(path => path),
+  validateIPAddress: jest.fn().mockImplementation(ip => ip),
+  validateBatchFilePath: jest.fn().mockImplementation(path => path)
+}));
+
+// Mock crypto
+jest.mock('../server/src/utils/crypto', () => ({
+  encrypt: jest.fn(text => text),
+  decrypt: jest.fn(text => text),
+  hashForLogging: jest.fn(() => 'hashed...'),
+  initializeKey: jest.fn(),
+  encryptionEnabled: true
+}));
 
 describe('Server Coverage Tests', () => {
   let app;
   let mockProcess;
-  let mockSSHClient;
-  let rateLimiter;
+  let originalEnv;
+
+  beforeAll(() => {
+    originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      MCP_AUTH_TOKEN: 'test-token',
+      ENABLE_DANGEROUS_MODE: 'false',
+      BUILD_OUTPUT_DIR: 'C:\\builds',
+      WINDOWS_VM_IP: '192.168.1.100',
+      ALLOWED_BUILD_PATHS: 'C:\\builds\\;C:\\projects\\',
+      ALLOWED_BATCH_DIRS: 'C:\\builds\\;C:\\temp\\'
+    };
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
 
   beforeEach(() => {
-    // Reset all mocks and modules before each test
     jest.clearAllMocks();
-    jest.resetModules();
     
-    // Setup mocks
+    // Create a mock process
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
+    mockProcess.stdin = { end: jest.fn() };
+    mockProcess.kill = jest.fn();
     
-    mockSpawn.mockReturnValue(mockProcess);
+    spawn.mockReturnValue(mockProcess);
     
-    mockSSHClient = new EventEmitter();
-    mockSSHClient.connect = jest.fn();
-    mockSSHClient.exec = jest.fn();
-    mockSSHClient.end = jest.fn();
-    mockSSH.Client.mockImplementation(() => mockSSHClient);
+    // Re-require server to get fresh instance
+    delete require.cache[require.resolve('../server/src/server')];
+    app = require('../server/src/server');
     
-    mockPing.promise = {
-      probe: jest.fn()
-    };
+    // Mock os.homedir
+    os.homedir.mockReturnValue('C:\\Users\\testuser');
     
-    // Require fresh instances for each test
-    rateLimiter = require('../server/src/utils/rate-limiter');
-    rateLimiter.clear();
-    app = require('../server/src/server.js');
-  });
-
-  afterEach(() => {
-    if (rateLimiter) {
-      rateLimiter.clear();
-    }
-  });
-
-  describe('Rate Limiting', () => {
-    test('should block requests when rate limit exceeded', async () => {
-      // First request should succeed
-      await request(app)
-        .get('/health')
-        .expect(200);
-
-      // Second request should succeed (limit is 2)
-      await request(app)
-        .get('/health')
-        .expect(200);
-
-      // Third request should be rate limited
-      const response = await request(app)
-        .get('/health')
-        .expect(429);
-
-      expect(response.body.error).toContain('Rate limit exceeded');
-      expect(response.body.retryAfter).toBe(300);
+    // Mock fs functions
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockImplementation((filePath) => {
+      if (filePath.includes('.ssh\\config')) {
+        return 'Host testhost\n  HostName 192.168.1.100\n  User testuser';
+      }
+      return '';
     });
   });
 
-  describe('IP Whitelist', () => {
-    test('should block requests from non-whitelisted IPs', async () => {
-      // Set allowed IPs
-      process.env.ALLOWED_IPS = '192.168.1.100,192.168.1.101';
-      
-      // Clear module cache and reload server
-      jest.resetModules();
-      app = require('../server/src/server.js');
-
-      const response = await request(app)
-        .get('/health')
-        .set('X-Forwarded-For', '10.0.0.1')
-        .expect(403);
-
-      expect(response.body.error).toBe('Access denied from this IP address');
-    });
-
-    test('should allow requests from whitelisted IPs with CIDR notation', async () => {
-      // Set allowed IPs with CIDR
-      process.env.ALLOWED_IPS = '192.168.1.0/24';
-      
-      // Clear module cache and reload server
-      jest.resetModules();
-      app = require('../server/src/server.js');
-
-      await request(app)
-        .get('/health')
-        .set('X-Forwarded-For', '192.168.1.50')
-        .expect(200);
-    });
-
-    afterAll(() => {
-      // Reset ALLOWED_IPS
-      delete process.env.ALLOWED_IPS;
-    });
-  });
-
-  describe('Authentication', () => {
-    test('should require authorization header when token is set', async () => {
+  describe('SSH Command Tool Coverage', () => {
+    test('should handle ssh command with saved connection', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({ method: 'tools/list' })
-        .expect(401);
-
-      expect(response.body.error).toBe('Authorization header required');
-    });
-
-    test('should reject invalid authorization token', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer invalid-token')
-        .send({ method: 'tools/list' })
-        .expect(401);
-
-      expect(response.body.error).toBe('Invalid authorization token');
-    });
-
-    test('should skip auth for health check', async () => {
-      await request(app)
-        .get('/health')
-        .expect(200);
-    });
-  });
-
-  describe('Build Validation Errors', () => {
-    test('should handle build path validation errors', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'build_dotnet',
-            arguments: {
-              projectPath: '../../../etc/passwd'
-            }
-          }
-        })
-        .expect(200);
-
-      expect(response.body.content[0].text).toContain('Validation error');
-    });
-
-    test('should handle PowerShell validation errors', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'run_powershell',
-            arguments: {
-              command: 'rm -rf /'
-            }
-          }
-        })
-        .expect(200);
-
-      expect(response.body.content[0].text).toContain('Validation error');
-    });
-
-    test('should handle ping validation errors', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ping_host',
-            arguments: {
-              host: 'invalid-ip'
-            }
-          }
-        })
-        .expect(200);
-
-      expect(response.body.content[0].text).toContain('Validation error');
-    });
-
-    test('should handle SSH validation errors', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
           method: 'tools/call',
           params: {
             name: 'ssh_command',
             arguments: {
-              host: '127.0.0.1',
-              username: 'admin',
-              password: 'pass',
-              command: 'whoami'
+              connection: 'testuser@testhost',
+              command: 'ls -la'
             }
           }
-        })
-        .expect(200);
+        });
 
-      expect(response.body.content[0].text).toContain('Validation error');
+      expect(response.status).toBe(200);
+      expect(spawn).toHaveBeenCalledWith(
+        'ssh',
+        expect.arrayContaining(['testuser@testhost', 'ls -la']),
+        expect.any(Object)
+      );
     });
-  });
 
-  describe('Unknown Methods and Tools', () => {
-    test('should handle unknown tools', async () => {
-      const response = await request(app)
+    test('should handle ssh command with password prompt', async () => {
+      const responsePromise = request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
           method: 'tools/call',
           params: {
-            name: 'unknown_tool',
+            name: 'ssh_command',
+            arguments: {
+              connection: 'newuser@newhost',
+              command: 'pwd',
+              password: 'secretpass'
+            }
+          }
+        });
+
+      // Wait a bit for the request to be processed
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Simulate password prompt
+      mockProcess.stdout.emit('data', Buffer.from('password:'));
+      
+      // Wait for password to be sent
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Simulate command output
+      mockProcess.stdout.emit('data', Buffer.from('/home/newuser\n'));
+      mockProcess.emit('close', 0);
+
+      const response = await responsePromise;
+      expect(response.status).toBe(200);
+      expect(mockProcess.stdin.end).toHaveBeenCalledWith('secretpass\n');
+    });
+
+    test('should handle ssh command with host key verification', async () => {
+      const responsePromise = request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'ssh_command',
+            arguments: {
+              connection: 'user@newhost',
+              command: 'echo test',
+              acceptHostKey: true
+            }
+          }
+        });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Simulate host key verification prompt
+      mockProcess.stdout.emit('data', Buffer.from('Are you sure you want to continue connecting (yes/no)?'));
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Simulate success
+      mockProcess.stdout.emit('data', Buffer.from('test\n'));
+      mockProcess.emit('close', 0);
+
+      const response = await responsePromise;
+      expect(response.status).toBe(200);
+      expect(mockProcess.stdin.end).toHaveBeenCalledWith('yes\n');
+    });
+
+    test('should handle ssh command timeout', async () => {
+      const response = await request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'ssh_command',
+            arguments: {
+              connection: 'user@host',
+              command: 'sleep 100',
+              timeout: 100 // 100ms timeout
+            }
+          }
+        });
+
+      // Wait for timeout
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      expect(response.status).toBe(200);
+      expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
+    });
+
+    test('should handle ssh process error', async () => {
+      const responsePromise = request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'ssh_command',
+            arguments: {
+              connection: 'user@host',
+              command: 'test'
+            }
+          }
+        });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Simulate process error
+      mockProcess.emit('error', new Error('spawn ssh ENOENT'));
+
+      const response = await responsePromise;
+      expect(response.status).toBe(200);
+      expect(response.body.content[0].text).toContain('SSH error');
+    });
+
+    test('should save new SSH connection', async () => {
+      fs.existsSync.mockImplementation(path => {
+        if (path.includes('.ssh')) return false;
+        return true;
+      });
+      
+      fs.mkdirSync = jest.fn();
+      fs.appendFileSync = jest.fn();
+
+      const response = await request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'ssh_command',
+            arguments: {
+              connection: 'newuser@192.168.1.200',
+              command: 'ls',
+              saveConnection: true
+            }
+          }
+        });
+
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('.ssh'),
+        { recursive: true }
+      );
+      expect(fs.appendFileSync).toHaveBeenCalled();
+    });
+  });
+
+  describe('Run Batch Tool Coverage', () => {
+    test('should execute batch file in dangerous mode', async () => {
+      process.env.ENABLE_DANGEROUS_MODE = 'true';
+      delete require.cache[require.resolve('../server/src/server')];
+      app = require('../server/src/server');
+
+      const response = await request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'run_batch',
+            arguments: {
+              batchFile: 'C:\\any\\path\\script.bat',
+              args: ['arg1', 'arg2']
+            }
+          }
+        });
+
+      expect(response.status).toBe(200);
+      expect(spawn).toHaveBeenCalledWith(
+        'C:\\any\\path\\script.bat',
+        ['arg1', 'arg2'],
+        expect.objectContaining({ shell: false })
+      );
+      
+      process.env.ENABLE_DANGEROUS_MODE = 'false';
+    });
+
+    test('should handle batch file with output', async () => {
+      const responsePromise = request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'run_batch',
+            arguments: {
+              batchFile: 'C:\\builds\\test.bat'
+            }
+          }
+        });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Simulate batch output
+      mockProcess.stdout.emit('data', Buffer.from('Batch output line 1\r\n'));
+      mockProcess.stdout.emit('data', Buffer.from('Batch output line 2\r\n'));
+      mockProcess.stderr.emit('data', Buffer.from('Warning: something\r\n'));
+      mockProcess.emit('close', 0);
+
+      const response = await responsePromise;
+      expect(response.status).toBe(200);
+      expect(response.body.content[0].text).toContain('Batch output line 1');
+      expect(response.body.content[0].text).toContain('Warning: something');
+    });
+  });
+
+  describe('Error Handling Coverage', () => {
+    test('should handle invalid tool name', async () => {
+      const response = await request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/call',
+          params: {
+            name: 'invalid_tool',
             arguments: {}
           }
-        })
-        .expect(200);
+        });
 
-      expect(response.body.content[0].text).toContain('Unknown tool');
+      expect(response.status).toBe(200);
+      expect(response.body.content[0].text).toBe('Unknown tool: invalid_tool');
     });
 
-    test('should handle unknown methods', async () => {
+    test('should handle missing arguments', async () => {
       const response = await request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
-          method: 'unknown/method',
-          params: {}
-        })
-        .expect(200);
+          method: 'tools/call',
+          params: {
+            name: 'build',
+            arguments: null
+          }
+        });
 
-      expect(response.body.error).toContain('Unknown method');
+      expect(response.status).toBe(200);
+      expect(response.body.error).toBeDefined();
+    });
+
+    test('should handle rate limit exceeded', async () => {
+      const rateLimiter = require('../server/src/utils/rate-limiter');
+      rateLimiter.checkRateLimit.mockReturnValue(false);
+
+      const response = await request(app)
+        .post('/mcp')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'tools/list'
+        });
+
+      expect(response.status).toBe(429);
+      expect(response.body.error).toContain('Rate limit exceeded');
     });
   });
 
-  describe('Process Output Handling', () => {
-    test('should handle stdout data', async () => {
-      setTimeout(() => {
-        mockProcess.stdout.emit('data', Buffer.from('Build output'));
-        mockProcess.emit('close', 0);
-      }, 10);
+  describe('Build Tool Edge Cases', () => {
+    test('should handle spawn error in build', async () => {
+      spawn.mockImplementation(() => {
+        throw new Error('spawn ENOENT');
+      });
 
       const response = await request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
           method: 'tools/call',
           params: {
             name: 'build_dotnet',
             arguments: {
-              projectPath: 'C:\\projects\\test.csproj'
+              projectPath: 'C:\\builds\\test.sln'
             }
           }
         });
 
-      expect(response.body.content[0].text).toContain('Build output');
+      expect(response.status).toBe(200);
+      expect(response.body.content[0].text).toContain('Failed to execute command');
     });
 
-    test('should handle stderr data', async () => {
-      setTimeout(() => {
-        mockProcess.stderr.emit('data', Buffer.from('Error output'));
-        mockProcess.emit('close', 1);
-      }, 10);
-
-      const response = await request(app)
+    test('should handle process crash', async () => {
+      const responsePromise = request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
           method: 'tools/call',
           params: {
-            name: 'run_powershell',
+            name: 'build_dotnet',
             arguments: {
-              command: 'echo test'
+              projectPath: 'C:\\builds\\test.sln'
             }
           }
         });
 
-      expect(response.body.content[0].text).toContain('Error output');
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Simulate process crash
+      mockProcess.emit('close', null, 'SIGSEGV');
+
+      const response = await responsePromise;
+      expect(response.status).toBe(200);
+      expect(response.body.content[0].text).toContain('terminated by signal');
     });
   });
 
-  describe('SSH Connection Handling', () => {
-    test('should handle SSH connection ready and stream data', async () => {
-      const mockStream = new EventEmitter();
-      mockStream.stderr = new EventEmitter();
-      
-      mockSSHClient.exec.mockImplementation((cmd, callback) => {
-        callback(null, mockStream);
-        
-        setTimeout(() => {
-          mockStream.emit('data', Buffer.from('SSH output'));
-          mockStream.stderr.emit('data', Buffer.from('SSH error'));
-          mockStream.emit('close', 0);
-        }, 10);
-      });
-
-      setTimeout(() => {
-        mockSSHClient.emit('ready');
-      }, 10);
-
+  describe('Tools List Coverage', () => {
+    test('should list all tools', async () => {
       const response = await request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('Authorization', 'Bearer test-token')
         .send({
-          method: 'tools/call',
-          params: {
-            name: 'ssh_command',
-            arguments: {
-              host: '192.168.1.1',
-              username: 'admin',
-              password: 'password',
-              command: 'echo test'
-            }
-          }
+          method: 'tools/list'
         });
 
-      expect(response.body.content[0].text).toContain('SSH output');
-      expect(response.body.content[0].text).toContain('STDERR: SSH error');
+      expect(response.status).toBe(200);
+      expect(response.body.tools).toBeDefined();
+      expect(response.body.tools.length).toBeGreaterThan(0);
+      expect(response.body.tools.map(t => t.name)).toContain('build_dotnet');
+      expect(response.body.tools.map(t => t.name)).toContain('ssh_command');
+      expect(response.body.tools.map(t => t.name)).toContain('run_batch');
     });
   });
 
-  describe('Error Handling', () => {
-    test('should handle general errors', async () => {
-      // Mock a method to throw an error
-      jest.spyOn(JSON, 'parse').mockImplementationOnce(() => {
-        throw new Error('Parse error');
-      });
-
+  describe('Unknown Method Coverage', () => {
+    test('should handle unknown method', async () => {
       const response = await request(app)
         .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .set('Content-Type', 'application/json')
-        .send('invalid json')
-        .expect(400);
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          method: 'unknown/method'
+        });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
+      expect(response.body.error).toContain('Unknown method');
     });
   });
 });

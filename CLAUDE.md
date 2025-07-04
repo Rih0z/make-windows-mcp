@@ -47,6 +47,7 @@ ai_coding_principles:
       dangerous_mode:
         - "`ENABLE_DANGEROUS_MODE=true`で有効化"
         - "全セキュリティ制限をバイパス（本番環境厳禁）"
+        - "レート制限完全無効化（v1.0.6）"
         - "起動時に大きな警告表示が必須"
 
   quality_standards:
@@ -71,8 +72,9 @@ ai_coding_principles:
   testing_standards:
     approach:
       - "新機能には必ずテストを追加（`tests/`ディレクトリ）"
-      - "テストカバレッジ100%を目標（現在91%+）"
+      - "テストカバレッジ86.51%達成（2025-07-04時点）"
       - "セキュリティエッジケースのテストを重視"
+      - "実機テスト実施済み（基本5ツール動作確認、新3ツールはデプロイ待ち）"
     
     test_execution:
       - "`npm test` - 全テスト実行"
@@ -144,6 +146,7 @@ ai_coding_principles:
   common_commands:
     development:
       - "npm run install:all - 全依存関係インストール"
+      - "npm run build:all - 全コンポーネントビルド"
       - "npm test - テスト実行"
       - "npm run test:coverage - カバレッジ確認"
     
@@ -155,13 +158,20 @@ ai_coding_principles:
 
   key_files:
     server:
-      - "server/src/server.js - MCPサーバー実装、ツール定義"
+      - "server/src/server.js - MCPサーバー実装、8つのツール定義（v1.0.6で3つ追加）"
       - "server/src/utils/security.js - コマンド検証、セキュリティパターン"
-      - "server/src/utils/rate-limiter.js - レート制限実装"
+      - "server/src/utils/rate-limiter.js - レート制限実装（危険モードで無効化）"
       - "server/src/utils/logger.js - 構造化ログ、ローテーション"
+      - "server/src/utils/helpers.js - 共通ユーティリティ関数"
+      - "server/src/utils/crypto.js - 暗号化・復号化（100%カバレッジ）"
     
     client:
       - "client/src/mcp-client.js - MCPクライアントラッパー"
+    
+    new_tools_v106:
+      - "mcp_self_build - MCPサーバー自己管理（ビルド・テスト・更新）"
+      - "process_manager - Windowsプロセス・サービス管理"
+      - "file_sync - 大容量ファイル同期（robocopy統合）"
 
   execution_checklist:
     mandatory_declaration:

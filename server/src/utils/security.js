@@ -8,19 +8,33 @@ class SecurityValidator {
       'test-connection', 'get-vm', 'start-vm', 'stop-vm', 'checkpoint-vm',
       'docker', 'kubectl', 'git', 'echo', 'write-host', 'write-output',
       'find-regkey', 'format-table', 'remove-item', 'set-location',
-      'invoke-command', 'start-process'
+      'invoke-command', 'start-process',
+      // Enhanced file operations for development workflow
+      'new-item', 'set-content', 'add-content', 'get-content', 'test-path',
+      'out-file', 'select-string', 'measure-object', 'where-object',
+      // Multi-language build tools
+      'mvn', 'maven', 'gradle', 'gradlew', 'java', 'javac',
+      'python', 'pip', 'poetry', 'conda', 'pipenv', 'pytest',
+      'node', 'npm', 'yarn', 'pnpm', 'npx', 'tsc',
+      // Additional language build tools
+      'go', 'cargo', 'rustc', 'cmake', 'make', 'msbuild', 'ninja',
+      'docker', 'docker-compose', 'g++', 'gcc', 'clang',
+      // Phase 3 language build tools
+      'kotlin', 'kotlinc', 'swift', 'swiftc', 'composer', 'php', 'artisan',
+      'bundle', 'ruby', 'rails', 'rake', 'gem', 'rspec', 'minitest'
     ];
     
     // Development mode commands (loaded from environment)
     this.devCommands = process.env.ALLOWED_DEV_COMMANDS ? 
       process.env.ALLOWED_DEV_COMMANDS.split(',').map(cmd => cmd.trim().toLowerCase()) :
-      ['tasklist', 'netstat', 'type', 'python', 'pip', 'node', 'npm', 'git', 'if', 'for', 'findstr', 'echo', 'set', 'call', 'start', 'cd', 'cmd', '&'];
+      ['tasklist', 'netstat', 'type', 'git', 'if', 'for', 'findstr', 'echo', 'set', 'call', 'start', 'cd', 'cmd', '&'];
     
     // Allowed operators in development mode
     this.devOperators = ['&&', '||', '|', '>', '>>', '<', '2>', '2>&1', ';', '&'];
     
+    // Enhanced dangerous patterns with improved Here-String support
     this.dangerousPatterns = [
-      /[\`]/g,                       // Backtick command substitution only
+      /(?<!@['"])[`](?!['"@])/g,     // Backtick command substitution (excluding Here-String @"...`...@")
       /rm\s+-rf/gi,                  // Dangerous delete commands
       /del\s+\/[sf]/gi,              // Windows delete commands
       /format\s+[c-z]:/gi,           // Format commands
@@ -41,8 +55,10 @@ class SecurityValidator {
       throw new Error('Invalid command: must be a non-empty string');
     }
 
-    if (command.length > 2048) {
-      throw new Error('Command too long: maximum 2048 characters allowed');
+    // Extended command length limit for improved development workflow
+    const maxLength = process.env.MAX_COMMAND_LENGTH ? parseInt(process.env.MAX_COMMAND_LENGTH) : 8192;
+    if (command.length > maxLength) {
+      throw new Error(`Command too long: maximum ${maxLength} characters allowed`);
     }
 
     // Check if development mode is enabled
@@ -159,9 +175,21 @@ class SecurityValidator {
       throw new Error('Invalid IP address format');
     }
 
-    // Block private IP ranges that shouldn't be accessed
+    // Allow localhost and development server ranges (for CI/CD and testing)
+    const allowedLocalRanges = [
+      /^127\./,                    // Loopback (localhost)
+      /^::1$/,                     // IPv6 loopback
+      /^localhost$/i               // localhost hostname
+    ];
+
+    // Check if this is an allowed local development IP
+    const isAllowedLocal = allowedLocalRanges.some(range => range.test(ip));
+    if (isAllowedLocal) {
+      return ip; // Allow localhost connections for development
+    }
+
+    // Block dangerous private IP ranges (excluding allowed localhost)
     const blockedRanges = [
-      /^127\./,          // Loopback
       /^169\.254\./,     // Link-local
       /^224\./,          // Multicast
       /^0\./             // Reserved
@@ -363,6 +391,412 @@ class SecurityValidator {
     }
 
     return normalizedPath;
+  }
+
+  /**
+   * Validate Java build tool and project file
+   */
+  validateJavaBuild(projectPath, buildTool) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate file extension
+    const validExtensions = ['.xml', '.gradle', '.kts'];
+    const hasValidExtension = validExtensions.some(ext => projectPath.toLowerCase().endsWith(ext));
+    
+    if (!hasValidExtension) {
+      throw new Error('Invalid Java project file. Expected pom.xml, build.gradle, or build.gradle.kts');
+    }
+
+    // Validate build tool
+    if (buildTool && !['maven', 'gradle', 'auto'].includes(buildTool)) {
+      throw new Error('Invalid build tool. Expected: maven, gradle, or auto');
+    }
+
+    // Auto-detect if not specified
+    if (!buildTool || buildTool === 'auto') {
+      if (projectPath.endsWith('pom.xml')) {
+        return 'maven';
+      } else if (projectPath.endsWith('build.gradle') || projectPath.endsWith('build.gradle.kts')) {
+        return 'gradle';
+      } else {
+        throw new Error('Cannot auto-detect build tool from file extension');
+      }
+    }
+
+    return buildTool;
+  }
+
+  /**
+   * Validate Python build tool and project directory
+   */
+  validatePythonBuild(projectPath, buildTool) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate build tool
+    const validBuildTools = ['pip', 'poetry', 'conda', 'pipenv', 'auto'];
+    if (buildTool && !validBuildTools.includes(buildTool)) {
+      throw new Error(`Invalid Python build tool. Expected: ${validBuildTools.join(', ')}`);
+    }
+
+    return buildTool || 'auto';
+  }
+
+  /**
+   * Validate Node.js build tool and project directory
+   */
+  validateNodeBuild(projectPath, packageManager) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate package manager
+    const validPackageManagers = ['npm', 'yarn', 'pnpm', 'auto'];
+    if (packageManager && !validPackageManagers.includes(packageManager)) {
+      throw new Error(`Invalid Node.js package manager. Expected: ${validPackageManagers.join(', ')}`);
+    }
+
+    return packageManager || 'auto';
+  }
+
+  /**
+   * Validate build command for security
+   */
+  validateBuildCommand(command) {
+    if (!command || typeof command !== 'string') {
+      throw new Error('Invalid build command: must be a non-empty string');
+    }
+
+    // Check against dangerous patterns
+    for (const pattern of this.dangerousPatterns) {
+      if (pattern.test(command)) {
+        throw new Error(`Dangerous pattern detected in build command: ${command}`);
+      }
+    }
+
+    // Extract the first word (the actual command)
+    const firstWord = command.trim().split(/\s+/)[0].toLowerCase();
+    
+    // Check if the command is allowed
+    const allAllowedCommands = [
+      ...this.allowedCommands,
+      ...(process.env.ENABLE_DEV_COMMANDS === 'true' ? this.devCommands : [])
+    ];
+
+    if (!allAllowedCommands.includes(firstWord)) {
+      throw new Error(`Build command not allowed: ${firstWord}`);
+    }
+
+    return command;
+  }
+
+  /**
+   * Validate Go build parameters
+   */
+  validateGoBuild(projectPath, action) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate Go action
+    const validActions = ['build', 'test', 'run', 'install', 'clean', 'mod', 'vet', 'fmt'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid Go action. Expected: ${validActions.join(', ')}`);
+    }
+
+    return { projectPath, action };
+  }
+
+  /**
+   * Validate Rust build parameters
+   */
+  validateRustBuild(projectPath, action) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate Rust action
+    const validActions = ['build', 'test', 'run', 'check', 'clippy', 'fmt', 'doc', 'clean', 'update'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid Rust action. Expected: ${validActions.join(', ')}`);
+    }
+
+    return { projectPath, action };
+  }
+
+  /**
+   * Validate C++ build parameters
+   */
+  validateCppBuild(projectPath, buildSystem) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate build system
+    const validBuildSystems = ['cmake', 'msbuild', 'make', 'ninja'];
+    if (!validBuildSystems.includes(buildSystem)) {
+      throw new Error(`Invalid build system. Expected: ${validBuildSystems.join(', ')}`);
+    }
+
+    return { projectPath, buildSystem };
+  }
+
+  /**
+   * Validate Docker build parameters
+   */
+  validateDockerBuild(contextPath, imageName) {
+    // Validate context path
+    this.validatePath(contextPath);
+    
+    // Validate Docker image name format
+    // Basic validation for Docker image naming conventions
+    if (!imageName || typeof imageName !== 'string') {
+      throw new Error('Image name is required and must be a string');
+    }
+
+    // Docker image name validation (simplified)
+    if (!/^[a-z0-9]([a-z0-9\-_\.]*[a-z0-9])?(\:[a-zA-Z0-9]([a-zA-Z0-9\-_\.]*[a-zA-Z0-9])?)?$/.test(imageName.toLowerCase())) {
+      throw new Error('Invalid image name format. Use lowercase letters, numbers, hyphens, underscores, and dots.');
+    }
+
+    return { contextPath, imageName };
+  }
+
+  /**
+   * Validate cross-compilation parameters
+   */
+  validateCrossCompilation(targetOS, targetArch) {
+    const validOS = ['windows', 'linux', 'darwin', 'freebsd'];
+    const validArch = ['amd64', 'arm64', '386', 'arm'];
+
+    if (targetOS && !validOS.includes(targetOS)) {
+      throw new Error(`Invalid target OS. Expected: ${validOS.join(', ')}`);
+    }
+
+    if (targetArch && !validArch.includes(targetArch)) {
+      throw new Error(`Invalid target architecture. Expected: ${validArch.join(', ')}`);
+    }
+
+    return { targetOS, targetArch };
+  }
+
+  /**
+   * Validate build flags and options for security
+   */
+  validateBuildFlags(flags) {
+    if (!Array.isArray(flags)) {
+      throw new Error('Build flags must be an array');
+    }
+
+    // Check for dangerous flags
+    const dangerousFlagPatterns = [
+      /--privileged/i,
+      /--cap-add/i,
+      /--security-opt/i,
+      /--volume.*\/:/,
+      /--mount.*type=bind/i,
+      /-v.*\/:/,
+      /--rm/i, // Potentially dangerous in automated contexts
+      /--network.*host/i
+    ];
+
+    for (const flag of flags) {
+      if (typeof flag !== 'string') {
+        throw new Error('All build flags must be strings');
+      }
+
+      // Check against dangerous patterns
+      for (const pattern of dangerousFlagPatterns) {
+        if (pattern.test(flag)) {
+          throw new Error(`Dangerous build flag detected: ${flag}`);
+        }
+      }
+
+      // Check for command injection attempts
+      if (flag.includes('$(') || flag.includes('`') || flag.includes(';')) {
+        throw new Error(`Potentially dangerous characters in build flag: ${flag}`);
+      }
+    }
+
+    return flags;
+  }
+
+  /**
+   * Validate environment variables for builds
+   */
+  validateBuildEnvironment(env) {
+    if (!env || typeof env !== 'object') {
+      return env;
+    }
+
+    // List of sensitive environment variables that should not be overridden
+    const protectedVars = [
+      'PATH', 'HOME', 'USER', 'USERNAME', 'USERPROFILE',
+      'SYSTEMROOT', 'WINDIR', 'PROGRAMFILES'
+    ];
+
+    for (const [key, value] of Object.entries(env)) {
+      // Check if trying to override protected variables
+      if (protectedVars.includes(key.toUpperCase())) {
+        throw new Error(`Cannot override protected environment variable: ${key}`);
+      }
+
+      // Validate values for potential injection
+      if (typeof value === 'string') {
+        if (value.includes('$(') || value.includes('`') || value.includes(';')) {
+          throw new Error(`Potentially dangerous characters in environment variable ${key}: ${value}`);
+        }
+      }
+    }
+
+    return env;
+  }
+
+  /**
+   * Validate Kotlin/Android build parameters
+   */
+  validateKotlinBuild(projectPath, projectType) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate project type
+    const validProjectTypes = ['android', 'jvm', 'native', 'multiplatform'];
+    if (!validProjectTypes.includes(projectType)) {
+      throw new Error(`Invalid project type. Expected: ${validProjectTypes.join(', ')}`);
+    }
+
+    return { projectPath, projectType };
+  }
+
+  /**
+   * Validate Swift build parameters
+   */
+  validateSwiftBuild(projectPath, action) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate Swift action
+    const validActions = ['build', 'test', 'run', 'package', 'clean'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid Swift action. Expected: ${validActions.join(', ')}`);
+    }
+
+    return { projectPath, action };
+  }
+
+  /**
+   * Validate PHP build parameters
+   */
+  validatePhpBuild(projectPath, action) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate PHP action
+    const validActions = ['install', 'update', 'test', 'build', 'artisan', 'serve'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid PHP action. Expected: ${validActions.join(', ')}`);
+    }
+
+    return { projectPath, action };
+  }
+
+  /**
+   * Validate Ruby build parameters
+   */
+  validateRubyBuild(projectPath, action) {
+    // Validate project path
+    this.validatePath(projectPath);
+    
+    // Validate Ruby action
+    const validActions = ['install', 'update', 'exec', 'test', 'build', 'rails', 'rake'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid Ruby action. Expected: ${validActions.join(', ')}`);
+    }
+
+    return { projectPath, action };
+  }
+
+  /**
+   * Enhanced error reporting with suggestions
+   */
+  createDetailedError(originalError, command, suggestions = []) {
+    let errorMessage = originalError;
+    
+    // Add specific suggestions based on error type
+    if (originalError.includes('Command not allowed')) {
+      suggestions.push('Try using development mode: ENABLE_DEV_COMMANDS=true');
+      suggestions.push('Check allowed commands list in security.js');
+    }
+    
+    if (originalError.includes('Directory traversal')) {
+      suggestions.push('Use absolute paths within allowed directories');
+      suggestions.push('Check ALLOWED_BUILD_PATHS environment variable');
+    }
+    
+    if (originalError.includes('Dangerous command detected')) {
+      suggestions.push('Use alternative safe commands');
+      suggestions.push('Consider using batch execution for complex operations');
+    }
+    
+    if (suggestions.length > 0) {
+      errorMessage += '\n\nSuggestions:\n' + suggestions.map(s => `  • ${s}`).join('\n');
+    }
+    
+    return new Error(errorMessage);
+  }
+
+  /**
+   * Validate batch command execution
+   */
+  validateBatchCommands(commands) {
+    if (!Array.isArray(commands)) {
+      throw new Error('Batch commands must be an array');
+    }
+    
+    if (commands.length > 50) {
+      throw new Error('Too many commands in batch: maximum 50 allowed');
+    }
+    
+    const validatedCommands = [];
+    for (const command of commands) {
+      try {
+        const validatedCommand = this.validatePowerShellCommand(command);
+        validatedCommands.push(validatedCommand);
+      } catch (error) {
+        throw this.createDetailedError(
+          `Batch validation failed at command: "${command.substring(0, 100)}..."\n${error.message}`,
+          command,
+          ['Fix the failing command', 'Remove the problematic command from batch']
+        );
+      }
+    }
+    
+    return validatedCommands;
+  }
+
+  /**
+   * Enhanced project-based security for development workflow
+   */
+  validateProjectWorkflow(projectPath, workflowType = 'default') {
+    this.validatePath(projectPath);
+    
+    const allowedWorkflows = ['default', 'fastapi', 'django', 'flask', 'nodejs', 'react', 'vue'];
+    if (!allowedWorkflows.includes(workflowType)) {
+      throw new Error(`Invalid workflow type. Supported: ${allowedWorkflows.join(', ')}`);
+    }
+    
+    // Define project-specific allowed operations
+    const workflowPermissions = {
+      fastapi: ['uvicorn', 'pytest', 'pip', 'python'],
+      django: ['python', 'manage.py', 'pytest', 'pip'],
+      flask: ['flask', 'python', 'pytest', 'pip'],
+      nodejs: ['node', 'npm', 'yarn', 'pnpm'],
+      react: ['npm', 'yarn', 'pnpm', 'webpack', 'vite'],
+      vue: ['npm', 'yarn', 'pnpm', 'vue-cli']
+    };
+    
+    return {
+      projectPath,
+      workflowType,
+      allowedCommands: workflowPermissions[workflowType] || []
+    };
   }
 }
 
