@@ -102,26 +102,15 @@ if (Test-Path $setupSource) {
     Write-Host "Updated setup scripts" -ForegroundColor Green
 }
 
-Write-Host "`n[4/6] Updating dependencies..." -ForegroundColor Yellow
-# Update package.json with correct scripts
-$packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
-$packageJson.scripts = @{
-    "start" = "node server.js"
-    "dev" = "set NODE_ENV=development && node server.js"
-    "dangerous" = "set ENABLE_DANGEROUS_MODE=true && node server.js"
-    "update" = "powershell -ExecutionPolicy Bypass -File setup\update-from-git.ps1"
+# Copy package.json from server directory
+$packageSource = "$TempDir\server\package.json"
+if (Test-Path $packageSource) {
+    Copy-Item $packageSource -Destination "$InstallPath\package.json" -Force
+    Write-Host "Updated package.json" -ForegroundColor Green
 }
-$packageJson.dependencies = @{
-    "express" = "^4.18.2"
-    "cors" = "^2.8.5"
-    "dotenv" = "^16.3.1"
-    "ssh2" = "^1.15.0"
-    "ping" = "^0.4.4"
-    "helmet" = "^7.1.0"
-}
-$packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding UTF8
 
-# Update npm packages
+Write-Host "`n[4/6] Updating dependencies..." -ForegroundColor Yellow
+# Update npm packages only if package.json changed
 npm install
 
 Write-Host "`n[5/6] Updating environment configuration..." -ForegroundColor Yellow
@@ -136,7 +125,10 @@ if (Test-Path ".env") {
         "MAX_LOG_SIZE=10485760",
         "MAX_LOG_FILES=5",
         "COMMAND_TIMEOUT=300000",
-        "MAX_SSH_CONNECTIONS=5"
+        "MAX_SSH_CONNECTIONS=5",
+        "ENABLE_DEV_COMMANDS=false",
+        "ALLOWED_DEV_COMMANDS=tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd",
+        "DEV_COMMAND_PATHS=C:\\builds\\,C:\\projects\\,C:\\dev\\"
     )
     
     foreach ($var in $newVars) {

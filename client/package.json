@@ -1,6 +1,6 @@
 {
   "name": "windows-mcp-client",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Windows MCP Client - Connects Claude Code to Windows MCP Server",
   "main": "src/mcp-client.js",
   "bin": {

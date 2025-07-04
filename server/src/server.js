@@ -593,7 +593,7 @@ if (process.env.NODE_ENV !== 'test') {
   
   app.listen(PORT, '0.0.0.0', async () => {
     // Get version from package.json
-    const packageJson = require('../package.json');
+    const packageJson = require('./package.json');
     const version = packageJson.version || '1.0.0';
     
     if (isDangerousMode) {
