@@ -32,6 +32,9 @@ ai_coding_principles:
     第7条:
       rule: "バージョン更新時は必ず複数のpackage.json（root, server, client）とサーバー起動時のバージョン表示部分を同時に更新する"
       related_sections: ["version_management", "deployment_requirements"]
+    第8条:
+      rule: "アップデートは必ずupdate-from-git.ps1（npm run update）を使用する。個別の緊急修正スクリプトは作成しない"
+      related_sections: ["deployment_requirements", "update_process"]
 
   project_specific_standards:
     mcp_protocol:
@@ -116,9 +119,11 @@ ai_coding_principles:
       - "管理者権限でPowerShellスクリプトを実行"
     
     update_process:
-      - "`npm run update` - GitHubから最新版を取得"
+      - "`npm run update` - GitHubから最新版を取得（唯一の公式アップデート方法）"
       - ".envと認証トークンは自動的に保持される"
       - "バックアップが自動作成される"
+      - "個別の緊急修正スクリプトは作成・使用しない"
+      - "すべてのバグ修正はGitHubにプッシュしてから`npm run update`で適用"
 
   security_implementation:
     command_validation:
@@ -178,7 +183,7 @@ ai_coding_principles:
 
   execution_checklist:
     mandatory_declaration:
-      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第4条を完全に宣言"
+      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第8条を完全に宣言"
       - "[ ] **関連セクション宣言**: 実行する作業に関連するセクションを宣言"
       - "[ ] 例：セキュリティ変更時は第3条・第4条 + security_implementation + security_modes を宣言"
     
@@ -212,6 +217,10 @@ ai_coding_principles:
    第2条: 常にプロの世界最高エンジニアとして対応する  
    第3条: モックや仮のコード、ハードコードを一切禁止する
    第4条: エンタープライズレベルの実装を実施し、修正は表面的ではなく、全体のアーキテクチャを意識して実施する
+   第5条: 問題に詰まったら、まずCLAUDE.mdやプロジェクトドキュメント内に解決策がないか確認する
+   第6条: push前にアップロードするべきではない情報が含まれていないか確認する
+   第7条: バージョン更新時は必ず複数のpackage.jsonを同時に更新する
+   第8条: アップデートは必ずupdate-from-git.ps1（npm run update）を使用する。個別の緊急修正スクリプトは作成しない
    ```
 
 2. **関連セクション宣言**: 実行する作業に応じて関連セクションも必ず宣言

@@ -874,10 +874,6 @@ powershell -ExecutionPolicy Bypass -File "C:\temp\windows-setup.ps1"
 # サーバーを最新版に更新
 cd C:\mcp-server
 npm run update
-
-# または、緊急修正が必要な場合
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/emergency-fix-v1.0.12.ps1" -OutFile "C:\temp\emergency-fix.ps1"
-powershell -ExecutionPolicy Bypass -File "C:\temp\emergency-fix.ps1"
 ```
 
 ### 方法2: 手動セットアップ
@@ -1637,18 +1633,6 @@ npm run update
 powershell -ExecutionPolicy Bypass -File setup\update-from-git.ps1
 ```
 
-#### 3. 緊急修正: `emergency-fix-v*.ps1`
-- **用途**: 特定のバグの緊急修正
-- **機能**:
-  - バージョン固有の問題を修正
-  - 最小限の変更で問題解決
-  - バックアップ作成
-
-```powershell
-# 最新の緊急修正を適用（例: v1.0.12）
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Rih0z/make-windows-mcp/main/server/setup/emergency-fix-v1.0.12.ps1" -OutFile "C:\temp\emergency-fix.ps1"
-powershell -ExecutionPolicy Bypass -File "C:\temp\emergency-fix.ps1"
-```
 
 ### クライアント側スクリプト
 
@@ -1677,7 +1661,7 @@ npm run setup check
 |------|-------------------|
 | 新規インストール | `windows-setup.ps1` |
 | 定期アップデート | `npm run update` または `update-from-git.ps1` |
-| 緊急バグ修正 | `emergency-fix-v*.ps1` |
+| ローカルファイル更新 | `update-server.ps1` |
 | クライアント設定 | `production-setup.js` |
 | サーバーパス修正 | `fix-server-path.ps1` |
 
