@@ -52,6 +52,8 @@ Windows VM上でMCP（Model Context Protocol）サーバーを構築し、macOS/
 - **詳細なログ** - リクエスト/レスポンスの記録、セキュリティイベント追跡
 - **簡単セットアップ** - 自動インストールスクリプト付き
 - **自動アップデート** - GitHubから最新版を取得可能
+- **セルフデプロイ・再起動機能** - MCPサーバー自体の管理・更新・再起動
+- **改善要求対応システム** - ユーザーからの機能要求を継続的に実装
 
 ### 🔄 将来の実装計画
 
@@ -101,6 +103,60 @@ MCPクライアント → client/mcp-client.js → Windows VM/server.js → Powe
 ## MCP対応ツール一覧
 
 Windows MCPサーバーでは、以下のMCPツールが利用可能です：
+
+## 🔄 セルフデプロイ・再起動・更新機能
+
+### 自動更新システム
+```bash
+# GitHubから最新版を取得して自動更新
+npm run update
+
+# ローカル更新（開発用）
+npm run update-local
+
+# サーバー再起動
+npm start
+```
+
+### mcp_self_build ツール（v1.0.6実装済み）
+MCPサーバー自体の完全な自己管理が可能：
+
+| アクション | 説明 |
+|----------|------|
+| `build` | MCPサーバーをビルド |
+| `test` | テスト実行（カバレッジ付き） |
+| `install` | Windows VMへインストール |
+| `update` | GitHubから最新版取得・自動アップデート |
+| `start` | サーバー起動 |
+| `stop` | サーバー停止 |
+| `status` | 動作状況確認 |
+
+```bash
+# セルフ更新の例
+@windows-build-server mcp_self_build action="update" options='{"autoStart": true}'
+
+# ステータス確認
+@windows-build-server mcp_self_build action="status"
+```
+
+### 🔧 ユーザー改善要求対応プロセス
+
+1. **要求受付** - GitHub Issues または直接フィードバック
+2. **分析・設計** - CLAUDE.mdの原則に基づく実装計画
+3. **TDD実装** - テスト駆動開発による機能追加
+4. **セキュリティ検証** - 多層防御の維持
+5. **自動デプロイ** - mcp_self_buildによる更新
+6. **ユーザー通知** - 新機能の詳細説明とマイグレーション手順
+
+### 📈 継続的改善サイクル
+
+```
+ユーザー要求 → 実装 → テスト → デプロイ → フィードバック → 次の改善
+     ↓           ↓       ↓        ↓         ↓          ↓
+  GitHub Issues → TDD → CI/CD → セルフ更新 → 使用状況分析 → 機能強化
+```
+
+---
 
 ### 🟢 運用中（5つのツール）
 現在のサーバーで利用可能：

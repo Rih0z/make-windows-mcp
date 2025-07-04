@@ -29,6 +29,9 @@ ai_coding_principles:
       rule: "問題に詰まったら、まずCLAUDE.mdやプロジェクトドキュメント内に解決策がないか確認する"
     第6条: 
       rule: "push前にアップロードするべきではない情報が含まれていないか確認する。特に認証トークン、パスワード、内部IPアドレスに注意"
+    第7条:
+      rule: "バージョン更新時は必ず複数のpackage.json（root, server, client）とサーバー起動時のバージョン表示部分を同時に更新する"
+      related_sections: ["version_management", "deployment_requirements"]
 
   project_specific_standards:
     mcp_protocol:
