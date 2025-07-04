@@ -588,18 +588,53 @@ const PORT = getNumericEnv('MCP_SERVER_PORT', 8080);
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
+  // Show dangerous mode in startup banner
+  const isDangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+  
   app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`MCP server running on http://0.0.0.0:${PORT}`);
-    console.log(`Health check: http://0.0.0.0:${PORT}/health`);
-    console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+    if (isDangerousMode) {
+      console.log('\n🔥🔥🔥 MCP SERVER - DANGEROUS MODE 🔥🔥🔥');
+      console.log(`🔥 Running on http://0.0.0.0:${PORT} (UNRESTRICTED)`);
+      console.log(`🔥 Health: http://0.0.0.0:${PORT}/health`);
+      console.log(`🔥 Endpoint: http://0.0.0.0:${PORT}/mcp`);
+    } else {
+      console.log(`MCP server running on http://0.0.0.0:${PORT}`);
+      console.log(`Health check: http://0.0.0.0:${PORT}/health`);
+      console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+    }
     
     // Display dangerous mode warning if enabled
     if (process.env.ENABLE_DANGEROUS_MODE === 'true') {
-      console.log('\n⚠️ ⚠️ ⚠️  DANGER: UNRESTRICTED COMMAND EXECUTION ENABLED  ⚠️ ⚠️ ⚠️');
-      console.log('🔥 ALL SECURITY RESTRICTIONS BYPASSED - ANY COMMAND CAN BE EXECUTED');
-      console.log('💀 This includes system-destructive commands, user management, etc.');
-      console.log('🚨 Use ONLY in fully trusted environments');
-      console.log('⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️\n');
+      console.log('\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️');
+      console.log('');
+      console.log('    🔥🔥🔥 DANGEROUS MODE ACTIVE - ALL SECURITY DISABLED 🔥🔥🔥');
+      console.log('');
+      console.log('    💀 ANY COMMAND CAN BE EXECUTED INCLUDING:');
+      console.log('       • System file deletion (del /f /s /q C:\\*)');
+      console.log('       • User account manipulation (net user)');
+      console.log('       • Registry modification (reg delete)');
+      console.log('       • Service termination (sc stop)');
+      console.log('       • Network reconfiguration');
+      console.log('       • Remote system shutdown');
+      console.log('');
+      console.log('    🚨 RATE LIMITING: DISABLED');
+      console.log('    🚨 PATH RESTRICTIONS: DISABLED');
+      console.log('    🚨 COMMAND VALIDATION: DISABLED');
+      console.log('');
+      console.log('    ⚡ USE ONLY IN FULLY TRUSTED ENVIRONMENTS ⚡');
+      console.log('');
+      console.log('⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️  ⚠️');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('\n');
+      
+      // Also log to security log
+      logger.security('DANGEROUS MODE ACTIVATED', {
+        mode: 'DANGEROUS',
+        allSecurityBypassed: true,
+        startTime: new Date().toISOString()
+      });
     }
     
     // Display available IP addresses
