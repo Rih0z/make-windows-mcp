@@ -365,6 +365,32 @@ ENABLE_DANGEROUS_MODE=true npm start
 - ✅ パス制限なし
 - ⚠️ 完全に信頼できる環境でのみ使用
 
+**危険モードでの使用例**：
+```bash
+# システム管理コマンド（通常モードでは制限される）
+@windows-build-server run_powershell command="Get-Process | Where-Object {$_.CPU -gt 100} | Stop-Process -Force"
+
+# レジストリ操作
+@windows-build-server run_powershell command="reg add HKLM\\SOFTWARE\\Test /v TestValue /t REG_SZ /d TestData /f"
+
+# ユーザー管理
+@windows-build-server run_powershell command="net user testuser TestPass123! /add"
+
+# システムファイル操作
+@windows-build-server run_powershell command="Remove-Item C:\\Windows\\Temp\\* -Recurse -Force"
+
+# サービス管理
+@windows-build-server run_powershell command="Stop-Service -Name 'Windows Update' -Force"
+
+# ネットワーク設定変更
+@windows-build-server run_powershell command="New-NetFirewallRule -DisplayName 'Custom Rule' -Direction Inbound -LocalPort 9999 -Protocol TCP -Action Allow"
+
+# リモートコマンド実行（SSH経由）
+@windows-build-server ssh_command host="192.168.1.100" username="admin" password="pass" command="shutdown /r /t 0"
+```
+
+⚠️ **警告**: これらのコマンドはシステムに重大な影響を与える可能性があります。実行前に必ず内容を確認してください。
+
 #### 開発モード（詳細ログ出力）
 ```powershell
 npm run dev
