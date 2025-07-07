@@ -1221,8 +1221,7 @@ app.post('/mcp', async (req, res) => {
                 break;
                 
               case 'install':
-              case 'update':
-                // Install or update MCP server
+                // Install MCP server (new installation)
                 const setupScript = path.join(process.cwd(), 'setup-windows-vm.ps1');
                 const psCommand = `Set-Location -Path "${process.cwd()}"; .\\setup-windows-vm.ps1 -TargetPath "${targetPath}"${options.forceDangerous ? ' -EnableDangerous' : ''}`;
                 
@@ -1232,13 +1231,43 @@ app.post('/mcp', async (req, res) => {
                   result = createTextResult('Installation requires dangerous mode to be enabled');
                 }
                 
-                if (options.autoStart && action === 'install') {
+                if (options.autoStart && result.success) {
                   // Auto-start after installation
                   const startResult = await executeBuild('powershell.exe', [
                     '-ExecutionPolicy', 'Bypass',
                     '-Command', `Start-Process -FilePath "${targetPath}\\start-mcp-server.bat" -WorkingDirectory "${targetPath}"`
                   ]);
                   result = createTextResult(`${result.content[0].text}\n\nAuto-start: ${startResult.content[0].text}`);
+                }
+                break;
+                
+              case 'update':
+                // Update MCP server from GitHub
+                if (dangerousMode) {
+                  const updateScript = path.join(targetPath, 'server', 'setup', 'update-from-git.ps1');
+                  const updateCommand = `Set-Location -Path "${targetPath}"; powershell -ExecutionPolicy Bypass -File "${updateScript}"`;
+                  
+                  result = await executeBuild('powershell.exe', [
+                    '-ExecutionPolicy', 'Bypass',
+                    '-Command', updateCommand
+                  ], {
+                    timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000), // 30 minutes for update
+                    workingDirectory: targetPath
+                  });
+                  
+                  if (options.autoStart && result.success) {
+                    // Auto-restart after successful update
+                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                    const restartResult = await executeBuild('powershell.exe', [
+                      '-ExecutionPolicy', 'Bypass',
+                      '-Command', `Set-Location -Path "${targetPath}"; npm run dangerous`
+                    ], {
+                      workingDirectory: targetPath
+                    });
+                    result = createTextResult(`${result.content[0].text}\n\nAuto-restart: ${restartResult.content[0].text}`);
+                  }
+                } else {
+                  result = createTextResult('Update requires dangerous mode to be enabled. Use run_powershell with "npm run update" instead.');
                 }
                 break;
                 
