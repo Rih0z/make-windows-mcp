@@ -30,9 +30,12 @@ ai_coding_principles:
     第6条: 
       rule: "push前にアップロードするべきではない情報が含まれていないか確認する。特に認証トークン、パスワード、内部IPアドレスに注意"
     第7条:
+      rule: "リモートアップデート機能はmcp_self_buildツールのupdateアクションを使用し、危険モードでのみ実行可能"
+      related_sections: ["project_specific_standards.mcp_protocol", "security_implementation", "update_process"]
+    第8条:
       rule: "バージョン更新時は必ず複数のpackage.json（root, server, client）とサーバー起動時のバージョン表示部分を同時に更新する"
       related_sections: ["version_management", "deployment_requirements"]
-    第8条:
+    第9条:
       rule: "アップデートは必ずupdate-from-git.ps1（npm run update）を使用する。個別の緊急修正スクリプトは作成しない"
       related_sections: ["deployment_requirements", "update_process"]
 
@@ -41,6 +44,14 @@ ai_coding_principles:
       - "MCPツール定義は`server/src/server.js`の`tools`配列に追加"
       - "新しいツールには必ずセキュリティ検証を実装"
       - "ツールのinputSchemaでパラメータ検証を厳密に定義"
+      
+    remote_update_functionality:
+      - "リモートアップデートは`mcp_self_build`ツールの`update`アクションで実行"
+      - "危険モード（`ENABLE_DANGEROUS_MODE=true`）でのみ利用可能"
+      - "GitHubリポジトリから最新版を自動取得・適用"
+      - "既存の環境設定（.env）は自動的に保持される"
+      - "autoStartオプションで更新後の自動再起動が可能"
+      - "実行コマンド: `@windows-build-server mcp_self_build action=\"update\" options='{\"autoStart\": true}'`"
     
     security_modes:
       normal_mode:
@@ -119,8 +130,10 @@ ai_coding_principles:
       - "管理者権限でPowerShellスクリプトを実行"
     
     update_process:
-      - "`npm run update` - GitHubから最新版を取得（唯一の公式アップデート方法）"
+      - "`npm run update` - GitHubから最新版を取得（ローカル実行）"
+      - "リモート更新: `@windows-build-server mcp_self_build action=\"update\" options='{\"autoStart\": true}'`"
       - ".envと認証トークンは自動的に保持される"
+      - "危険モードでのみリモート更新が可能"
       - "バックアップが自動作成される"
       - "個別の緊急修正スクリプトは作成・使用しない"
       - "すべてのバグ修正はGitHubにプッシュしてから`npm run update`で適用"
@@ -183,15 +196,16 @@ ai_coding_principles:
 
   execution_checklist:
     mandatory_declaration:
-      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第8条を完全に宣言"
+      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第9条を完全に宣言"
       - "[ ] **関連セクション宣言**: 実行する作業に関連するセクションを宣言"
       - "[ ] 例：セキュリティ変更時は第3条・第4条 + security_implementation + security_modes を宣言"
     
     before_coding:
-      - "[ ] AIコーディング原則を宣言"
+      - "[ ] AIコーディング原則を宣言（第1条〜第9条）"
       - "[ ] 既存のセキュリティ実装を確認"
       - "[ ] 影響範囲の特定（クライアント/サーバー）"
       - "[ ] テスト計画の立案"
+      - "[ ] リモートアップデート機能使用時は第7条の確認"
     
     during_coding:
       - "[ ] セキュリティバリデーションの実装"
