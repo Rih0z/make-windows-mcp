@@ -4,7 +4,9 @@
 param(
     [string]$InstallPath = "C:\mcp-server",
     [string]$TempDir = "$env:TEMP\mcp-update-$(Get-Date -Format 'yyyyMMddHHmmss')",
-    [switch]$Force = $false
+    [switch]$Force = $false,
+    [switch]$AutoRestart = $false,
+    [int]$RestartDelay = 30
 )
 
 Write-Host "=== Windows MCP Server Git Update ===" -ForegroundColor Cyan
@@ -166,9 +168,38 @@ if ($currentEnv -match 'MCP_AUTH_TOKEN=(.+)') {
     }
 }
 
-Write-Host "`nNext steps:" -ForegroundColor Yellow
-Write-Host "1. Start server: npm start" -ForegroundColor White
-Write-Host "2. Start in dangerous mode: npm run dangerous" -ForegroundColor White
-Write-Host "3. If issues occur, restore from: $backupPath" -ForegroundColor White
+# Auto-restart server if requested
+if ($AutoRestart) {
+    Write-Host "`n[Auto-Restart] Server will restart in $RestartDelay seconds..." -ForegroundColor Yellow
+    
+    # Create auto-restart script
+    $restartScript = @"
+Write-Host "Auto-restarting MCP server..." -ForegroundColor Green
+Set-Location "$InstallPath"
+
+# Stop existing processes
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 5
+
+# Start server in dangerous mode
+`$env:ENABLE_DANGEROUS_MODE = "true"
+Start-Process powershell -ArgumentList "-Command", "cd '$InstallPath'; npm run dangerous" -WindowStyle Minimized
+Write-Host "MCP Server restarted in dangerous mode!" -ForegroundColor Green
+"@
+    
+    # Schedule the restart
+    $restartScriptPath = "$InstallPath\auto-restart-temp.ps1"
+    $restartScript | Out-File -FilePath $restartScriptPath -Encoding UTF8
+    
+    # Use Start-Process with delay
+    Start-Process powershell -ArgumentList "-Command", "Start-Sleep $RestartDelay; & '$restartScriptPath'; Remove-Item '$restartScriptPath' -Force" -WindowStyle Hidden
+    
+    Write-Host "Auto-restart scheduled for $RestartDelay seconds from now" -ForegroundColor Green
+} else {
+    Write-Host "`nNext steps:" -ForegroundColor Yellow
+    Write-Host "1. Start server: npm start" -ForegroundColor White
+    Write-Host "2. Start in dangerous mode: npm run dangerous" -ForegroundColor White
+    Write-Host "3. If issues occur, restore from: $backupPath" -ForegroundColor White
+}
 
 Write-Host "`nUpdate completed successfully!" -ForegroundColor Green
