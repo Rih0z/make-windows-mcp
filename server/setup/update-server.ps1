@@ -92,7 +92,7 @@ if (Test-Path ".env") {
         "ENABLE_SECURITY_MONITORING=true",
         "MAX_LOG_SIZE=10485760",
         "MAX_LOG_FILES=5",
-        "COMMAND_TIMEOUT=300000",
+        "COMMAND_TIMEOUT=1800000",
         "MAX_SSH_CONNECTIONS=5"
     )
     

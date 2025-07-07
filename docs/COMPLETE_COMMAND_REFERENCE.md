@@ -25,7 +25,7 @@ Windows MCP Serverで利用可能な全8つのMCPツールの完全なコマン�
 - **目的**: .NETプロジェクトのビルド実行
 - **対応形式**: .csproj, .sln, .vbproj, .fsproj
 - **ビルドエンジン**: dotnet CLI
-- **実行時間制限**: 300秒（COMMAND_TIMEOUT設定可能）
+- **実行時間制限**: 1800秒（COMMAND_TIMEOUT設定可能）
 
 ### パラメータ
 

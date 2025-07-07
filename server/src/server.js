@@ -41,7 +41,7 @@ function validateEnvironment() {
     MCP_SERVER_PORT: { default: 8080, min: 1, max: 65535 },
     RATE_LIMIT_REQUESTS: { default: 60, min: 1, max: 1000 },
     RATE_LIMIT_WINDOW: { default: 60000, min: 1000, max: 600000 },
-    COMMAND_TIMEOUT: { default: 300000, min: 1000, max: 3600000 },
+    COMMAND_TIMEOUT: { default: 1800000, min: 1000, max: 3600000 },
     SSH_TIMEOUT: { default: 30000, min: 1000, max: 300000 }
   };
   
@@ -1086,7 +1086,7 @@ app.post('/mcp', async (req, res) => {
               // Get timeout from args or use default
               const requestedTimeout = args.timeout ? 
                 Math.min(parseInt(args.timeout), 1800) : // Cap at 30 minutes
-                getNumericEnv('COMMAND_TIMEOUT', 300) / 1000; // Default 5 minutes
+                getNumericEnv('COMMAND_TIMEOUT', 1800) / 1000; // Default 30 minutes
               
               const timeoutMs = requestedTimeout * 1000;
               
@@ -1105,7 +1105,7 @@ app.post('/mcp', async (req, res) => {
               clientIP, 
               command: args.command.substring(0, 100),
               dangerousMode,
-              timeout: args.timeout || getNumericEnv('COMMAND_TIMEOUT', 300000) / 1000
+              timeout: args.timeout || getNumericEnv('COMMAND_TIMEOUT', 1800000) / 1000
             });
           } catch (error) {
             result = handleValidationError(error, 'PowerShell', logger, clientIP, { command: args.command });
@@ -1441,7 +1441,7 @@ app.post('/mcp', async (req, res) => {
             // Set JAVA_HOME if specified
             const buildOptions = {
               workingDirectory: projectDir,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000)
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
             };
             
             if (args.javaHome) {
@@ -1534,7 +1534,7 @@ app.post('/mcp', async (req, res) => {
             
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000)
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
             };
             
             // Set virtual environment if specified
@@ -1629,7 +1629,7 @@ app.post('/mcp', async (req, res) => {
             
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000),
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000),
               env: { ...process.env, NODE_ENV: environment }
             };
             
@@ -1720,7 +1720,7 @@ app.post('/mcp', async (req, res) => {
             // Build environment with cross-compilation support
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000),
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000),
               env: { ...process.env }
             };
 
@@ -1816,7 +1816,7 @@ app.post('/mcp', async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000)
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
             };
 
             // Set target directory if specified
@@ -2040,7 +2040,7 @@ app.post('/mcp', async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 900000) // Longer timeout for Docker builds
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000) // Default 30 minutes for Docker builds
             };
 
             if (args.remoteHost) {
@@ -2250,7 +2250,7 @@ app.post('/mcp', async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000) // 5 minutes
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000) // 5 minutes
             };
 
             // Add platform-specific environment variables if needed
@@ -2365,7 +2365,7 @@ app.post('/mcp', async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000) // 5 minutes
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000) // 5 minutes
             };
 
             if (args.remoteHost) {
@@ -2483,7 +2483,7 @@ app.post('/mcp', async (req, res) => {
             const buildOptions = {
               workingDirectory: validatedPath,
               env: buildEnv,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 300000) // 5 minutes
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000) // 5 minutes
             };
 
             if (args.remoteHost) {
@@ -2542,7 +2542,7 @@ async function executeBuild(command, args, options = {}) {
     let processExited = false;
 
     // Add timeout handling
-    const timeout = options.timeout || getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
+    const timeout = options.timeout || getNumericEnv('COMMAND_TIMEOUT', 1800000); // 30 minutes default
     const timer = setTimeout(() => {
       if (!processExited) {
         childProcess.kill('SIGTERM');
