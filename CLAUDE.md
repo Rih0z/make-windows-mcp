@@ -41,6 +41,9 @@ ai_coding_principles:
     第10条:
       rule: "作業完了したら必ずGitHubにpushする。コミットだけでなく、必ずgit pushを実行して変更をリモートリポジトリに反映させる"
       related_sections: ["version_management", "execution_checklist"]
+    第11条:
+      rule: "機能追加やバグ修正などコードを変更したら必ずバージョン情報を更新する。package.json（root, server, client）とCHANGELOG.mdを更新する"
+      related_sections: ["version_management", "documentation_management", "execution_checklist"]
 
   project_specific_standards:
     mcp_protocol:
@@ -204,7 +207,7 @@ ai_coding_principles:
       - "[ ] 例：セキュリティ変更時は第3条・第4条 + security_implementation + security_modes を宣言"
     
     before_coding:
-      - "[ ] AIコーディング原則を宣言（第1条〜第10条）"
+      - "[ ] AIコーディング原則を宣言（第1条〜第11条）"
       - "[ ] 既存のセキュリティ実装を確認"
       - "[ ] 影響範囲の特定（クライアント/サーバー）"
       - "[ ] テスト計画の立案"
@@ -219,7 +222,7 @@ ai_coding_principles:
     after_coding:
       - "[ ] テスト実装・実行（カバレッジ確認）"
       - "[ ] セキュリティレビュー"
-      - "[ ] バージョン更新（必要時）"
+      - "[ ] **バージョン更新（第11条）- package.jsonとCHANGELOG.md**"
       - "[ ] ドキュメント更新"
       - "[ ] **GitHubへのpush実行（第10条）**"
 ```
@@ -240,6 +243,7 @@ ai_coding_principles:
    第7条: バージョン更新時は必ず複数のpackage.jsonを同時に更新する
    第8条: アップデートは必ずupdate-from-git.ps1（npm run update）を使用する。個別の緊急修正スクリプトは作成しない
    第9条: 作業完了したら必ずGitHubにpushする。コミットだけでなく、必ずgit pushを実行する
+   第10条: コードを変更したら必ずバージョン情報を更新する。package.jsonとCHANGELOG.mdを更新する
    ```
 
 2. **関連セクション宣言**: 実行する作業に応じて関連セクションも必ず宣言

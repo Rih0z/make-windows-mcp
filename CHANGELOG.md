@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.14] - 2025-07-08
+
+### ドキュメント
+- **CLAUDE.md更新**:
+  - 第11条追加: 機能追加やバグ修正などコードを変更したら必ずバージョン情報を更新する
+  - package.json（root, server, client）とCHANGELOG.mdの更新を必須化
+  - execution_checklistにバージョン更新を明記（第11条）
+
 ## [1.0.13] - 2025-07-08
 
 ### 🚨 緊急修正
