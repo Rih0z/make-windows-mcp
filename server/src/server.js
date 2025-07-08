@@ -209,10 +209,21 @@ const REMOTE_HOSTS = {
 
 // Health check
 app.get('/health', (req, res) => {
+  const commandTimeout = getNumericEnv('COMMAND_TIMEOUT', 1800000);
+  const timeoutMinutes = Math.round(commandTimeout / 60000);
+  
   res.json({ 
     status: 'ok', 
     server: 'windows-build-server',
-    remoteHosts: REMOTE_HOSTS
+    remoteHosts: REMOTE_HOSTS,
+    configuration: {
+      commandTimeout: commandTimeout,
+      timeoutMinutes: timeoutMinutes,
+      dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
+      devCommands: process.env.ENABLE_DEV_COMMANDS === 'true',
+      authConfigured: !!process.env.MCP_AUTH_TOKEN,
+      port: getNumericEnv('MCP_SERVER_PORT', 8080)
+    }
   });
 });
 
@@ -2742,16 +2753,23 @@ if (process.env.NODE_ENV !== 'test') {
       }
     }
     
+    // Get current timeout settings
+    const commandTimeout = getNumericEnv('COMMAND_TIMEOUT', 1800000);
+    const timeoutMinutes = Math.round(commandTimeout / 60000);
+    const timeoutSeconds = Math.round(commandTimeout / 1000);
+    
     if (isDangerousMode) {
       console.log('\n🔥🔥🔥 MCP SERVER v' + version + ' - DANGEROUS MODE 🔥🔥🔥');
       console.log(`🔥 Running on http://0.0.0.0:${PORT} (UNRESTRICTED)`);
       console.log(`🔥 Health: http://0.0.0.0:${PORT}/health`);
       console.log(`🔥 Endpoint: http://0.0.0.0:${PORT}/mcp`);
+      console.log(`🔥 Command Timeout: ${timeoutMinutes} minutes (${timeoutSeconds}s)`);
     } else {
       console.log(`\nWindows MCP Server v${version}`);
       console.log(`Running on http://0.0.0.0:${PORT}`);
       console.log(`Health check: http://0.0.0.0:${PORT}/health`);
       console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+      console.log(`Command Timeout: ${timeoutMinutes} minutes (${timeoutSeconds}s)`);
     }
     
     // Display dangerous mode warning if enabled
@@ -2784,9 +2802,21 @@ if (process.env.NODE_ENV !== 'test') {
       logger.security('DANGEROUS MODE ACTIVATED', {
         mode: 'DANGEROUS',
         allSecurityBypassed: true,
-        startTime: new Date().toISOString()
+        startTime: new Date().toISOString(),
+        commandTimeout: commandTimeout
       });
     }
+    
+    // Display configuration summary
+    console.log('\n📋 Configuration Summary:');
+    console.log(`   • Version: ${version}`);
+    console.log(`   • Port: ${PORT}`);
+    console.log(`   • Command Timeout: ${timeoutMinutes} minutes (${commandTimeout}ms)`);
+    console.log(`   • Dangerous Mode: ${isDangerousMode ? '🔥 ENABLED' : '✅ DISABLED'}`);
+    console.log(`   • Rate Limiting: ${isDangerousMode ? '❌ DISABLED' : '✅ ENABLED'}`);
+    console.log(`   • Dev Commands: ${process.env.ENABLE_DEV_COMMANDS === 'true' ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`   • Authentication: ${process.env.MCP_AUTH_TOKEN ? '✅ CONFIGURED' : '⚠️  NOT SET'}`);
+    console.log('');
     
     // Display available IP addresses
     try {
