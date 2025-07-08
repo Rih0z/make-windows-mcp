@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.0.15] - 2025-07-08
+
+### テスト強化
+- **タイムアウトバグ修正のテストケース追加**:
+  - timeout-bug-fix.test.js: v1.0.13で修正されたタイムアウトバグの回帰防止テスト
+  - getNumericEnv関数の正しいデフォルト値テスト（1800000vs1800）
+  - execute_powershellツールのタイムアウト設定テスト
+  - バージョン情報の表示確認テスト
+
+- **セキュリティ機能の包括的テスト**:
+  - security-enhanced.test.js: 危険モード、開発モード、認証の詳細テスト
+  - コマンド検証、パス制限、IP制限のテスト
+  - レート制限とセキュリティユーティリティ関数のテスト
+
+- **MCPツール完全テストスイート**:
+  - mcp-tools-complete.test.js: 全MCPツールの機能テスト
+  - execute_powershell, run_batch, build_project, mcp_self_buildの詳細テスト
+  - 多言語ビルドツール（Go, Rust, Python, Java, Node.js）のテスト
+  - 特殊ビルドツール（C++, Docker, Android）のテスト
+
+### 改善
+- **ヘルスエンドポイント機能強化**:
+  - /healthエンドポイントにバージョン情報を追加
+  - package.jsonから動的にバージョンを読み込み
+  - サーバー設定の可視性向上
+
 ## [1.0.14] - 2025-07-08
 
 ### ドキュメント

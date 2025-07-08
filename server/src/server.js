@@ -212,9 +212,19 @@ app.get('/health', (req, res) => {
   const commandTimeout = getNumericEnv('COMMAND_TIMEOUT', 1800000);
   const timeoutMinutes = Math.round(commandTimeout / 60000);
   
+  // Get version from package.json
+  let version = 'unknown';
+  try {
+    const packageJson = require('../package.json');
+    version = packageJson.version;
+  } catch (error) {
+    logger.warn('Could not read version from package.json', { error: error.message });
+  }
+
   res.json({ 
     status: 'ok', 
     server: 'windows-build-server',
+    version: version,
     remoteHosts: REMOTE_HOSTS,
     configuration: {
       commandTimeout: commandTimeout,

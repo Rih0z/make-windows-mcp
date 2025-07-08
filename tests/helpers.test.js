@@ -293,7 +293,7 @@ describe('Helpers Utils', () => {
     test('should handle undefined and null values gracefully', () => {
       // getClientIP will throw if connection/socket are missing
       expect(() => getClientIP({})).toThrow(TypeError);
-      expect(getClientIP({ ip: null, connection: {}, socket: {} })).toBe(null);
+      expect(getClientIP({ ip: null, connection: {}, socket: {} })).toBeUndefined();
       
       expect(createTextResult(null)).toEqual({
         content: [{
