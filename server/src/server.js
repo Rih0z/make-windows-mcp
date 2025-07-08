@@ -1097,7 +1097,7 @@ app.post('/mcp', async (req, res) => {
               // Get timeout from args or use default
               const requestedTimeout = args.timeout ? 
                 Math.min(parseInt(args.timeout), 1800) : // Cap at 30 minutes
-                getNumericEnv('COMMAND_TIMEOUT', 1800) / 1000; // Default 30 minutes
+                getNumericEnv('COMMAND_TIMEOUT', 1800000) / 1000; // Default 30 minutes
               
               const timeoutMs = requestedTimeout * 1000;
               
