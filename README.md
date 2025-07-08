@@ -1680,10 +1680,51 @@ choco install dotnet-sdk
 New-NetFirewallRule -DisplayName "MCP Server" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
 ```
 
-### ビルドタイムアウト
-`server.js`でタイムアウトを増やす：
+### ビルドタイムアウト（緊急修正）
+
+#### 🚨 緊急対応：1.8秒タイムアウトバグ修正
+
+**症状**: コマンドが1.8秒で強制終了される（本来30分であるべき）
+
+**原因**: .envファイルの`COMMAND_TIMEOUT=1800`（正しくは`COMMAND_TIMEOUT=1800000`）
+
+**緊急修正手順**:
+
+```batch
+# Windows VMでバッチファイルを実行
+emergency-timeout-fix.bat
+```
+
+または手動で：
+
+```powershell
+# 1. GitHub最新版を取得
+.\server\setup\update-from-git.ps1 -Force
+
+# 2. .envファイルを確認・修正
+$envContent = Get-Content ".env" -Raw
+$envContent = $envContent -replace "COMMAND_TIMEOUT=1800\b", "COMMAND_TIMEOUT=1800000"
+$envContent | Out-File -FilePath ".env" -Encoding UTF8
+
+# 3. サーバー再起動
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
+$env:ENABLE_DANGEROUS_MODE = "true"
+npm run dangerous
+```
+
+**デバッグ用スクリプト**:
+```powershell
+# 現在の設定を確認
+.\debug-timeout.ps1
+
+# 設定のみを修正
+.\fix-timeout-config.ps1
+```
+
+#### 従来のタイムアウト設定
+長時間実行が必要な場合：
 ```javascript
-const timeout = setTimeout(() => {...}, 600000); // 10分
+const timeout = setTimeout(() => {...}, 1800000); // 30分
 ```
 
 ### 認証エラー（Invalid authorization token）
