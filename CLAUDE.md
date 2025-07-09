@@ -44,6 +44,9 @@ ai_coding_principles:
     第11条:
       rule: "機能追加やバグ修正などコードを変更したら必ずバージョン情報を更新する。package.json（root, server, client）とCHANGELOG.mdを更新する"
       related_sections: ["version_management", "documentation_management", "execution_checklist"]
+    第12条:
+      rule: "不要なスクリプトは増やさない。スクリプト作成時は常に既存のスクリプトで使用可能なものがないか以下のセクションを確認する、スクリプトを作成したらscriptsフォルダに格納する。"
+      related_sections: ["how_to_use_scripts"]
 
   project_specific_standards:
     mcp_protocol:
@@ -200,18 +203,43 @@ ai_coding_principles:
       - "process_manager - Windowsプロセス・サービス管理"
       - "file_sync - 大容量ファイル同期（robocopy統合）"
 
+  how_to_use_scripts:
+    existing_scripts:
+      server_setup:
+        - "server/setup/windows-setup.ps1 - Windows環境初期セットアップ"
+        - "server/setup/update-from-git.ps1 - GitHubから最新版取得・更新（npm run update）"
+        - "server/setup/auto-restart-server.ps1 - サーバー自動再起動"
+        - "server/setup/update-server.ps1 - ローカル環境サーバー更新（npm run update-local）"
+        - "server/setup/encrypt-password.js - パスワード暗号化ユーティリティ"
+      client_setup:
+        - "client/setup/production-setup.js - 本番環境設定生成"
+      project_scripts:
+        - "scripts/clean-env.ps1 - 環境変数クリーンアップ"
+        - "scripts/install-all.sh - 全パッケージインストール（macOS/Linux用）"
+        - "scripts/update-server.sh - サーバー更新スクリプト（macOS/Linux用）"
+    script_creation_rules:
+      - "既存スクリプトで対応可能か必ず確認"
+      - "update-from-git.ps1で解決できる問題は新規スクリプト作成禁止"
+      - "新規作成時は適切なディレクトリに配置："
+      - "  - サーバー関連: server/setup/"
+      - "  - クライアント関連: client/setup/"
+      - "  - プロジェクト全体: scripts/"
+      - "  - テスト関連: tests/helpers/"
+      - "一時的な修正スクリプトは作成しない（GitHubへプッシュして正式更新）"
+
   execution_checklist:
     mandatory_declaration:
-      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第9条を完全に宣言"
+      - "[ ] **CORE_PRINCIPLES宣言**: 第1条〜第12条を完全に宣言"
       - "[ ] **関連セクション宣言**: 実行する作業に関連するセクションを宣言"
       - "[ ] 例：セキュリティ変更時は第3条・第4条 + security_implementation + security_modes を宣言"
     
     before_coding:
-      - "[ ] AIコーディング原則を宣言（第1条〜第11条）"
+      - "[ ] AIコーディング原則を宣言（第1条〜第12条）"
       - "[ ] 既存のセキュリティ実装を確認"
       - "[ ] 影響範囲の特定（クライアント/サーバー）"
       - "[ ] テスト計画の立案"
       - "[ ] リモートアップデート機能使用時は第7条の確認"
+      - "[ ] スクリプト作成前に第12条とhow_to_use_scriptsセクションを確認"
     
     during_coding:
       - "[ ] セキュリティバリデーションの実装"
@@ -243,7 +271,9 @@ ai_coding_principles:
    第7条: バージョン更新時は必ず複数のpackage.jsonを同時に更新する
    第8条: アップデートは必ずupdate-from-git.ps1（npm run update）を使用する。個別の緊急修正スクリプトは作成しない
    第9条: 作業完了したら必ずGitHubにpushする。コミットだけでなく、必ずgit pushを実行する
-   第10条: コードを変更したら必ずバージョン情報を更新する。package.jsonとCHANGELOG.mdを更新する
+   第10条: 作業完了したら必ずGitHubにpushする
+   第11条: コードを変更したら必ずバージョン情報を更新する
+   第12条: 不要なスクリプトは増やさない。既存スクリプトで対応可能か確認する
    ```
 
 2. **関連セクション宣言**: 実行する作業に応じて関連セクションも必ず宣言
