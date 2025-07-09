@@ -1,6 +1,6 @@
 {
   "name": "windows-mcp-server",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Windows MCP Server - Runs on Windows VM to execute build commands",
   "main": "src/server.js",
   "scripts": {

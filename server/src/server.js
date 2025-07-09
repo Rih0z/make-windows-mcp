@@ -2830,8 +2830,16 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`   • Port: ${PORT}`);
     console.log(`   • Command Timeout: ${timeoutMinutes} minutes (${commandTimeout}ms)`);
     console.log(`   • Dangerous Mode: ${isDangerousMode ? '🔥 ENABLED' : '✅ DISABLED'}`);
-    console.log(`   • Rate Limiting: ${isDangerousMode ? '❌ DISABLED' : '✅ ENABLED'}`);
-    console.log(`   • Dev Commands: ${process.env.ENABLE_DEV_COMMANDS === 'true' ? '✅ ENABLED' : '❌ DISABLED'}`);
+    
+    // Check actual rate limiting status
+    const maxRequests = getNumericEnv('RATE_LIMIT_REQUESTS', 60);
+    const isRateLimitingDisabled = maxRequests === 0 || isDangerousMode;
+    console.log(`   • Rate Limiting: ${isRateLimitingDisabled ? '❌ DISABLED' : '✅ ENABLED'}`);
+    
+    // Check actual dev commands status
+    const isDevCommandsEnabled = process.env.ENABLE_DEV_COMMANDS === 'true';
+    console.log(`   • Dev Commands: ${isDevCommandsEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
+    
     console.log(`   • Authentication: ${process.env.MCP_AUTH_TOKEN ? '✅ CONFIGURED' : '⚠️  NOT SET'}`);
     console.log('');
     
