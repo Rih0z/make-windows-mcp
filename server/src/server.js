@@ -2768,6 +2768,13 @@ if (process.env.NODE_ENV !== 'test') {
     const timeoutMinutes = Math.round(commandTimeout / 60000);
     const timeoutSeconds = Math.round(commandTimeout / 1000);
     
+    // Debug environment variables
+    console.log('\n🔍 Debug Environment Variables:');
+    console.log(`   • ENABLE_DANGEROUS_MODE: "${process.env.ENABLE_DANGEROUS_MODE}"`);
+    console.log(`   • NODE_ENV: "${process.env.NODE_ENV}"`);
+    console.log(`   • isDangerousMode: ${isDangerousMode}`);
+    console.log('');
+    
     if (isDangerousMode) {
       console.log('\n🔥🔥🔥 MCP SERVER v' + version + ' - DANGEROUS MODE 🔥🔥🔥');
       console.log(`🔥 Running on http://0.0.0.0:${PORT} (UNRESTRICTED)`);

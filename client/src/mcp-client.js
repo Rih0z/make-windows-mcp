@@ -46,6 +46,11 @@ const serverUrl = `${protocol}://${WINDOWS_VM_IP}:${MCP_SERVER_PORT}/mcp`;
 // Build arguments
 const args = ['-y', 'mcp-remote', serverUrl];
 
+// Add --allow-http flag for HTTP connections
+if (protocol === 'http') {
+  args.push('--allow-http');
+}
+
 // Add auth header if token is set
 if (MCP_AUTH_TOKEN && MCP_AUTH_TOKEN !== 'change-this-to-a-secure-random-token') {
   args.push('--header', `Authorization: Bearer ${MCP_AUTH_TOKEN}`);
