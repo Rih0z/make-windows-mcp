@@ -1105,8 +1105,9 @@ app.post('/mcp', async (req, res) => {
               result = await executeRemoteCommand(validatedHost, validatedCommand);
             } else {
               // Get timeout from args or use default
+              const maxAllowedTimeout = getNumericEnv('MAX_ALLOWED_TIMEOUT', 3600000) / 1000; // Default 60 minutes
               const requestedTimeout = args.timeout ? 
-                Math.min(parseInt(args.timeout), 1800) : // Cap at 30 minutes
+                Math.min(parseInt(args.timeout), maxAllowedTimeout) : // Cap at MAX_ALLOWED_TIMEOUT
                 getNumericEnv('COMMAND_TIMEOUT', 1800000) / 1000; // Default 30 minutes
               
               const timeoutMs = requestedTimeout * 1000;
