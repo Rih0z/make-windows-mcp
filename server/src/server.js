@@ -249,9 +249,39 @@ app.post('/mcp', async (req, res) => {
   const { method, params } = req.body;
   
   try {
-    if (method === 'tools/list') {
+    if (method === 'initialize') {
+      // MCP protocol initialization
       res.json({
-        tools: [
+        jsonrpc: '2.0',
+        id: req.body.id,
+        result: {
+          protocolVersion: '1.0',
+          capabilities: {
+            tools: {},
+            resources: {},
+            prompts: {},
+            logging: {}
+          },
+          serverInfo: {
+            name: 'windows-mcp-server',
+            version: '1.0.20'
+          }
+        }
+      });
+    } else if (method === 'shutdown') {
+      // MCP protocol shutdown
+      res.json({
+        jsonrpc: '2.0',
+        id: req.body.id,
+        result: {}
+      });
+      logger.info('MCP shutdown requested', { clientIP });
+    } else if (method === 'tools/list') {
+      res.json({
+        jsonrpc: '2.0',
+        id: req.body.id,
+        result: {
+          tools: [
           {
             name: 'build_dotnet',
             description: 'Build a .NET application',
@@ -1014,6 +1044,7 @@ app.post('/mcp', async (req, res) => {
             }
           }
         ]
+        }
       });
     } else if (method === 'tools/call') {
       const { name, arguments: args } = params;
@@ -2568,13 +2599,32 @@ app.post('/mcp', async (req, res) => {
           result = createTextResult(`Unknown tool: ${name}`);
       }
       
-      res.json(result);
+      res.json({
+        jsonrpc: '2.0',
+        id: req.body.id,
+        result: result
+      });
     } else {
-      res.json({ error: `Unknown method: ${method}` });
+      res.json({
+        jsonrpc: '2.0',
+        id: req.body.id,
+        error: {
+          code: -32601,
+          message: `Method not found: ${method}`
+        }
+      });
     }
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      jsonrpc: '2.0',
+      id: req.body.id,
+      error: {
+        code: -32603,
+        message: 'Internal error',
+        data: error.message
+      }
+    });
   }
 });
 
