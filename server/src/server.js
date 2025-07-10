@@ -86,7 +86,33 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*'
 }));
-app.use(express.json({ limit: '1mb' })); // Reduced from 10mb for security
+// JSON parsing with error handling
+app.use(express.json({ 
+  limit: '1mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      throw new SyntaxError('Invalid JSON');
+    }
+  }
+}));
+
+// JSON parse error handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.error('JSON parse error', { clientIP: getClientIP(req), error: err.message });
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32700,
+        message: 'Parse error: Invalid JSON was received by the server'
+      }
+    });
+  }
+  next(err);
+});
 
 // Access logging middleware
 app.use((req, res, next) => {
@@ -237,8 +263,49 @@ app.get('/health', (req, res) => {
   });
 });
 
+// JSONRPC request validation middleware
+function validateJSONRPC(req, res, next) {
+  // Check if jsonrpc field is "2.0"
+  if (req.body.jsonrpc !== '2.0') {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id: req.body.id || null,
+      error: {
+        code: -32600,
+        message: 'Invalid Request: jsonrpc must be "2.0"'
+      }
+    });
+  }
+  
+  // Check if method is present and is a string
+  if (!req.body.method || typeof req.body.method !== 'string') {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id: req.body.id || null,
+      error: {
+        code: -32600,
+        message: 'Invalid Request: method is required and must be a string'
+      }
+    });
+  }
+  
+  // Check if id is present (can be string, number, or null)
+  if (req.body.id === undefined) {
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32600,
+        message: 'Invalid Request: id is required'
+      }
+    });
+  }
+  
+  next();
+}
+
 // MCP endpoint
-app.post('/mcp', async (req, res) => {
+app.post('/mcp', validateJSONRPC, async (req, res) => {
   const clientIP = getClientIP(req);
   logger.info('Received MCP request', { 
     clientIP, 
@@ -246,14 +313,14 @@ app.post('/mcp', async (req, res) => {
     toolName: req.body.params?.name 
   });
   
-  const { method, params } = req.body;
+  const { method, params, id } = req.body;
   
   try {
     if (method === 'initialize') {
       // MCP protocol initialization
       res.json({
         jsonrpc: '2.0',
-        id: req.body.id,
+        id: id,
         result: {
           protocolVersion: '1.0',
           capabilities: {
@@ -264,7 +331,7 @@ app.post('/mcp', async (req, res) => {
           },
           serverInfo: {
             name: 'windows-mcp-server',
-            version: '1.0.20'
+            version: '1.0.21'
           }
         }
       });
@@ -272,14 +339,21 @@ app.post('/mcp', async (req, res) => {
       // MCP protocol shutdown
       res.json({
         jsonrpc: '2.0',
-        id: req.body.id,
+        id: id,
         result: {}
       });
       logger.info('MCP shutdown requested', { clientIP });
+    } else if (method === 'ping') {
+      // MCP protocol ping/pong for health check
+      res.json({
+        jsonrpc: '2.0',
+        id: id,
+        result: { status: 'pong' }
+      });
     } else if (method === 'tools/list') {
       res.json({
         jsonrpc: '2.0',
-        id: req.body.id,
+        id: id,
         result: {
           tools: [
           {
@@ -2601,13 +2675,13 @@ app.post('/mcp', async (req, res) => {
       
       res.json({
         jsonrpc: '2.0',
-        id: req.body.id,
+        id: id,
         result: result
       });
     } else {
       res.json({
         jsonrpc: '2.0',
-        id: req.body.id,
+        id: id,
         error: {
           code: -32601,
           message: `Method not found: ${method}`
