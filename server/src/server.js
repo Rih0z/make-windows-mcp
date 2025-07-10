@@ -197,7 +197,13 @@ app.use((req, res, next) => {
       return res.status(401).json({ error: 'Authorization header required' });
     }
     
-    const token = providedToken.replace('Bearer ', '');
+    // Robust token extraction - handle various Bearer formats
+    let token = providedToken.trim();
+    
+    // Remove Bearer prefix (case-insensitive, handle multiple spaces)
+    if (token.toLowerCase().startsWith('bearer ')) {
+      token = token.substring(7).trim(); // Remove 'bearer ' (7 chars) and trim spaces
+    }
     if (token !== authToken) {
       // Log partial tokens for debugging without exposing full token
       const expectedPartial = authToken.substring(0, 4) + '...' + authToken.substring(authToken.length - 4);
@@ -331,7 +337,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           serverInfo: {
             name: 'windows-mcp-server',
-            version: '1.0.21'
+            version: '1.0.22'
           }
         }
       });
