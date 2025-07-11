@@ -990,8 +990,11 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
       });
     } else if (method === 'tools/list') {
       // Enhanced tools/list with help information (CLAUDE.md 第13条)
-      const toolsResult = {
-        tools: [
+      res.json({
+        jsonrpc: '2.0',
+        id: id,
+        result: {
+          tools: [
           {
             name: 'build_dotnet',
             description: 'Build a .NET application',
@@ -1808,6 +1811,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           totalTools: 9, // Updated count for v1.0.28
           categories: helpGenerator.categories
+        }
         }
       });
       

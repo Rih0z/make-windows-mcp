@@ -295,10 +295,10 @@ ${this.generateCategoryOverview()}
     const required = tool.inputSchema?.required || [];
     const properties = tool.inputSchema?.properties || {};
     
-    const arguments = {};
+    const args = {};
     required.forEach(param => {
       if (properties[param]) {
-        arguments[param] = this.generateExampleValue(properties[param]);
+        args[param] = this.generateExampleValue(properties[param]);
       }
     });
 
@@ -306,7 +306,7 @@ ${this.generateCategoryOverview()}
       title: `Basic ${tool.name} Usage`,
       code: JSON.stringify({
         name: tool.name,
-        arguments
+        arguments: args
       }, null, 2)
     };
   }
