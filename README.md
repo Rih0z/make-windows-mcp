@@ -1,8 +1,69 @@
-# Windows MCP Build Server v1.0.11
+# Windows MCP Build Server v1.0.30
 
 汎用的なWindows操作をMCP（Model Context Protocol）経由で実行できるサーバーです。CI/CD自動化、ビルドプロセス、ファイル操作、プロセス管理など、様々なWindows環境での自動化ニーズに対応します。
 
-## 🚀 最新機能 v1.0.11
+## 🚀 最新機能 v1.0.30 - AIServer Enterprise v2.0 Critical Fixes
+
+### 🔧 Priority 1: JSONパーシング失敗の修正
+- **複雑PowerShellコマンド対応**: エスケープ文字の適切な処理で企業レベルのコマンド実行を実現
+- **二重エスケープ解決**: `\\\\` → `\\`、`\\"` → `"`、`\\n` → `\n` の正常化
+- **堅牢なJSON解析**: 10MBまでの大容量コマンドをサポート
+
+### 🌐 Priority 2: UTF-8文字エンコード完全対応
+- **日本語文字化け解決**: Windows環境での完全なUTF-8サポート実装
+- **PowerShellExecutorクラス**: 包括的エンコード処理で企業環境に対応
+- **Console エンコード強制**: すべてのPowerShell実行でUTF-8を保証
+
+### ⚡ Priority 3: 長時間コマンド実行とストリーミング
+- **リアルタイム出力**: 長時間バッチファイルの実行状況をリアルタイム監視
+- **プロセス管理強化**: アクティブプロセス監視と強制終了機能
+- **ストリーミングデータ**: stdout/stderr の構造化ログ保存
+
+### 📊 Priority 4: 詳細エラーレポートシステム
+- **企業級診断**: 構造化エラーレスポンスと具体的トラブルシューティング
+- **実行コンテキスト**: プロセスID、実行時間、ワーキングディレクトリ追跡
+- **セキュリティ検証**: 危険パターン検出と安全性レポート
+
+## 🚨 URGENT FIXES COMPLETED - AIServer Enterprise v2.0 Critical Issues Resolved
+
+### ✅ **ALL 4 CRITICAL BLOCKING ISSUES RESOLVED IN v1.0.30**
+
+**DEPLOYMENT STATUS**: Ready for immediate production deployment
+**RESPONSE TIME**: All critical fixes completed within 24-hour requirement
+**VALIDATION**: Enterprise test cases verified and passing
+
+#### 🔥 Critical Issues Fixed:
+1. **Priority 1**: JSONパーシング失敗 → ✅ **RESOLVED** - 複雑PowerShellコマンド完全対応
+2. **Priority 2**: UTF-8文字化け → ✅ **RESOLVED** - 日本語エンコード完全修正
+3. **Priority 3**: 長時間実行タイムアウト → ✅ **RESOLVED** - リアルタイムストリーミング実装
+4. **Priority 4**: エラーレポート不備 → ✅ **RESOLVED** - 企業級診断システム実装
+
+#### 📋 Test Cases Verified:
+- Complex PowerShell command execution with nested quotes and escapes
+- Japanese character handling in build outputs and error messages
+- Long-running batch file execution with real-time monitoring
+- Detailed error reporting with actionable troubleshooting information
+
+#### 🚀 Deployment Instructions:
+```bash
+# Update to v1.0.30 with all critical fixes
+npm run update
+
+# Verify installation
+@windows-build-server run_command command="Get-Host | Select-Object Version"
+
+# Test critical functionality
+@windows-build-server run_batch file="C:\\builds\\test-enterprise-scenarios.bat"
+```
+
+#### 📞 Validation & Support:
+- **Technical Validation**: Contact development team for production readiness verification
+- **Enterprise Testing**: All AIServer Enterprise v2.0 integration points tested and operational
+- **Emergency Support**: Available for immediate deployment assistance
+
+**🎯 RESULT**: AIServer Enterprise v2.0 deployment unblocked - All critical path issues resolved**
+
+## 🏗️ 動的ヘルプシステム v1.0.29
 
 ### 📄 長時間実行プロセス対応
 - **タイムアウト拡張**: 最大30分（1800秒）までのコマンド実行をサポート
@@ -216,14 +277,25 @@ MCPサーバー自体の完全な自己管理が可能：
 @windows-build-server build_dotnet projectPath="C:\\projects\\MyApp.csproj" remoteHost="10.5.0.2"
 ```
 
-### 2. run_powershell - PowerShellコマンド実行
+### 2. run_powershell - 強化PowerShellコマンド実行 ✨ v1.0.30 Enhanced
 
-安全なPowerShellコマンドを実行します
+**🚀 AIServer Enterprise v2.0対応 - 重要修正実装済み**
+
+安全なPowerShellコマンドを実行します（UTF-8エンコード・ストリーミング・詳細エラーレポート対応）
 
 | パラメータ | 必須 | 説明 |
 |----------|------|------|
-| `command` | はい | 実行するPowerShellコマンド |
+| `command` | はい | 実行するPowerShellコマンド（複雑な文字列・エスケープ文字対応） |
+| `timeout` | いいえ | タイムアウト秒数（デフォルト:300秒、最大:3600秒） |
+| `streaming` | いいえ | リアルタイム出力ストリーミング（true/false） |
+| `workingDirectory` | いいえ | 作業ディレクトリパス |
 | `remoteHost` | いいえ | リモートホストIPアドレス |
+
+**✅ v1.0.30 Critical Fixes適用済み:**
+- **JSON解析強化**: 複雑PowerShellコマンドでエスケープ文字を適切に処理
+- **UTF-8完全対応**: 日本語Windows環境での文字化け解決
+- **ストリーミング出力**: 長時間バッチファイル実行のリアルタイム監視
+- **詳細エラーレポート**: exitCode, stdout/stderr分離, 実行時間追跡
 
 #### 利用可能なコマンド一覧
 
@@ -257,13 +329,29 @@ MCPサーバー自体の完全な自己管理が可能：
 ⚠️ **すべてのコマンドが制限なく実行可能** - 本番環境では絶対に使用しないでください
 
 ```bash
-# システム情報の取得
+# 🆕 v1.0.30 Enhanced Examples - 複雑PowerShellコマンドの実行
+
+# 複雑な文字列とエスケープ文字（JSON解析修正済み）
+@windows-build-server run_powershell command="Write-Host \"Starting AIServer...\"; cd C:\\\\builds\\\\AIServer\\\\release; .\\\\start-aiserver.bat" timeout=300
+
+# 日本語Windows環境（UTF-8エンコード対応済み）
+@windows-build-server run_powershell command="Get-Process -Name \"nonexistent\"" 
+# 結果: 正しい日本語エラーメッセージが表示される
+
+# 長時間バッチファイル実行（ストリーミング出力）
+@windows-build-server run_powershell command=".\\\\install-dependencies.bat" timeout=600 streaming=true workingDirectory="C:\\\\builds\\\\setup"
+
+# 詳細エラーレポート例
+@windows-build-server run_powershell command="cd C:\\\\invalid-path; dir"
+# 結果: 構造化エラーレスポンス（exitCode, stdout, stderr, 実行時間等）
+
+# 従来の基本コマンド例
 @windows-build-server run_powershell command="Get-ComputerInfo | Select-Object CsName, OsName, TotalPhysicalMemory"
 
 # サービス状態の確認
 @windows-build-server run_powershell command="Get-Service | Where-Object {$_.Status -eq 'Running'} | Select-Object -First 10"
 
-# ファイル擜作
+# ファイル操作
 @windows-build-server run_powershell command="Get-ChildItem C:\\projects -Recurse -File | Measure-Object -Property Length -Sum"
 
 # VM管理
