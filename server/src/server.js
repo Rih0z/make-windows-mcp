@@ -183,8 +183,8 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const clientIP = getClientIP(req);
   
-  // Skip auth for health check
-  if (req.path === '/health') {
+  // Skip auth for health check and auth management endpoints
+  if (req.path === '/health' || req.path.startsWith('/auth/') || req.path.startsWith('/config/')) {
     return next();
   }
   
@@ -201,8 +201,17 @@ app.use((req, res, next) => {
       clientIP,
       path: req.path 
     });
-    return res.status(401).json({ 
-      error: 'Authorization header required' 
+    return res.status(401).json({
+      error: {
+        code: 'AUTH_HEADER_MISSING',
+        message: 'Authorization header is required',
+        details: {
+          timestamp: new Date().toISOString(),
+          expectedFormat: 'Authorization: Bearer <token>',
+          suggestion: 'Include Authorization header with Bearer token format',
+          clientIP: clientIP
+        }
+      }
     });
   }
   
@@ -215,8 +224,22 @@ app.use((req, res, next) => {
       path: req.path,
       headerFormat: authHeader.substring(0, 20) + '...'
     });
-    return res.status(401).json({ 
-      error: 'Invalid authorization header format' 
+    return res.status(401).json({
+      error: {
+        code: 'AUTH_HEADER_FORMAT_INVALID',
+        message: 'Invalid authorization header format',
+        details: {
+          timestamp: new Date().toISOString(),
+          receivedFormat: authHeader.substring(0, 20) + '...',
+          expectedFormat: 'Authorization: Bearer <32-character-token>',
+          suggestions: [
+            'Ensure header starts with "Bearer " (note the space)',
+            'Verify token is provided after "Bearer "',
+            'Check for extra spaces or special characters'
+          ],
+          clientIP: clientIP
+        }
+      }
     });
   }
   
@@ -238,8 +261,31 @@ app.use((req, res, next) => {
       logger.debug('Token validation failed - check .env files on both server and client');
     }
     
-    return res.status(401).json({ 
-      error: 'Invalid authorization token' 
+    return res.status(401).json({
+      error: {
+        code: 'AUTH_TOKEN_INVALID',
+        message: 'Authentication token is invalid',
+        details: {
+          timestamp: new Date().toISOString(),
+          tokenComparison: {
+            expectedLength: authManager.getExpectedTokenLength(),
+            receivedLength: token.length,
+            expectedPartial: authManager.getExpectedTokenPartial(),
+            receivedPartial: authManager.getPartialToken(token)
+          },
+          suggestions: [
+            'Verify the MCP_AUTH_TOKEN environment variable matches on server and client',
+            'Check for extra spaces or newlines in the token',
+            'Ensure the token is exactly 32 characters long',
+            'Try regenerating the token with: openssl rand -hex 32'
+          ],
+          debugEndpoints: {
+            authStatus: '/auth/status',
+            configValidation: '/config/validate'
+          },
+          clientIP: clientIP
+        }
+      }
     });
   }
   
@@ -283,6 +329,212 @@ app.get('/health', (req, res) => {
       port: getNumericEnv('MCP_SERVER_PORT', 8080)
     }
   });
+});
+
+// Authentication status endpoint
+app.get('/auth/status', (req, res) => {
+  const clientIP = getClientIP(req);
+  const authHeader = req.headers.authorization;
+  
+  // Extract token for validation
+  const extractedToken = authManager.extractToken(authHeader);
+  const isValidToken = authManager.validateToken(extractedToken);
+  
+  const authStatus = {
+    timestamp: new Date().toISOString(),
+    authEnabled: authManager.isAuthEnabled(),
+    tokenProvided: !!extractedToken,
+    tokenValid: isValidToken,
+    clientIP: clientIP
+  };
+  
+  // Add debug information if auth is enabled
+  if (authManager.isAuthEnabled()) {
+    authStatus.debug = {
+      expectedTokenLength: authManager.getExpectedTokenLength(),
+      providedTokenLength: extractedToken ? extractedToken.length : 0,
+      expectedTokenPartial: authManager.getExpectedTokenPartial(),
+      providedTokenPartial: authManager.getPartialToken(extractedToken),
+      headerFormat: authHeader ? 'present' : 'missing'
+    };
+  }
+  
+  // Log the authentication check
+  logger.info('Authentication status check', {
+    clientIP,
+    authEnabled: authStatus.authEnabled,
+    tokenValid: authStatus.tokenValid,
+    tokenProvided: authStatus.tokenProvided
+  });
+  
+  res.json(authStatus);
+});
+
+// Configuration validation endpoint
+app.get('/config/validate', (req, res) => {
+  const clientIP = getClientIP(req);
+  
+  const config = {
+    timestamp: new Date().toISOString(),
+    server: {
+      version: require('../package.json').version,
+      nodeVersion: process.version,
+      platform: process.platform
+    },
+    authentication: {
+      enabled: authManager.isAuthEnabled(),
+      tokenConfigured: !!process.env.MCP_AUTH_TOKEN,
+      tokenLength: authManager.getExpectedTokenLength()
+    },
+    security: {
+      dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
+      devCommands: process.env.ENABLE_DEV_COMMANDS === 'true',
+      allowedIPs: process.env.ALLOWED_IPS || 'all',
+      httpsEnabled: process.env.ENABLE_HTTPS === 'true'
+    },
+    networking: {
+      port: getNumericEnv('MCP_SERVER_PORT', 8080),
+      rateLimiting: {
+        enabled: getNumericEnv('RATE_LIMIT_REQUESTS', 60) > 0,
+        requestsPerWindow: getNumericEnv('RATE_LIMIT_REQUESTS', 60),
+        windowMs: getNumericEnv('RATE_LIMIT_WINDOW', 60000)
+      }
+    },
+    paths: {
+      allowedBuildPaths: process.env.ALLOWED_BUILD_PATHS || 'not configured',
+      allowedBatchDirs: process.env.ALLOWED_BATCH_DIRS || 'not configured'
+    }
+  };
+  
+  // Validate configuration issues
+  const issues = [];
+  
+  if (config.authentication.enabled && config.authentication.tokenLength < 16) {
+    issues.push('Authentication token is too short (minimum 16 characters recommended)');
+  }
+  
+  if (config.security.dangerousMode) {
+    issues.push('DANGEROUS MODE is enabled - not recommended for production');
+  }
+  
+  if (!config.authentication.enabled && process.env.NODE_ENV === 'production') {
+    issues.push('Authentication is disabled in production environment');
+  }
+  
+  config.validation = {
+    status: issues.length === 0 ? 'valid' : 'warnings',
+    issues: issues
+  };
+  
+  logger.info('Configuration validation requested', { clientIP, issues: issues.length });
+  
+  res.json(config);
+});
+
+// Enhanced authentication refresh endpoint
+app.post('/auth/refresh', (req, res) => {
+  const clientIP = getClientIP(req);
+  const authHeader = req.headers.authorization;
+  
+  if (!authManager.isAuthEnabled()) {
+    return res.json({
+      status: 'authentication_disabled',
+      message: 'Authentication is not enabled on this server',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  const extractedToken = authManager.extractToken(authHeader);
+  const isValidToken = authManager.validateToken(extractedToken);
+  
+  if (!isValidToken) {
+    logger.security('Authentication refresh failed - invalid token', {
+      clientIP,
+      providedTokenPartial: authManager.getPartialToken(extractedToken)
+    });
+    
+    return res.status(401).json({
+      error: {
+        code: 'AUTH_INVALID_TOKEN',
+        message: 'Current authentication token is invalid',
+        details: {
+          timestamp: new Date().toISOString(),
+          expectedTokenLength: authManager.getExpectedTokenLength(),
+          providedTokenLength: extractedToken ? extractedToken.length : 0,
+          suggestion: 'Verify the token in your environment configuration'
+        }
+      }
+    });
+  }
+  
+  // Token is valid - in this implementation, we don't actually refresh since tokens don't expire
+  // But we provide confirmation and session information
+  logger.info('Authentication refresh successful', { clientIP });
+  
+  res.json({
+    status: 'token_valid',
+    message: 'Authentication token is valid and active',
+    timestamp: new Date().toISOString(),
+    session: {
+      tokenValid: true,
+      serverUptime: process.uptime(),
+      lastValidation: new Date().toISOString()
+    }
+  });
+});
+
+// Advanced authentication debug endpoint (development mode only)
+app.post('/auth/debug', (req, res) => {
+  const clientIP = getClientIP(req);
+  
+  // Only available in development mode for security
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(403).json({
+      error: 'Debug endpoint only available in development mode'
+    });
+  }
+  
+  const authHeader = req.headers.authorization;
+  const extractedToken = authManager.extractToken(authHeader);
+  const diagnostics = authManager.generateDiagnostics(extractedToken, authHeader);
+  
+  // Add detailed environment analysis
+  diagnostics.environment = {
+    nodeEnv: process.env.NODE_ENV,
+    authToken: {
+      configured: !!process.env.MCP_AUTH_TOKEN,
+      length: process.env.MCP_AUTH_TOKEN ? process.env.MCP_AUTH_TOKEN.length : 0,
+      startsWithExpected: process.env.MCP_AUTH_TOKEN ? process.env.MCP_AUTH_TOKEN.startsWith('J') : false // Based on the example token
+    },
+    requestDetails: {
+      userAgent: req.headers['user-agent'],
+      contentType: req.headers['content-type'],
+      method: req.method,
+      path: req.path
+    }
+  };
+  
+  // Add step-by-step validation process
+  diagnostics.validationSteps = [
+    { step: 1, name: 'Header Extraction', passed: !!authHeader },
+    { step: 2, name: 'Bearer Format Check', passed: authHeader && authHeader.toLowerCase().startsWith('bearer ') },
+    { step: 3, name: 'Token Extraction', passed: !!extractedToken },
+    { step: 4, name: 'Token Length Check', passed: extractedToken && extractedToken.length === authManager.getExpectedTokenLength() },
+    { step: 5, name: 'Token Content Validation', passed: authManager.validateToken(extractedToken) }
+  ];
+  
+  logger.info('Authentication debug requested', { 
+    clientIP, 
+    stepsFailure: diagnostics.validationSteps.filter(s => !s.passed).map(s => s.name) 
+  });
+  
+  res.json(diagnostics);
+});
+
+// Session health endpoint
+app.get('/auth/health', (req, res) => {
+  const sessionHealth = authManager.getSessionHealth();
+  res.json(sessionHealth);
 });
 
 // JSONRPC request validation middleware

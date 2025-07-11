@@ -137,6 +137,77 @@ class AuthManager {
   getExpectedTokenPartial() {
     return this.authToken ? this.getPartialToken(this.authToken) : 'none';
   }
+
+  /**
+   * Generate comprehensive authentication diagnostics
+   * @param {string} providedToken - Token from request
+   * @param {string} authHeader - Full authorization header
+   * @returns {Object} - Diagnostic information
+   */
+  generateDiagnostics(providedToken, authHeader) {
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      authEnabled: this.isEnabled,
+      serverInfo: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        uptime: process.uptime()
+      }
+    };
+
+    if (this.isEnabled) {
+      diagnostics.tokenAnalysis = {
+        expected: {
+          length: this.getExpectedTokenLength(),
+          partial: this.getExpectedTokenPartial(),
+          type: typeof this.authToken
+        },
+        received: {
+          length: providedToken ? providedToken.length : 0,
+          partial: this.getPartialToken(providedToken),
+          type: typeof providedToken
+        },
+        headerAnalysis: {
+          provided: !!authHeader,
+          length: authHeader ? authHeader.length : 0,
+          startsWithBearer: authHeader ? authHeader.toLowerCase().startsWith('bearer ') : false,
+          format: authHeader ? authHeader.substring(0, 10) + '...' : 'missing'
+        }
+      };
+
+      // Character-by-character comparison for debugging
+      if (providedToken && this.authToken && providedToken.length === this.authToken.length) {
+        const differences = [];
+        for (let i = 0; i < providedToken.length; i++) {
+          if (providedToken[i] !== this.authToken[i]) {
+            differences.push({
+              position: i,
+              expected: this.authToken.charCodeAt(i),
+              received: providedToken.charCodeAt(i)
+            });
+          }
+        }
+        diagnostics.tokenAnalysis.characterDifferences = differences.slice(0, 5); // Only show first 5 differences for security
+      }
+    }
+
+    return diagnostics;
+  }
+
+  /**
+   * Get session health information
+   * @returns {Object} - Session health data
+   */
+  getSessionHealth() {
+    return {
+      timestamp: new Date().toISOString(),
+      authEnabled: this.isEnabled,
+      serverUptime: Math.floor(process.uptime()),
+      tokenConfigured: !!this.authToken,
+      memoryUsage: process.memoryUsage(),
+      instanceHealth: 'stable'
+    };
+  }
 }
 
 // Export singleton instance
