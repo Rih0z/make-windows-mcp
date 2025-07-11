@@ -328,7 +328,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
         jsonrpc: '2.0',
         id: id,
         result: {
-          protocolVersion: '1.0',
+          protocolVersion: '2024-11-05',
           capabilities: {
             tools: {},
             resources: {},
@@ -337,7 +337,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           serverInfo: {
             name: 'windows-mcp-server',
-            version: '1.0.22'
+            version: '1.0.23'
           }
         }
       });
