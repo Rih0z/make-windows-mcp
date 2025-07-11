@@ -47,6 +47,9 @@ ai_coding_principles:
     第12条:
       rule: "不要なスクリプトは増やさない。スクリプト作成時は常に既存のスクリプトで使用可能なものがないか以下のセクションを確認する、スクリプトを作成したらscriptsフォルダに格納する。"
       related_sections: ["how_to_use_scripts"]
+    第13条:
+      rule: "MCP接続成功時にすべての機能の使い方をクライアントに伝え、新機能追加時も即座に更新する。動的ヘルプシステムで常に最新の機能案内を提供する"
+      related_sections: ["dynamic_help_system", "user_experience", "mcp_protocol"]
 
   project_specific_standards:
     mcp_protocol:
@@ -329,3 +332,40 @@ ai_coding_principles:
 - デフォルト：60リクエスト/分
 - `RATE_LIMIT_REQUESTS`で調整
 - 開発時は0に設定可能（非推奨）
+
+## 動的ヘルプシステム（Dynamic Help System）
+
+### 概要
+MCP接続成功時とtools/list実行時に、利用可能なすべての機能とその使用例を自動的にクライアントに提供するシステム。
+
+### 機能要件
+- **接続時ウェルカムメッセージ**: 全機能概要と基本的な使用方法
+- **詳細ヘルプAPI**: `/help/tools` - 全ツールの詳細説明と使用例
+- **カテゴリ別ヘルプ**: `/help/category/{category}` - カテゴリごとの機能説明
+- **新機能通知**: 新しいツール追加時の自動案内メッセージ
+
+### 実装箇所
+- `server/src/server.js`: ヘルプエンドポイントとウェルカムメッセージ
+- `server/src/utils/help-generator.js`: 動的ヘルプコンテンツ生成
+- MCP initialize レスポンスに機能概要を含める
+
+### ヘルプカテゴリ
+- **build**: .NET, Java, Python, Node.js, Go, Rust, C++, Docker等のビルドツール
+- **system**: PowerShell実行、バッチファイル実行、プロセス管理
+- **files**: ファイル同期、Base64エンコード、ファイル操作
+- **network**: SSH接続、リモートホスト操作、ping
+- **management**: サーバー管理、認証、設定検証
+- **auth**: 認証状態確認、デバッグ、セッション管理
+
+### 使用例フォーマット
+各ツールに対して：
+- 基本的な使用例
+- よく使われるオプション
+- エラー処理例
+- 関連ツールとの組み合わせ
+
+### 新機能追加時の更新
+1. ツール追加時に自動的にヘルプコンテンツを生成
+2. カテゴリ分類の自動判定
+3. 使用例テンプレートの自動生成
+4. バージョン情報との連携

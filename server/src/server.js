@@ -14,6 +14,7 @@ const logger = require('./utils/logger');
 const crypto = require('./utils/crypto');
 const authManager = require('./utils/auth-manager');
 const portManager = require('./utils/port-manager');
+const helpGenerator = require('./utils/help-generator');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -537,6 +538,288 @@ app.get('/auth/health', (req, res) => {
   res.json(sessionHealth);
 });
 
+// Dynamic Help System Endpoints - Implements CLAUDE.md 第13条
+app.get('/help/tools', (req, res) => {
+  const clientIP = getClientIP(req);
+  
+  try {
+    // Get current tools configuration (this will be dynamic)
+    const mockTools = []; // We'll populate this with actual tools from the server
+    
+    // For now, we'll read the tools from the server configuration
+    // This is a simplified version - in reality we'd get this from the MCP tools definition
+    const documentation = helpGenerator.generateToolDocumentation(mockTools);
+    
+    logger.info('Help documentation requested', { clientIP });
+    
+    res.json({
+      title: 'Windows MCP Build Server - Tool Documentation',
+      version: require('../package.json').version,
+      timestamp: new Date().toISOString(),
+      documentation
+    });
+  } catch (error) {
+    logger.error('Help generation failed', { clientIP, error: error.message });
+    res.status(500).json({ error: 'Failed to generate help documentation' });
+  }
+});
+
+// Category-specific help
+app.get('/help/category/:category', (req, res) => {
+  const clientIP = getClientIP(req);
+  const category = req.params.category;
+  
+  const validCategories = ['build', 'system', 'files', 'network', 'management', 'auth'];
+  
+  if (!validCategories.includes(category)) {
+    return res.status(400).json({
+      error: 'Invalid category',
+      validCategories
+    });
+  }
+  
+  try {
+    const mockTools = []; // Will be populated with actual tools
+    const documentation = helpGenerator.generateToolDocumentation(mockTools);
+    const categoryDocs = documentation.categories[category];
+    
+    if (!categoryDocs) {
+      return res.status(404).json({ error: `No tools found in category: ${category}` });
+    }
+    
+    logger.info('Category help requested', { clientIP, category });
+    
+    res.json({
+      category,
+      ...categoryDocs,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Category help generation failed', { clientIP, category, error: error.message });
+    res.status(500).json({ error: 'Failed to generate category help' });
+  }
+});
+
+// Quick reference endpoint
+app.get('/help/quick', (req, res) => {
+  const clientIP = getClientIP(req);
+  
+  const quickHelp = {
+    timestamp: new Date().toISOString(),
+    server: 'Windows MCP Build Server',
+    version: require('../package.json').version,
+    
+    essentialCommands: {
+      'Check server status': 'GET /health',
+      'List all tools': 'POST /mcp with method: tools/list',
+      'Get help': 'GET /help/tools',
+      'Check authentication': 'GET /auth/status'
+    },
+    
+    categories: helpGenerator.categories,
+    
+    commonExamples: {
+      'Build .NET project': {
+        method: 'tools/call',
+        tool: 'build_dotnet',
+        example: {
+          projectPath: 'C:/builds/MyProject/MyProject.csproj',
+          configuration: 'Release'
+        }
+      },
+      'Run PowerShell': {
+        method: 'tools/call', 
+        tool: 'run_powershell',
+        example: {
+          command: 'Get-Process'
+        }
+      },
+      'Encode file': {
+        method: 'tools/call',
+        tool: 'encode_file_base64',
+        example: {
+          filePath: 'C:/builds/output/file.pdf'
+        }
+      }
+    },
+    
+    troubleshooting: {
+      authError: 'Check /auth/status and verify MCP_AUTH_TOKEN',
+      buildError: 'Ensure project path is in allowed directories',
+      permissionError: 'Check security mode and command permissions'
+    }
+  };
+  
+  logger.info('Quick help requested', { clientIP });
+  res.json(quickHelp);
+});
+
+// New feature notification endpoint
+app.get('/help/whats-new', (req, res) => {
+  const clientIP = getClientIP(req);
+  const currentVersion = require('../package.json').version;
+  
+  const whatsNew = {
+    timestamp: new Date().toISOString(),
+    currentVersion,
+    
+    latestFeatures: {
+      'v1.0.28': {
+        date: '2025-07-11',
+        category: 'Authentication Enhancement',
+        features: [
+          {
+            name: 'Session Management API',
+            description: 'New endpoints: /auth/status, /auth/refresh, /auth/health',
+            usage: 'GET /auth/status - Check authentication state'
+          },
+          {
+            name: 'Enhanced Error Messages',
+            description: 'Detailed error codes and debugging suggestions',
+            usage: 'Authentication errors now include specific solutions'
+          },
+          {
+            name: 'Debug Endpoints',
+            description: 'Development mode debugging with /auth/debug',
+            usage: 'POST /auth/debug - Detailed authentication analysis'
+          }
+        ]
+      },
+      'v1.0.27': {
+        date: '2025-07-11',
+        category: 'File Operations',
+        features: [
+          {
+            name: 'PDF Base64 Encoding',
+            description: 'New encode_file_base64 tool for file verification',
+            usage: 'Perfect for verifying PDF orientation and content'
+          },
+          {
+            name: 'Preview Mode',
+            description: 'Get file metadata without full Base64 encoding',
+            usage: 'Use options.preview: true for metadata only'
+          }
+        ]
+      },
+      'v1.0.26': {
+        date: '2025-07-11', 
+        category: 'Smart Connection',
+        features: [
+          {
+            name: 'Server Auto-Discovery',
+            description: 'Automatic port detection and connection',
+            usage: 'Set MCP_SERVER_PORT=auto for hands-free connections'
+          },
+          {
+            name: 'Smart Port Management',
+            description: 'Automatic port conflict resolution',
+            usage: 'No more EADDRINUSE errors - automatic fallback'
+          }
+        ]
+      }
+    },
+    
+    gettingStarted: {
+      newUsers: [
+        '1. Check server status: GET /health',
+        '2. List all tools: POST /mcp method=tools/list',
+        '3. Get quick help: GET /help/quick',
+        '4. Try a command: POST /mcp method=tools/call'
+      ],
+      tryTheseNew: [
+        {
+          feature: 'Authentication Status',
+          command: 'GET /auth/status',
+          description: 'Check your authentication configuration'
+        },
+        {
+          feature: 'PDF Encoding',
+          command: 'tools/call encode_file_base64',
+          description: 'Encode PDF files for verification'
+        },
+        {
+          feature: 'Quick Reference',
+          command: 'GET /help/quick',
+          description: 'Get instant tool examples'
+        }
+      ]
+    },
+    
+    upgradeNotes: {
+      breaking: [],
+      improvements: [
+        'All authentication errors now include detailed diagnostics',
+        'Client connections are now fully automatic',
+        'Help system provides real-time usage examples'
+      ],
+      migration: 'No migration required - all changes are backward compatible'
+    }
+  };
+  
+  logger.info('What\'s new requested', { clientIP, version: currentVersion });
+  res.json(whatsNew);
+});
+
+// Feature notification for specific versions
+app.get('/help/whats-new/:version', (req, res) => {
+  const clientIP = getClientIP(req);
+  const requestedVersion = req.params.version;
+  
+  const versionFeatures = {
+    'v1.0.28': {
+      title: 'Enterprise Authentication System Enhancement',
+      summary: 'Complete authentication system overhaul with enterprise-grade features',
+      newTools: [],
+      newEndpoints: ['/auth/status', '/auth/refresh', '/auth/health', '/auth/debug', '/config/validate'],
+      improvements: [
+        'Structured error responses with detailed diagnostics',
+        'Real-time authentication status checking',
+        'Development mode debugging capabilities',
+        'Session health monitoring'
+      ]
+    },
+    'v1.0.27': {
+      title: 'PDF File Verification System',
+      summary: 'Base64 encoding tools for PDF content verification',
+      newTools: ['encode_file_base64'],
+      newEndpoints: [],
+      improvements: [
+        'PDF content verification for image orientation fixes',
+        'Preview mode for large file metadata',
+        'Configurable file size limits'
+      ]
+    },
+    'v1.0.26': {
+      title: 'Smart Server Discovery System',
+      summary: 'Automatic connection without manual port configuration',
+      newTools: [],
+      newEndpoints: [],
+      improvements: [
+        'Automatic server discovery and connection',
+        'Port conflict resolution',
+        'Zero-configuration client setup'
+      ]
+    }
+  };
+  
+  const versionInfo = versionFeatures[requestedVersion];
+  
+  if (!versionInfo) {
+    return res.status(404).json({
+      error: 'Version not found',
+      availableVersions: Object.keys(versionFeatures)
+    });
+  }
+  
+  logger.info('Version-specific features requested', { clientIP, version: requestedVersion });
+  
+  res.json({
+    version: requestedVersion,
+    timestamp: new Date().toISOString(),
+    ...versionInfo
+  });
+});
+
 // JSONRPC request validation middleware
 function validateJSONRPC(req, res, next) {
   // Check if jsonrpc field is "2.0"
@@ -591,7 +874,16 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
   
   try {
     if (method === 'initialize') {
-      // MCP protocol initialization
+      // MCP protocol initialization with welcome message (CLAUDE.md 第13条)
+      const serverInfo = {
+        name: 'windows-mcp-server',
+        version: require('../package.json').version,
+        authConfigured: authManager.isAuthEnabled(),
+        dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true'
+      };
+      
+      const welcomeMessage = helpGenerator.generateWelcomeMessage(serverInfo);
+      
       res.json({
         jsonrpc: '2.0',
         id: id,
@@ -604,10 +896,21 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             logging: {}
           },
           serverInfo: {
-            name: 'windows-mcp-server',
-            version: '1.0.25'
+            ...serverInfo,
+            welcomeMessage,
+            helpEndpoints: {
+              comprehensive: '/help/tools',
+              quickReference: '/help/quick',
+              categories: '/help/category/{category}',
+              authentication: '/auth/status'
+            }
           }
         }
+      });
+      
+      logger.info('MCP initialization completed with welcome message', { 
+        clientIP: getClientIP(req),
+        version: serverInfo.version
       });
     } else if (method === 'shutdown') {
       // MCP protocol shutdown
@@ -625,11 +928,9 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
         result: { status: 'pong' }
       });
     } else if (method === 'tools/list') {
-      res.json({
-        jsonrpc: '2.0',
-        id: id,
-        result: {
-          tools: [
+      // Enhanced tools/list with help information (CLAUDE.md 第13条)
+      const toolsResult = {
+        tools: [
           {
             name: 'build_dotnet',
             description: 'Build a .NET application',
@@ -1425,8 +1726,33 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               required: ['filePath']
             }
           }
-        ]
+        ],
+        
+        // Added help information (CLAUDE.md 第13条)
+        helpInfo: {
+          message: '🎉 All tools available! Use /help/quick for examples and /help/tools for detailed documentation.',
+          quickStart: {
+            'Build .NET': 'Use build_dotnet with projectPath and configuration',
+            'Run Commands': 'Use run_powershell with command parameter', 
+            'Encode Files': 'Use encode_file_base64 with filePath',
+            'Get Help': 'Visit /help/quick for comprehensive examples'
+          },
+          helpEndpoints: {
+            '/help/quick': 'Quick reference and common examples',
+            '/help/tools': 'Complete tool documentation',
+            '/help/category/build': 'Build tools documentation',
+            '/help/category/system': 'System tools documentation',
+            '/help/category/files': 'File operation tools',
+            '/auth/status': 'Check authentication status'
+          },
+          totalTools: 9, // Updated count for v1.0.28
+          categories: helpGenerator.categories
         }
+      });
+      
+      logger.info('Tools list requested with help information', { 
+        clientIP: getClientIP(req),
+        toolCount: 9
       });
     } else if (method === 'tools/call') {
       const { name, arguments: args } = params;

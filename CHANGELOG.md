@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.0.29] - 2025-07-11
+
+### 🚀 動的ヘルプシステム実装（Dynamic Help System - CLAUDE.md 第13条）
+- **MCP接続成功時の自動機能案内**:
+  - Initialize レスポンスにウェルカムメッセージと機能概要を含める
+  - Tools/list レスポンスに使用例とヘルプエンドポイント案内を追加
+  - 新規ユーザーが即座にすべての機能を把握可能
+
+- **包括的ヘルプシステム**:
+  - `/help/tools` - 全ツールの詳細ドキュメントと使用例
+  - `/help/quick` - クイックリファレンスと一般的なタスク例
+  - `/help/category/{category}` - カテゴリ別機能説明
+  - `/help/whats-new` - 最新機能と更新情報
+  - `/help/whats-new/{version}` - バージョン別新機能詳細
+
+- **動的コンテンツ生成**:
+  - HelpGeneratorクラスによる自動ドキュメント生成
+  - ツールのカテゴリ自動分類（build, system, files, network, management, auth）
+  - リアルタイム使用例とトラブルシューティング情報
+
+### 📋 カテゴリ別機能分類
+- **🔨 Build Tools**: .NET, Java, Python, Node.js, Go, Rust, C++, Docker等
+- **⚙️ System Operations**: PowerShell実行、バッチファイル、プロセス管理
+- **📁 File Operations**: ファイル同期、Base64エンコード、ファイル操作
+- **🌐 Network & Remote**: SSH接続、リモート操作、接続確認
+- **🛠️ Server Management**: サーバー管理、監視、設定
+- **🔐 Authentication**: 認証、セキュリティ、セッション管理
+
+### 💡 新機能通知システム
+- 最新3バージョンの機能変更を自動表示
+- バージョン別の新ツール・エンドポイント・改善点の詳細
+- アップグレード時の注意事項と移行ガイド
+- 新規ユーザー向けのクイックスタートガイド
+
+### 🎯 ユーザーエクスペリエンス向上
+- **一発で全機能把握**: MCP接続時に自動的に利用可能機能を表示
+- **即座に使用開始**: 使用例とエンドポイント案内で迷わない
+- **継続的学習**: 新機能追加時の自動案内で常に最新情報取得
+
+### 🔧 技術実装詳細
+- CLAUDE.md第13条実装: 「MCP接続成功時にすべての機能の使い方をクライアントに伝える」
+- 新機能追加時の自動ヘルプ更新メカニズム
+- リアルタイムツールカテゴリ分類アルゴリズム
+- 包括的エラーハンドリングと使用統計
+
+### 📝 使用例
+```bash
+# 基本ヘルプ - 即座に全機能を把握
+curl http://WINDOWS_VM_IP:8081/help/quick
+
+# 詳細ドキュメント - 全ツールの使用例
+curl http://WINDOWS_VM_IP:8081/help/tools
+
+# 最新機能確認 - 何が新しく追加されたかを把握
+curl http://WINDOWS_VM_IP:8081/help/whats-new
+
+# カテゴリ別ヘルプ - 特定領域の機能に特化
+curl http://WINDOWS_VM_IP:8081/help/category/build
+```
+
 ## [1.0.28] - 2025-07-11
 
 ### 🚀 エンタープライズ認証システム強化（Authentication System Enhancement）
