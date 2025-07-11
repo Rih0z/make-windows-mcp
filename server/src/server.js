@@ -12,6 +12,7 @@ const security = require('./utils/security');
 const rateLimiter = require('./utils/rate-limiter');
 const logger = require('./utils/logger');
 const crypto = require('./utils/crypto');
+const authManager = require('./utils/auth-manager');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -177,57 +178,71 @@ app.use((req, res, next) => {
   next();
 });
 
-// Authentication middleware
+// Secure Authentication middleware using AuthManager
 app.use((req, res, next) => {
-  const authToken = process.env.MCP_AUTH_TOKEN;
+  const clientIP = getClientIP(req);
   
   // Skip auth for health check
   if (req.path === '/health') {
     return next();
   }
   
-  if (authToken && authToken !== 'change-this-to-a-secure-random-token') {
-    const providedToken = req.headers.authorization;
-    
-    if (!providedToken) {
-      logger.security('Missing authorization header', { 
-        clientIP: getClientIP(req),
-        path: req.path 
-      });
-      return res.status(401).json({ error: 'Authorization header required' });
-    }
-    
-    // Robust token extraction - handle various Bearer formats
-    let token = providedToken.trim();
-    
-    // Remove Bearer prefix (case-insensitive, handle multiple spaces)
-    if (token.toLowerCase().startsWith('bearer ')) {
-      token = token.substring(7).trim(); // Remove 'bearer ' (7 chars) and trim spaces
-    }
-    if (token !== authToken) {
-      // Log partial tokens for debugging without exposing full token
-      const expectedPartial = authToken.substring(0, 4) + '...' + authToken.substring(authToken.length - 4);
-      const receivedPartial = token.length >= 8 ? 
-        token.substring(0, 4) + '...' + token.substring(token.length - 4) : 
-        'too short';
-      
-      logger.security('Invalid authorization token', { 
-        clientIP: getClientIP(req),
-        path: req.path,
-        expectedPartial,
-        receivedPartial,
-        tokenLength: { expected: authToken.length, received: token.length }
-      });
-      
-      // Development mode hint
-      if (process.env.NODE_ENV === 'development') {
-        logger.debug('Token validation failed - check .env files on both server and client');
-      }
-      
-      return res.status(401).json({ error: 'Invalid authorization token' });
-    }
+  // Check if authentication is enabled
+  if (!authManager.isAuthEnabled()) {
+    return next();
   }
   
+  // Get authorization header
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    logger.security('Missing authorization header', { 
+      clientIP,
+      path: req.path 
+    });
+    return res.status(401).json({ 
+      error: 'Authorization header required' 
+    });
+  }
+  
+  // Extract token using secure method
+  const token = authManager.extractToken(authHeader);
+  
+  if (!token) {
+    logger.security('Invalid authorization header format', { 
+      clientIP,
+      path: req.path,
+      headerFormat: authHeader.substring(0, 20) + '...'
+    });
+    return res.status(401).json({ 
+      error: 'Invalid authorization header format' 
+    });
+  }
+  
+  // Validate token using secure comparison
+  if (!authManager.validateToken(token)) {
+    logger.security('Invalid authorization token', { 
+      clientIP,
+      path: req.path,
+      expectedPartial: authManager.getExpectedTokenPartial(),
+      receivedPartial: authManager.getPartialToken(token),
+      tokenLength: { 
+        expected: authManager.getExpectedTokenLength(), 
+        received: token.length 
+      }
+    });
+    
+    // Development mode hint
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('Token validation failed - check .env files on both server and client');
+    }
+    
+    return res.status(401).json({ 
+      error: 'Invalid authorization token' 
+    });
+  }
+  
+  // Authentication successful
   next();
 });
 
@@ -337,7 +352,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           serverInfo: {
             name: 'windows-mcp-server',
-            version: '1.0.23'
+            version: '1.0.24'
           }
         }
       });

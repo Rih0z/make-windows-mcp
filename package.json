@@ -1,6 +1,6 @@
 {
   "name": "windows-mcp",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "Windows MCP - Connect Claude Code to Windows build environments",
   "private": true,
   "scripts": {
