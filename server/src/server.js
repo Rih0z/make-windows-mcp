@@ -2348,6 +2348,9 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               throw new Error('filePath is required');
             }
 
+            // Check if dangerous mode is enabled
+            const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+
             // Security validation
             const filePath = dangerousMode ? args.filePath : security.validateBuildPath(args.filePath);
             const options = args.options || {};

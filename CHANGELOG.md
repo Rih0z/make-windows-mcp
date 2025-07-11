@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.31] - 2025-07-11
+
+### 🐛 Bug Fixes
+- **Fix encode_file_base64 tool dangerousMode undefined error**:
+  - Added missing `dangerousMode` variable declaration in `encode_file_base64` case statement
+  - Variable was being used for security validation but not declared within the case scope
+  - Fixed "ReferenceError: dangerousMode is not defined" error that prevented file encoding
+  - Consistent with other tool implementations that properly declare dangerousMode
+
+### 🔍 Technical Details
+- **File**: `/server/src/server.js` line 2352
+- **Issue**: `dangerousMode` variable referenced without declaration in `encode_file_base64` case
+- **Fix**: Added `const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';` declaration
+- **Impact**: Ensures proper security validation and dangerous mode detection for file encoding operations
+
 ## [1.0.30] - 2025-07-11
 
 ### 🚀 AIServer Enterprise v2.0 Critical Fixes - 24時間緊急対応
