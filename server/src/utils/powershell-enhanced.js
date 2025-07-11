@@ -29,13 +29,11 @@ class PowerShellExecutor {
     const processId = ++this.processCounter;
     const startTime = Date.now();
 
-    // Enhanced PowerShell arguments for UTF-8 support
+    // Fixed PowerShell arguments - removed invalid parameters
     const args = [
       '-NoProfile',
       '-NonInteractive',
       '-ExecutionPolicy', 'Bypass',
-      '-OutputEncoding', 'UTF8',
-      '-InputFormat', 'Text',
       '-Command', `
         # Force UTF-8 encoding for all output
         [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;

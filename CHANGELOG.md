@@ -1,5 +1,77 @@
 # Changelog
 
+## [1.0.32] - 2025-07-11
+
+### 🚨 CRITICAL REGRESSION FIX - P0 Emergency Response (4-hour SLA)
+
+#### 🔴 SHOW STOPPER: PowerShell Execution Complete Failure - **RESOLVED**
+
+**Issue**: 100% PowerShell command failure rate due to invalid parameters
+**Impact**: Total development blockage - AIServer Enterprise v2.0 deployment impossible
+**Root Cause**: Invalid `-OutputEncoding UTF8` and `-InputFormat Text` parameters introduced in v1.0.30
+
+#### 💥 Regression Analysis
+- **v1.0.28**: JSON parsing issues but PowerShell worked
+- **v1.0.30**: JSON fixed BUT PowerShell completely broken (regression)
+- **v1.0.32**: BOTH issues resolved - full functionality restored
+
+#### 🔧 Emergency Fix Implementation
+```javascript
+// BEFORE (v1.0.30) - BROKEN
+const args = [
+  '-OutputEncoding', 'UTF8',    // ❌ Invalid parameter
+  '-InputFormat', 'Text',       // ❌ Invalid parameter  
+  '-Command', command
+];
+
+// AFTER (v1.0.32) - FIXED
+const args = [
+  '-NoProfile',
+  '-NonInteractive', 
+  '-ExecutionPolicy', 'Bypass',
+  '-Command', `
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+    ${command}
+  `
+];
+```
+
+#### 📋 Validation Results
+```bash
+✅ Basic PowerShell execution: Hello World test PASSED
+✅ Directory operations: Get-Location PASSED  
+✅ Process management: Get-Process PASSED
+✅ Network diagnostics: netstat commands PASSED
+✅ File system operations: Test-Path PASSED
+✅ UTF-8 encoding: Japanese text PASSED
+✅ Complex commands: Special characters PASSED
+✅ Error handling: Proper error reporting PASSED
+```
+
+#### 🎯 Impact Resolution
+- **Before v1.0.32**: 100% PowerShell failure, development blocked
+- **After v1.0.32**: Full PowerShell functionality restored, UTF-8 encoding preserved
+
+#### ⚡ Emergency Deployment
+```bash
+# IMMEDIATE UPDATE REQUIRED
+npm run update
+
+# Validate fix
+npm run test tests/critical-regression-fix.test.js
+
+# Test PowerShell functionality
+@windows-build-server run_powershell command="Write-Host 'PowerShell Fixed'"
+```
+
+#### 🚀 AIServer Enterprise v2.0 Status
+**DEPLOYMENT UNBLOCKED**: All Windows operations restored
+- ✅ start-aiserver.bat execution capability
+- ✅ Server startup status verification  
+- ✅ Port availability checking
+- ✅ Process monitoring functionality
+- ✅ Windows administration tasks
+
 ## [1.0.31] - 2025-07-11
 
 ### 🚨 URGENT BUG FIXES - 24時間対応完了
