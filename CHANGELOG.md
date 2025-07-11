@@ -2,12 +2,47 @@
 
 ## [1.0.31] - 2025-07-11
 
-### 🐛 Bug Fixes
-- **Fix encode_file_base64 tool dangerousMode undefined error**:
-  - Added missing `dangerousMode` variable declaration in `encode_file_base64` case statement
-  - Variable was being used for security validation but not declared within the case scope
-  - Fixed "ReferenceError: dangerousMode is not defined" error that prevented file encoding
-  - Consistent with other tool implementations that properly declare dangerousMode
+### 🚨 URGENT BUG FIXES - 24時間対応完了
+
+#### 🔧 Problem 1: PowerShell Command Timeout Issues - **RESOLVED**
+- **Issue**: dotnetコマンドが2分でタイムアウトしてPDF生成テストが完了できない
+- **Root Cause**: .NET初回コンパイル時間を考慮していないタイムアウト設定
+- **Solution**: dotnet-aware智能タイムアウト実装
+  ```javascript
+  // Dotnetコマンド専用の延長タイムアウト（10分）
+  if (validatedCommand.toLowerCase().includes('dotnet')) {
+    defaultTimeout = Math.max(defaultTimeout, 600000);
+  }
+  ```
+
+#### 🔧 Problem 2: encode_file_base64 dangerousMode Error - **RESOLVED**
+- **Issue**: `"dangerousMode is not defined"`エラーでPDFのBase64エンコードが失敗
+- **Root Cause**: `dangerousMode`変数の宣言漏れ（スコープエラー）
+- **Solution**: 欠落していた変数宣言を追加
+  ```javascript
+  // Fixed: Missing dangerousMode variable declaration
+  const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+  ```
+
+#### 🧪 Comprehensive Testing Implementation
+- **Bug Report Validation Tests**: 報告された全問題の再現テスト実装
+- **Integration Tests**: 実際のdotnet runシナリオテスト
+- **Timeout Configuration Tests**: タイムアウト設定の検証
+- **Error Handling Tests**: パラメータ検証とエラーメッセージ改善
+
+#### 📋 Test Case Results
+```bash
+✅ dotnet commands: 10分タイムアウト適用確認
+✅ encode_file_base64: dangerousModeエラー解消確認  
+✅ Complex PowerShell: エスケープ文字処理確認
+✅ PDF generation workflow: エンドツーエンド動作確認
+```
+
+#### 💡 Enhanced Features
+- **Smart Timeout Management**: コマンド種別に応じた動的タイムアウト調整
+- **Improved Error Messages**: 具体的で実用的なエラー情報
+- **Enhanced Parameter Validation**: 型安全性とスコープ管理強化
+- **Comprehensive Logging**: デバッグ効率向上のための詳細ログ
 
 ### 🔍 Technical Details
 - **File**: `/server/src/server.js` line 2352

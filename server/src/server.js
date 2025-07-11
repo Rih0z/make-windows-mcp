@@ -1913,9 +1913,15 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               validatedCommand = security.validatePowerShellCommand(args.command);
             }
             
-            // Enhanced timeout handling
+            // Enhanced timeout handling with dotnet-aware defaults
             const maxAllowedTimeout = getNumericEnv('MAX_ALLOWED_TIMEOUT', 3600000); // 60 minutes max
-            const defaultTimeout = getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
+            let defaultTimeout = getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
+            
+            // Increase default timeout for dotnet commands (initial compilation can be slow)
+            if (validatedCommand.toLowerCase().includes('dotnet')) {
+              defaultTimeout = Math.max(defaultTimeout, 600000); // 10 minutes for dotnet commands
+            }
+            
             const requestedTimeoutMs = args.timeout ? 
               Math.min(parseInt(args.timeout) * 1000, maxAllowedTimeout) : 
               defaultTimeout;
