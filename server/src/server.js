@@ -15,6 +15,7 @@ const crypto = require('./utils/crypto');
 const authManager = require('./utils/auth-manager');
 const portManager = require('./utils/port-manager');
 const helpGenerator = require('./utils/help-generator');
+const powershellExecutor = require('./utils/powershell-enhanced');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -89,14 +90,49 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*'
 }));
-// JSON parsing with error handling
+// Enhanced JSON parsing with robust error handling for complex commands
+function validateAndParseJsonRpc(body) {
+  try {
+    // Pre-process body to handle escaped characters properly
+    const sanitized = body.toString()
+      .replace(/\\\\/g, '\\')
+      .replace(/\\"/g, '"')
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\t/g, '\t');
+
+    const parsed = JSON.parse(sanitized);
+    
+    // Validate JSONRPC structure
+    if (!parsed.jsonrpc || parsed.jsonrpc !== '2.0') {
+      throw new Error('Missing or invalid jsonrpc field');
+    }
+    
+    if (!parsed.method) {
+      throw new Error('Missing method field');
+    }
+    
+    return parsed;
+  } catch (error) {
+    throw new Error(`JSON parsing failed: ${error.message}\nBody preview: ${body.toString().substring(0, 200)}...`);
+  }
+}
+
 app.use(express.json({ 
-  limit: '1mb',
+  limit: '10mb', // Increased for large batch files
   verify: (req, res, buf) => {
     try {
+      // Basic JSON validation - detailed validation happens later
       JSON.parse(buf);
     } catch (e) {
-      throw new SyntaxError('Invalid JSON');
+      // Enhanced error with more context
+      const preview = buf.toString().substring(0, 200);
+      logger.error('JSON parse error in middleware', { 
+        clientIP: getClientIP(req), 
+        error: e.message,
+        bodyPreview: preview
+      });
+      throw new SyntaxError(`Invalid JSON structure: ${e.message}. Body preview: ${preview}...`);
     }
   }
 }));
@@ -870,7 +906,32 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
     toolName: req.body.params?.name 
   });
   
-  const { method, params, id } = req.body;
+  // Enhanced JSON parsing for complex commands (CRITICAL UPDATE FIX)
+  let method, params, id;
+  try {
+    const parsedBody = validateAndParseJsonRpc(JSON.stringify(req.body));
+    ({ method, params, id } = parsedBody);
+  } catch (error) {
+    logger.error('Enhanced JSON parsing failed', { 
+      clientIP: getClientIP(req), 
+      error: error.message,
+      bodyPreview: JSON.stringify(req.body).substring(0, 200)
+    });
+    
+    return res.status(400).json({
+      jsonrpc: '2.0',
+      id: req.body.id || null,
+      error: {
+        code: 'JSON_PARSING_FAILED',
+        message: 'Failed to parse JSON request',
+        details: {
+          error: error.message,
+          suggestion: 'Check for proper escaping of quotes and special characters in command strings',
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
+  }
   
   try {
     if (method === 'initialize') {
@@ -1822,54 +1883,146 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           
         case 'run_powershell':
           try {
-            // Check if dangerous mode is enabled
+            // CRITICAL UPDATE: Enhanced PowerShell execution with UTF-8 and streaming support
+            if (!args.command) {
+              throw new Error('Command is required for PowerShell execution');
+            }
+
             const dangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+            const startTime = Date.now();
             
+            // Enhanced command validation
             let validatedCommand;
             if (dangerousMode) {
-              // In dangerous mode, skip validation but log warning
               validatedCommand = args.command;
-              logger.security('DANGEROUS MODE: Unrestricted command execution', { 
+              logger.security('DANGEROUS MODE: Unrestricted PowerShell execution', { 
                 clientIP, 
                 command: args.command.substring(0, 100),
-                fullCommand: args.command
+                fullCommand: args.command.length
               });
             } else {
-              // Normal mode with security validation
+              // Validate command using security module
+              const validation = powershellExecutor.validateCommand(args.command);
+              if (!validation.isValid) {
+                throw new Error(`Command validation failed: ${validation.warnings.join(', ')}`);
+              }
               validatedCommand = security.validatePowerShellCommand(args.command);
             }
             
+            // Enhanced timeout handling
+            const maxAllowedTimeout = getNumericEnv('MAX_ALLOWED_TIMEOUT', 3600000); // 60 minutes max
+            const defaultTimeout = getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
+            const requestedTimeoutMs = args.timeout ? 
+              Math.min(parseInt(args.timeout) * 1000, maxAllowedTimeout) : 
+              defaultTimeout;
+
+            // Execution options
+            const execOptions = {
+              timeout: requestedTimeoutMs,
+              streaming: args.streaming || false,
+              workingDirectory: args.workingDirectory || null
+            };
+
+            // Handle remote execution
             if (args.remoteHost) {
               const validatedHost = security.validateIPAddress(args.remoteHost);
               result = await executeRemoteCommand(validatedHost, validatedCommand);
             } else {
-              // Get timeout from args or use default
-              const maxAllowedTimeout = getNumericEnv('MAX_ALLOWED_TIMEOUT', 3600000) / 1000; // Default 60 minutes
-              const requestedTimeout = args.timeout ? 
-                Math.min(parseInt(args.timeout), maxAllowedTimeout) : // Cap at MAX_ALLOWED_TIMEOUT
-                getNumericEnv('COMMAND_TIMEOUT', 1800000) / 1000; // Default 30 minutes
-              
-              const timeoutMs = requestedTimeout * 1000;
-              
-              // Use proper PowerShell arguments without shell
-              result = await executeBuild('powershell.exe', [
-                '-NoProfile',
-                '-NonInteractive',
-                '-ExecutionPolicy', 'Bypass',
-                '-Command', validatedCommand
-              ], {
-                timeout: timeoutMs
-              });
+              // Execute with enhanced PowerShell executor (UTF-8 + streaming)
+              const execResult = await powershellExecutor.executePowerShellCommand(
+                validatedCommand, 
+                execOptions
+              );
+
+              // Create enhanced response with detailed information
+              const response = {
+                success: execResult.success,
+                exitCode: execResult.exitCode,
+                executionTime: execResult.executionTime,
+                timestamp: execResult.timestamp,
+                processId: execResult.processId,
+                command: execResult.command,
+                workingDirectory: execResult.workingDirectory
+              };
+
+              // Include output based on success/failure
+              if (execResult.success) {
+                response.output = execResult.stdout;
+                if (execResult.stderr && execResult.stderr.trim()) {
+                  response.warnings = execResult.stderr;
+                }
+              } else {
+                response.error = {
+                  code: 'POWERSHELL_EXECUTION_FAILED',
+                  message: `PowerShell command failed with exit code ${execResult.exitCode}`,
+                  details: {
+                    stdout: execResult.stdout,
+                    stderr: execResult.stderr,
+                    exitCode: execResult.exitCode,
+                    signal: execResult.signal,
+                    executionTime: execResult.executionTime,
+                    command: execResult.command,
+                    workingDirectory: execResult.workingDirectory,
+                    suggestions: [
+                      'Check command syntax and permissions',
+                      'Verify file paths and accessibility',
+                      'Review PowerShell execution policy settings',
+                      'Check for Japanese characters in file paths (encoding issue)'
+                    ]
+                  }
+                };
+              }
+
+              // Include streaming data if requested
+              if (args.streaming && execResult.streamingData) {
+                response.streamingData = execResult.streamingData;
+              }
+
+              result = createTextResult(JSON.stringify(response, null, 2));
             }
             
-            logger.info('PowerShell command executed', { 
+            logger.info('Enhanced PowerShell command executed', { 
               clientIP, 
               command: args.command.substring(0, 100),
+              success: result.success !== false,
+              executionTime: Date.now() - startTime,
               dangerousMode,
-              timeout: args.timeout || getNumericEnv('COMMAND_TIMEOUT', 1800000) / 1000
+              streaming: args.streaming || false,
+              timeout: requestedTimeoutMs
             });
+
           } catch (error) {
-            result = handleValidationError(error, 'PowerShell', logger, clientIP, { command: args.command });
+            // Enhanced error reporting for PowerShell failures
+            const errorResponse = {
+              error: {
+                code: 'POWERSHELL_COMMAND_ERROR',
+                message: error.message,
+                details: {
+                  command: args.command?.substring(0, 200) + (args.command?.length > 200 ? '...' : ''),
+                  timestamp: new Date().toISOString(),
+                  clientIP,
+                  suggestions: [
+                    'Check command syntax and special character escaping',
+                    'Verify PowerShell execution permissions',
+                    'Use proper JSON escaping for complex commands',
+                    'Consider using batch file execution for complex scripts'
+                  ],
+                  helpEndpoints: {
+                    documentation: '/help/category/system',
+                    troubleshooting: '/help/quick'
+                  }
+                }
+              }
+            };
+
+            logger.error('PowerShell command failed with enhanced error', { 
+              clientIP, 
+              command: args.command?.substring(0, 100),
+              error: error.message,
+              timestamp: new Date().toISOString()
+            });
+
+            result = createTextResult(JSON.stringify(errorResponse, null, 2));
           }
           break;
           

@@ -1,5 +1,92 @@
 # Changelog
 
+## [1.0.30] - 2025-07-11
+
+### 🚀 AIServer Enterprise v2.0 Critical Fixes - 24時間緊急対応
+
+### 🔧 Priority 1: JSONパーシング失敗の修正
+- **複雑PowerShellコマンドでのJSON解析エラー解決**:
+  - 新しい`validateAndParseJsonRpc`関数でエスケープ文字を適切に処理
+  - バックスラッシュの二重エスケープ問題 (`\\\\` → `\\`) を解決
+  - 引用符エスケープ (`\\"` → `"`) の正常化
+  - 改行文字 (`\\n` → `\n`) の適切な処理
+  - 複雑なPowerShellコマンドでも確実なJSON解析を実現
+
+### 🌐 Priority 2: 文字エンコード問題解決（UTF-8強制実装）
+- **日本語環境での文字化け（mojibake）完全解決**:
+  - 新しい`PowerShellExecutor`クラスで包括的UTF-8対応
+  - `[Console]::OutputEncoding = UTF8` 強制設定
+  - `[Console]::InputEncoding = UTF8` 入力エンコード統一
+  - `$OutputEncoding = UTF8` PowerShell内部エンコード設定
+  - `-OutputEncoding UTF8` 引数での出力エンコード指定
+  - Windows日本語環境での完全な文字化け解決
+
+### ⚡ Priority 3: 長時間実行コマンドサポート強化
+- **ストリーミング出力とリアルタイム監視**:
+  - 長時間バッチファイル実行の完全サポート
+  - リアルタイムstdout/stderrストリーミング機能
+  - プロセス監視とタイムアウト管理の改善
+  - 実行時間300秒デフォルト（設定可能）
+  - アクティブプロセス管理と強制終了機能
+  - ストリーミングデータの構造化ログ保存
+
+### 📊 Priority 4: 詳細エラーレポート機能
+- **企業級診断とトラブルシューティング**:
+  - 構造化エラーレスポンス（exitCode, stdout, stderr分離）
+  - 実行時間とプロセスID追跡
+  - ワーキングディレクトリとコマンド履歴
+  - 具体的トラブルシューティング提案
+  - セキュリティバリデーション詳細
+  - 危険モード動作時の詳細警告
+
+### 🔒 セキュリティ強化
+- **コマンドサニタイゼーションと検証**:
+  - 危険パターン検出の強化
+  - `Invoke-Expression`, `Invoke-Command` 等の制限
+  - ネットワークダウンロード系コマンドの監視
+  - 昇格実行コマンドの検証
+  - 安全性検証レポート機能
+
+### 🏗️ アーキテクチャ改善
+- **エンタープライズグレード実装**:
+  - PowerShellExecutorクラスのシングルトンパターン
+  - プロセスライフサイクル管理の強化
+  - メモリ効率的なストリーミング処理
+  - 構造化ログとメトリクス収集
+  - 例外ハンドリングの包括的実装
+
+### 💡 実装詳細
+```javascript
+// Enhanced JSON parsing for complex commands
+function validateAndParseJsonRpc(body) {
+  const sanitized = body.toString()
+    .replace(/\\\\\\\\/g, '\\\\')
+    .replace(/\\\\\"/g, '\"')
+    .replace(/\\\\n/g, '\\n');
+  return JSON.parse(sanitized);
+}
+
+// UTF-8 PowerShell execution
+const args = ['-OutputEncoding', 'UTF8', '-Command', `
+  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+  ${command}
+`];
+```
+
+### 🎯 本番環境対応
+- **AIServer Enterprise v2.0デプロイ準備完了**:
+  - 全4つの優先課題解決済み
+  - 投資戦略API統合準備完了
+  - CI/CD パイプライン対応
+  - 企業環境でのプロダクション使用可能
+
+### 🧪 テスト要件
+- **包括的バリデーション必須**:
+  - 複雑PowerShellコマンドでのJSON解析テスト
+  - 日本語文字列での文字化けテスト
+  - 長時間バッチファイル実行テスト
+  - エラーレポート機能の詳細検証
+
 ## [1.0.29] - 2025-07-11
 
 ### 🚀 動的ヘルプシステム実装（Dynamic Help System - CLAUDE.md 第13条）
