@@ -13,6 +13,7 @@ const rateLimiter = require('./utils/rate-limiter');
 const logger = require('./utils/logger');
 const crypto = require('./utils/crypto');
 const authManager = require('./utils/auth-manager');
+const portManager = require('./utils/port-manager');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -352,7 +353,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           serverInfo: {
             name: 'windows-mcp-server',
-            version: '1.0.24'
+            version: '1.0.25'
           }
         }
       });
@@ -2886,14 +2887,25 @@ async function executeRemoteCommand(host, command) {
   return await executeSSHCommand(host, username, password, command);
 }
 
-const PORT = getNumericEnv('MCP_SERVER_PORT', 8080);
-
-// Only start server if not in test environment
-if (process.env.NODE_ENV !== 'test') {
-  // Show dangerous mode in startup banner
-  const isDangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+// Smart server startup with automatic port detection
+async function startServer() {
+  // Initialize port manager
+  portManager.initialize();
   
-  app.listen(PORT, '0.0.0.0', async () => {
+  // Setup graceful shutdown
+  portManager.setupGracefulShutdown();
+  
+  // Find available port
+  let assignedPort;
+  try {
+    assignedPort = await portManager.findAvailablePort();
+  } catch (error) {
+    console.error('❌ Failed to find available port:', error.message);
+    process.exit(1);
+  }
+  
+  // Start server on assigned port
+  const server = app.listen(assignedPort, '0.0.0.0', async () => {
     // Get version from package.json
     let version = 'unknown';
     try {
@@ -2914,24 +2926,30 @@ if (process.env.NODE_ENV !== 'test') {
     const timeoutMinutes = Math.round(commandTimeout / 60000);
     const timeoutSeconds = Math.round(commandTimeout / 1000);
     
+    // Show dangerous mode in startup banner
+    const isDangerousMode = process.env.ENABLE_DANGEROUS_MODE === 'true';
+    
     // Debug environment variables
-    console.log('\n🔍 Debug Environment Variables:');
+    console.log('🔍 Debug Environment Variables:');
     console.log(`   • ENABLE_DANGEROUS_MODE: "${process.env.ENABLE_DANGEROUS_MODE}"`);
     console.log(`   • NODE_ENV: "${process.env.NODE_ENV}"`);
     console.log(`   • isDangerousMode: ${isDangerousMode}`);
     console.log('');
     
+    // Display port allocation summary
+    portManager.displayPortSummary();
+    
     if (isDangerousMode) {
-      console.log('\n🔥🔥🔥 MCP SERVER v' + version + ' - DANGEROUS MODE 🔥🔥🔥');
-      console.log(`🔥 Running on http://0.0.0.0:${PORT} (UNRESTRICTED)`);
-      console.log(`🔥 Health: http://0.0.0.0:${PORT}/health`);
-      console.log(`🔥 Endpoint: http://0.0.0.0:${PORT}/mcp`);
+      console.log('🔥🔥🔥 MCP SERVER v' + version + ' - DANGEROUS MODE 🔥🔥🔥');
+      console.log(`🔥 Running on http://0.0.0.0:${assignedPort} (UNRESTRICTED)`);
+      console.log(`🔥 Health: http://0.0.0.0:${assignedPort}/health`);
+      console.log(`🔥 Endpoint: http://0.0.0.0:${assignedPort}/mcp`);
       console.log(`🔥 Command Timeout: ${timeoutMinutes} minutes (${timeoutSeconds}s)`);
     } else {
       console.log(`\nWindows MCP Server v${version}`);
-      console.log(`Running on http://0.0.0.0:${PORT}`);
-      console.log(`Health check: http://0.0.0.0:${PORT}/health`);
-      console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+      console.log(`Running on http://0.0.0.0:${assignedPort}`);
+      console.log(`Health check: http://0.0.0.0:${assignedPort}/health`);
+      console.log(`MCP endpoint: http://0.0.0.0:${assignedPort}/mcp`);
       console.log(`Command Timeout: ${timeoutMinutes} minutes (${timeoutSeconds}s)`);
     }
     
@@ -2973,7 +2991,7 @@ if (process.env.NODE_ENV !== 'test') {
     // Display configuration summary
     console.log('\n📋 Configuration Summary:');
     console.log(`   • Version: ${version}`);
-    console.log(`   • Port: ${PORT}`);
+    console.log(`   • Port: ${assignedPort}`);
     console.log(`   • Command Timeout: ${timeoutMinutes} minutes (${commandTimeout}ms)`);
     console.log(`   • Dangerous Mode: ${isDangerousMode ? '🔥 ENABLED' : '✅ DISABLED'}`);
     
@@ -3002,7 +3020,7 @@ if (process.env.NODE_ENV !== 'test') {
         if (ips.length > 0) {
           console.log('\nYour server is accessible at:');
           ips.forEach(ip => {
-            console.log(`  http://${ip.trim()}:${PORT}`);
+            console.log(`  http://${ip.trim()}:${assignedPort}`);
           });
           
           // Check for VPN IPs
@@ -3012,7 +3030,7 @@ if (process.env.NODE_ENV !== 'test') {
           if (vpnIps.length > 0) {
             console.log('\n⚠️  VPN detected! Use these IPs if connecting through VPN:');
             vpnIps.forEach(ip => {
-              console.log(`  http://${ip.trim()}:${PORT}`);
+              console.log(`  http://${ip.trim()}:${assignedPort}`);
             });
           }
         }
@@ -3020,6 +3038,16 @@ if (process.env.NODE_ENV !== 'test') {
     } catch (err) {
       // Silently ignore errors in IP detection
     }
+  });
+  
+  return server;
+}
+
+// Only start server if not in test environment  
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch(error => {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   });
 }
 

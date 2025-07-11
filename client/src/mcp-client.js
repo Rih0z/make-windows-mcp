@@ -39,9 +39,27 @@ if (!WINDOWS_VM_IP) {
   process.exit(1);
 }
 
+// Try to read server port information
+let actualPort = MCP_SERVER_PORT;
+try {
+  const portInfoPath = path.join(__dirname, '..', '..', 'server', 'server-port.json');
+  const portInfo = JSON.parse(fs.readFileSync(portInfoPath, 'utf8'));
+  
+  if (portInfo.assignedPort) {
+    actualPort = portInfo.assignedPort;
+    
+    if (portInfo.fallbackUsed) {
+      console.log(`ℹ️  Server is using fallback port ${actualPort} (preferred ${portInfo.preferredPort} was in use)`);
+    }
+  }
+} catch {
+  // Port info file not found or invalid, use default
+  console.log(`ℹ️  Using default port ${actualPort} (no server port info available)`);
+}
+
 // Build the MCP server URL
 const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-const serverUrl = `${protocol}://${WINDOWS_VM_IP}:${MCP_SERVER_PORT}/mcp`;
+const serverUrl = `${protocol}://${WINDOWS_VM_IP}:${actualPort}/mcp`;
 
 // Build arguments
 const args = ['-y', 'mcp-remote', serverUrl];
