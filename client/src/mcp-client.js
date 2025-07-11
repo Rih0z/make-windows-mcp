@@ -39,53 +39,82 @@ if (!WINDOWS_VM_IP) {
   process.exit(1);
 }
 
-// Try to read server port information
-let actualPort = MCP_SERVER_PORT;
-try {
-  const portInfoPath = path.join(__dirname, '..', '..', 'server', 'server-port.json');
-  const portInfo = JSON.parse(fs.readFileSync(portInfoPath, 'utf8'));
-  
-  if (portInfo.assignedPort) {
-    actualPort = portInfo.assignedPort;
-    
-    if (portInfo.fallbackUsed) {
-      console.log(`ℹ️  Server is using fallback port ${actualPort} (preferred ${portInfo.preferredPort} was in use)`);
-    }
+// Smart server discovery - no manual port configuration needed!
+const ServerDiscovery = require('./server-discovery');
+
+async function getServerUrl() {
+  // If port is explicitly set in .env, respect it
+  if (process.env.MCP_SERVER_PORT && process.env.MCP_SERVER_PORT !== 'auto') {
+    const explicitPort = process.env.MCP_SERVER_PORT;
+    console.log(`🎯 Using explicit port from .env: ${explicitPort}`);
+    const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
+    return `${protocol}://${WINDOWS_VM_IP}:${explicitPort}/mcp`;
   }
-} catch {
-  // Port info file not found or invalid, use default
-  console.log(`ℹ️  Using default port ${actualPort} (no server port info available)`);
+  
+  // Use smart discovery
+  const discovery = new ServerDiscovery(WINDOWS_VM_IP, MCP_AUTH_TOKEN);
+  
+  try {
+    const connection = await discovery.smartConnect();
+    console.log(`\n🎉 Smart connection successful!`);
+    console.log(`📡 Server: ${connection.serverInfo.name} v${connection.serverInfo.version}`);
+    console.log(`🔗 URL: ${connection.url}\n`);
+    
+    return connection.url;
+  } catch (error) {
+    console.error(`\n❌ Smart discovery failed: ${error.message}`);
+    console.error(`💡 Please ensure MCP server is running on ${WINDOWS_VM_IP}`);
+    
+    // Fall back to default
+    const defaultPort = MCP_SERVER_PORT || '8080';
+    console.log(`🔄 Falling back to default port ${defaultPort}`);
+    const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
+    return `${protocol}://${WINDOWS_VM_IP}:${defaultPort}/mcp`;
+  }
 }
 
-// Build the MCP server URL
-const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-const serverUrl = `${protocol}://${WINDOWS_VM_IP}:${actualPort}/mcp`;
+// Get server URL (async)
+let serverUrl;
+(async () => {
+  try {
+    serverUrl = await getServerUrl();
+  } catch (error) {
+    console.error('Failed to determine server URL:', error);
+    process.exit(1);
+  }
 
-// Build arguments
-const args = ['-y', 'mcp-remote', serverUrl];
+  // Continue with MCP client setup
+  startMCPClient();
+})();
 
-// Add --allow-http flag for HTTP connections
-if (protocol === 'http') {
-  args.push('--allow-http');
+function startMCPClient() {
+  // Build arguments
+  const args = ['-y', 'mcp-remote', serverUrl];
+
+  // Add --allow-http flag for HTTP connections
+  const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
+  if (protocol === 'http') {
+    args.push('--allow-http');
+  }
+
+  // Add auth header if token is set
+  if (MCP_AUTH_TOKEN && MCP_AUTH_TOKEN !== 'change-this-to-a-secure-random-token') {
+    args.push('--header', `Authorization: Bearer ${MCP_AUTH_TOKEN}`);
+  }
+
+  console.log(`🔌 Connecting to Windows MCP Server at ${serverUrl}...`);
+
+  const mcpProcess = spawn('npx', args, {
+    stdio: 'inherit',
+    env: process.env
+  });
+
+  mcpProcess.on('error', (err) => {
+    console.error('Failed to start MCP client:', err);
+    process.exit(1);
+  });
+
+  mcpProcess.on('exit', (code) => {
+    process.exit(code || 0);
+  });
 }
-
-// Add auth header if token is set
-if (MCP_AUTH_TOKEN && MCP_AUTH_TOKEN !== 'change-this-to-a-secure-random-token') {
-  args.push('--header', `Authorization: Bearer ${MCP_AUTH_TOKEN}`);
-}
-
-console.log(`Connecting to Windows MCP Server at ${serverUrl}...`);
-
-const mcpProcess = spawn('npx', args, {
-  stdio: 'inherit',
-  env: process.env
-});
-
-mcpProcess.on('error', (err) => {
-  console.error('Failed to start MCP client:', err);
-  process.exit(1);
-});
-
-mcpProcess.on('exit', (code) => {
-  process.exit(code || 0);
-});
