@@ -1,5 +1,75 @@
 # Changelog
 
+## [1.0.27] - 2025-07-11
+
+### 🚀 PDFファイル検証機能（File Base64 Encoding Tool）
+- **encode_file_base64ツール実装**:
+  - PDFファイルをBase64エンコードして内容確認が可能
+  - 画像の向き検出修正の検証に対応
+  - セキュリティ強化されたファイルアクセス制御
+
+- **包括的セキュリティ機能**:
+  - ファイルサイズ制限（デフォルト10MB、最大50MB）
+  - 拡張子ホワイトリスト（.pdf, .txt, .docx, .png, .jpg, .jpeg等）
+  - 許可ディレクトリ内のファイルのみアクセス可能
+  - 詳細なセキュリティログとアクセス追跡
+
+- **柔軟な設定オプション**:
+  - 環境変数での制限値カスタマイズ
+  - プレビューモード（メタデータのみ返却）
+  - リアルタイムファイル検証と存在確認
+
+### 💡 使用例とテストケース
+```bash
+# PDFファイルのBase64エンコード
+curl -X POST "http://WINDOWS_VM_IP:8081/mcp" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "encode_file_base64",
+      "arguments": {
+        "filePath": "C:/builds/Standard-image-repo/output/sample_output_standard.pdf"
+      }
+    }
+  }'
+
+# プレビューモード（メタデータのみ）
+curl -X POST "http://WINDOWS_VM_IP:8081/mcp" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "encode_file_base64",
+      "arguments": {
+        "filePath": "C:/builds/Standard-image-repo/output/sample_output_standard.pdf",
+        "options": {
+          "preview": true
+        }
+      }
+    }
+  }'
+```
+
+### 🔧 技術仕様詳細
+- **レスポンス形式**: MCP標準準拠のJSONRPC 2.0
+- **メタデータ**: ファイル名、サイズ、拡張子、最終更新日時
+- **エンコーディング**: Node.js Buffer→Base64変換
+- **エラーハンドリング**: 詳細なエラーメッセージと提案
+
+### 🛡️ 新環境変数
+- `FILE_ENCODING_MAX_SIZE`: ファイルサイズ上限（バイト）
+- `FILE_ENCODING_ALLOWED_EXTENSIONS`: 許可拡張子リスト
+
+### 🐛 解決される課題
+- 生成されたPDFの内容確認不可能
+- 画像向き検出修正の効果検証困難
+- リモート環境での品質保証問題
+
 ## [1.0.26] - 2025-07-11
 
 ### 🚀 サーバー自動発見システム（Server Discovery System）

@@ -1138,6 +1138,40 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               },
               required: ['projectPath', 'action']
             }
+          },
+          {
+            name: 'encode_file_base64',
+            description: 'Encode files to Base64 format with comprehensive security validation for PDF verification and file content analysis',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                filePath: { 
+                  type: 'string',
+                  description: 'Absolute path to file to encode (must be in allowed directories)'
+                },
+                options: {
+                  type: 'object',
+                  properties: {
+                    maxSizeBytes: { 
+                      type: 'number', 
+                      description: 'Maximum file size in bytes (default: 10MB, max: 50MB)',
+                      minimum: 1,
+                      maximum: 52428800
+                    },
+                    allowedExtensions: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Allowed file extensions (default: [".pdf", ".txt", ".docx", ".png", ".jpg", ".jpeg"])'
+                    },
+                    preview: {
+                      type: 'boolean',
+                      description: 'Return preview info only (metadata without full Base64 content)'
+                    }
+                  }
+                }
+              },
+              required: ['filePath']
+            }
           }
         ]
         }
@@ -1570,6 +1604,106 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             });
           } catch (error) {
             result = handleValidationError(error, 'File sync', logger, clientIP, { source: args.source, destination: args.destination });
+          }
+          break;
+
+        case 'encode_file_base64':
+          try {
+            if (!args.filePath) {
+              throw new Error('filePath is required');
+            }
+
+            // Security validation
+            const filePath = dangerousMode ? args.filePath : security.validateBuildPath(args.filePath);
+            const options = args.options || {};
+            
+            // Set defaults from environment or options
+            const envMaxSize = getNumericEnv('FILE_ENCODING_MAX_SIZE', 10485760); // 10MB default
+            const envExtensions = process.env.FILE_ENCODING_ALLOWED_EXTENSIONS 
+              ? process.env.FILE_ENCODING_ALLOWED_EXTENSIONS.split(',').map(ext => ext.trim())
+              : ['.pdf', '.txt', '.docx', '.png', '.jpg', '.jpeg'];
+            
+            const maxSizeBytes = options.maxSizeBytes || envMaxSize;
+            const allowedExtensions = options.allowedExtensions || envExtensions;
+            const previewOnly = options.preview || false;
+            
+            // Check file exists
+            if (!fs.existsSync(filePath)) {
+              throw new Error(`File not found: ${filePath}`);
+            }
+            
+            // Get file stats
+            const stats = fs.statSync(filePath);
+            const fileSize = stats.size;
+            const fileName = path.basename(filePath);
+            const fileExtension = path.extname(filePath).toLowerCase();
+            
+            // Validate file size
+            if (fileSize > maxSizeBytes) {
+              throw new Error(`File size ${fileSize} bytes exceeds maximum allowed size ${maxSizeBytes} bytes`);
+            }
+            
+            // Validate file extension
+            if (!allowedExtensions.includes(fileExtension)) {
+              throw new Error(`File extension '${fileExtension}' not allowed. Allowed extensions: ${allowedExtensions.join(', ')}`);
+            }
+            
+            // Log security event
+            logger.security('File encoding requested', {
+              clientIP,
+              filePath,
+              fileSize,
+              fileExtension,
+              previewOnly,
+              dangerousMode
+            });
+            
+            if (previewOnly) {
+              // Return metadata only
+              result = createTextResult(JSON.stringify({
+                fileName,
+                fileSize,
+                fileExtension,
+                lastModified: stats.mtime.toISOString(),
+                isReadable: true,
+                preview: true
+              }, null, 2));
+            } else {
+              // Read and encode file
+              const fileBuffer = fs.readFileSync(filePath);
+              const base64Content = fileBuffer.toString('base64');
+              
+              // Create response with metadata
+              const response = {
+                content: [{
+                  type: 'text',
+                  text: base64Content
+                }],
+                fileName,
+                fileSize,
+                fileExtension,
+                lastModified: stats.mtime.toISOString(),
+                encoded: true,
+                encoding: 'base64'
+              };
+              
+              result = createTextResult(JSON.stringify(response));
+            }
+            
+            logger.info('File encoding completed', { 
+              clientIP, 
+              filePath,
+              fileSize,
+              encoded: !previewOnly
+            });
+            
+          } catch (error) {
+            logger.error('File encoding failed', { 
+              clientIP, 
+              filePath: args.filePath, 
+              error: error.message 
+            });
+            result = handleValidationError(error, 'File encoding', logger, clientIP, { filePath: args.filePath });
           }
           break;
 
