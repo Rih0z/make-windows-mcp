@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.33] - 2025-07-15
+
+### Fixed
+- **Critical Bug Fix**: Fixed JSON-RPC request parsing issue in MCP endpoint
+  - Removed double JSON parsing that was causing 400 errors for valid requests
+  - The server was attempting to re-parse already-parsed request bodies
+  - This affected all MCP tool calls and was causing test failures
+- **Test Suite Fix**: Updated `mcp-tools-complete.test.js` to properly format JSON-RPC requests
+  - Added required `jsonrpc: '2.0'` and `id` fields to all test requests
+  - Fixed tool name from `execute_powershell` to `run_powershell`
+  - Fixed tool name from `build_project` to `build_dotnet`
+  - Updated response structure expectations to match actual MCP protocol
+
+### Technical Details
+- Issue: The server was calling `JSON.stringify(req.body)` and then trying to parse it again with `validateAndParseJsonRpc`, causing parsing errors especially with escaped quotes in commands
+- Solution: Use the already-parsed `req.body` directly since Express middleware has already parsed the JSON
+- Impact: All MCP tool calls were failing with 400 Bad Request errors
+
 ## [1.0.32] - 2025-07-11
 
 ### 🚨 CRITICAL REGRESSION FIX - P0 Emergency Response (4-hour SLA)

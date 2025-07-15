@@ -906,32 +906,8 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
     toolName: req.body.params?.name 
   });
   
-  // Enhanced JSON parsing for complex commands (CRITICAL UPDATE FIX)
-  let method, params, id;
-  try {
-    const parsedBody = validateAndParseJsonRpc(JSON.stringify(req.body));
-    ({ method, params, id } = parsedBody);
-  } catch (error) {
-    logger.error('Enhanced JSON parsing failed', { 
-      clientIP: getClientIP(req), 
-      error: error.message,
-      bodyPreview: JSON.stringify(req.body).substring(0, 200)
-    });
-    
-    return res.status(400).json({
-      jsonrpc: '2.0',
-      id: req.body.id || null,
-      error: {
-        code: 'JSON_PARSING_FAILED',
-        message: 'Failed to parse JSON request',
-        details: {
-          error: error.message,
-          suggestion: 'Check for proper escaping of quotes and special characters in command strings',
-          timestamp: new Date().toISOString()
-        }
-      }
-    });
-  }
+  // Use the already-parsed request body directly
+  const { method, params, id } = req.body;
   
   try {
     if (method === 'initialize') {
