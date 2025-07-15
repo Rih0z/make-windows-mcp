@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.0.35] - 2025-07-15
+
+### 🚀 Ultimate User Experience: Immediate Feature Notification on Connection
+- **Critical Enhancement**: MCP connection now immediately displays all capabilities
+  - Added `immediateNotification` field to MCP `initialize` response
+  - Python virtual environment support now visible the moment connection succeeds
+  - Eliminates any possibility of users missing already-implemented features
+
+### Immediate Connection Feedback (CLAUDE.md 第13条究極実装)
+- **MCP Initialize Response Enhancement**:
+  - `immediateNotification.message`: "🎉 MCP Connection Successful! Python Virtual Environment Support Available!"
+  - `criticalFeatures` section prominently displays Python testing readiness
+  - `quickStart` provides instant Python virtual environment example
+  - Users see all 9 tools and capabilities before making any additional calls
+
+### Zero-Latency Feature Discovery
+- **First-Second Experience**: All capabilities visible at connection establishment
+- **Proactive Communication**: Server announces Python venv support immediately  
+- **Complete Information**: No need to call additional endpoints to discover features
+- **Enterprise Ready**: Professional greeting with technical capabilities overview
+
+### Technical Implementation
+- Enhanced `server/src/server.js:954` with immediate notification object
+- MCP protocol compliant while maximizing user experience
+- Instant visibility of Python virtual environment support from v1.0.33
+
 ## [1.0.34] - 2025-07-15
 
 ### 🎯 Enhanced User Experience: Dynamic Help System Strengthening

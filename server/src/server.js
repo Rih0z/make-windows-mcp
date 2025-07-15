@@ -949,6 +949,19 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               categories: '/help/category/{category}',
               authentication: '/auth/status'
             }
+          },
+          // 第13条完全実装: 初期化時の即座機能通知
+          immediateNotification: {
+            message: '🎉 MCP Connection Successful! Python Virtual Environment Support Available!',
+            criticalFeatures: {
+              '🐍 Python Testing Ready': 'build_python tool with virtual environment auto-creation',
+              '🔨 Multi-Language Builds': '.NET, Java, Python, Node.js, Go, Rust, C++, Ruby',
+              '⚡ Windows Automation': 'PowerShell execution with security controls',
+              '📋 Help Available': 'Use tools/list or visit /help/tools for detailed examples'
+            },
+            quickStart: 'build_python: {"projectPath": "C:/project", "commands": ["test"], "useVirtualEnv": true}',
+            version: serverInfo.version,
+            totalTools: 9
           }
         }
       });
