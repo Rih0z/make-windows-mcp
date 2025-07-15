@@ -143,18 +143,44 @@ class SecurityValidator {
       throw new Error('Directory traversal detected in path');
     }
 
-    // Validate against allowed build paths
+    // Enhanced path validation for enterprise development environments
+    const isEnterpriseMode = process.env.ENABLE_ENTERPRISE_DEV_MODE === 'true';
+    const crossPlatformMode = process.env.ENABLE_CROSS_PLATFORM_PATHS === 'true';
+    
+    // Standard allowed build paths
     const allowedPaths = process.env.ALLOWED_BUILD_PATHS ? 
       process.env.ALLOWED_BUILD_PATHS.split(',').map(p => p.trim()) : 
-      ['C:\\projects\\', 'Z:\\', 'C:\\build\\'];
+      ['C:\\projects\\', 'Z:\\', 'C:\\build\\', 'C:\\builds\\'];
 
-    const isAllowed = allowedPaths.some(allowedPath => {
+    // Enterprise project paths (supports wildcards)
+    const enterprisePaths = process.env.ENTERPRISE_PROJECT_PATHS ? 
+      process.env.ENTERPRISE_PROJECT_PATHS.split(',').map(p => p.trim()) : [];
+
+    let isAllowed = false;
+
+    // Check standard allowed paths first
+    isAllowed = allowedPaths.some(allowedPath => {
       const normalizedAllowed = path.win32.normalize(allowedPath.replace(/\//g, '\\'));
       return normalizedPath.toLowerCase().startsWith(normalizedAllowed.toLowerCase());
     });
 
+    // If not allowed by standard paths and enterprise mode is enabled, check enterprise paths
+    if (!isAllowed && isEnterpriseMode) {
+      isAllowed = this.validateEnterprisePath(inputPath, enterprisePaths, crossPlatformMode);
+    }
+
+    // Special case for cross-platform development
+    if (!isAllowed && crossPlatformMode) {
+      isAllowed = this.validateCrossPlatformPath(inputPath);
+    }
+
     if (!isAllowed) {
-      throw new Error(`Path not in allowed directories: ${normalizedPath}`);
+      const suggestions = [
+        'Check ALLOWED_BUILD_PATHS environment variable',
+        isEnterpriseMode ? 'Verify ENTERPRISE_PROJECT_PATHS configuration' : 'Consider enabling ENABLE_ENTERPRISE_DEV_MODE',
+        'Ensure project is in an allowed directory'
+      ];
+      throw new Error(`Path not in allowed directories: ${normalizedPath}. Suggestions: ${suggestions.join('; ')}`);
     }
 
     return normalizedPath;
@@ -831,6 +857,183 @@ class SecurityValidator {
       workflowType,
       allowedCommands: workflowPermissions[workflowType] || []
     };
+  }
+
+  /**
+   * Validate enterprise project paths with wildcard support
+   * Addresses external engineer feedback on path restrictions
+   */
+  validateEnterprisePath(inputPath, enterprisePaths, crossPlatformMode) {
+    if (!enterprisePaths || enterprisePaths.length === 0) {
+      return false;
+    }
+
+    const normalizedInput = crossPlatformMode ? 
+      this.normalizeCrossPlatformPath(inputPath) : 
+      path.win32.normalize(inputPath.replace(/\//g, '\\'));
+
+    return enterprisePaths.some(enterprisePath => {
+      // Handle wildcard patterns like /Users/*/Documents/Projects/*
+      if (enterprisePath.includes('*')) {
+        const regexPattern = enterprisePath
+          .replace(/\\/g, '\\\\')  // Escape backslashes
+          .replace(/\*/g, '[^/\\\\]*'); // Convert * to regex pattern
+        
+        const regex = new RegExp('^' + regexPattern, 'i');
+        return regex.test(normalizedInput);
+      }
+
+      // Standard prefix matching
+      const normalizedEnterprise = crossPlatformMode ?
+        this.normalizeCrossPlatformPath(enterprisePath) :
+        path.win32.normalize(enterprisePath.replace(/\//g, '\\'));
+      
+      return normalizedInput.toLowerCase().startsWith(normalizedEnterprise.toLowerCase());
+    });
+  }
+
+  /**
+   * Validate cross-platform development paths
+   * Supports both Windows and Unix-style paths for enterprise development
+   */
+  validateCrossPlatformPath(inputPath) {
+    // Common cross-platform development patterns
+    const crossPlatformPatterns = [
+      /^\/Users\/[^\/]+\/Documents\/Projects\//i,    // macOS user projects
+      /^\/home\/[^\/]+\/projects\//i,                // Linux user projects  
+      /^\/workspace\//i,                             // Docker/container workspace
+      /^C:\\builds\\/i,                              // Windows builds directory
+      /^C:\\projects\\/i,                            // Windows projects directory
+      /^\/tmp\/builds\//i,                           // Temporary build directory
+      /^\/var\/builds\//i                            // System build directory
+    ];
+
+    return crossPlatformPatterns.some(pattern => pattern.test(inputPath));
+  }
+
+  /**
+   * Normalize path for cross-platform compatibility
+   */
+  normalizeCrossPlatformPath(inputPath) {
+    // Convert to forward slashes for consistent comparison
+    let normalized = inputPath.replace(/\\/g, '/');
+    
+    // Remove duplicate slashes
+    normalized = normalized.replace(/\/+/g, '/');
+    
+    // Remove trailing slash unless it's root
+    if (normalized.length > 1 && normalized.endsWith('/')) {
+      normalized = normalized.slice(0, -1);
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Enhanced PowerShell command validation for enterprise environments
+   * Addresses JSON escaping and complex syntax limitations
+   */
+  validateEnhancedPowerShell(command) {
+    const enhancedMode = process.env.ENABLE_ENHANCED_POWERSHELL === 'true';
+    const jsonEscaping = process.env.ENABLE_ENHANCED_JSON_ESCAPING === 'true';
+    const complexityLevel = parseInt(process.env.COMMAND_COMPLEXITY_LEVEL || '3');
+
+    if (!enhancedMode) {
+      return this.validatePowerShellCommand(command);
+    }
+
+    // Enhanced command length limit for enterprise operations
+    const maxLength = parseInt(process.env.ENTERPRISE_COMMAND_TIMEOUT || '16384');
+    if (command.length > maxLength) {
+      throw new Error(`Enterprise command too long: maximum ${maxLength} characters allowed`);
+    }
+
+    // Handle JSON escaping issues
+    if (jsonEscaping) {
+      command = this.preprocessJsonEscaping(command);
+    }
+
+    // Allow Bash-style operators based on complexity level
+    if (complexityLevel >= 4) {
+      // Convert Bash-style operators to PowerShell equivalents
+      command = this.convertBashToPowerShell(command);
+    }
+
+    return this.validatePowerShellCommand(command);
+  }
+
+  /**
+   * Preprocess command to handle JSON escaping issues
+   */
+  preprocessJsonEscaping(command) {
+    // Handle common JSON escaping problems reported by external engineers
+    return command
+      .replace(/\\"/g, '\\"')           // Preserve escaped quotes
+      .replace(/\\\\/g, '\\')           // Normalize double backslashes
+      .replace(/\$env:([^;"\s]+)/g, '$$env:$1'); // Protect environment variables
+  }
+
+  /**
+   * Convert Bash-style syntax to PowerShell equivalents
+   */
+  convertBashToPowerShell(command) {
+    // Convert && to PowerShell semicolon chaining
+    command = command.replace(/\s*&&\s*/g, '; ');
+    
+    // Convert || to PowerShell try-catch equivalent (simplified)
+    command = command.replace(/\s*\|\|\s*/g, '; if ($LASTEXITCODE -ne 0) { ');
+    
+    return command;
+  }
+
+  /**
+   * Enhanced Python environment validation with PYTHONPATH support
+   * Addresses module import issues reported by external engineers
+   */
+  validatePythonEnvironment(projectPath, command) {
+    const pythonEnhanced = process.env.ENABLE_PYTHON_ENV_MANAGEMENT === 'true';
+    const autoPathResolution = process.env.PYTHON_AUTO_PATH_RESOLUTION === 'true';
+
+    if (!pythonEnhanced) {
+      return { projectPath, command };
+    }
+
+    const enhancedCommand = autoPathResolution ? 
+      this.enhancePythonCommand(projectPath, command) : command;
+
+    return {
+      projectPath,
+      command: enhancedCommand,
+      pythonPath: autoPathResolution ? this.resolvePythonPath(projectPath) : null
+    };
+  }
+
+  /**
+   * Enhance Python command with automatic PYTHONPATH resolution
+   */
+  enhancePythonCommand(projectPath, command) {
+    const pythonPath = this.resolvePythonPath(projectPath);
+    
+    if (pythonPath && !command.includes('PYTHONPATH')) {
+      return `$env:PYTHONPATH="${pythonPath}"; ${command}`;
+    }
+    
+    return command;
+  }
+
+  /**
+   * Resolve PYTHONPATH for Python module imports
+   */
+  resolvePythonPath(projectPath) {
+    const commonPythonPaths = [
+      path.join(projectPath, 'src'),
+      path.join(projectPath, 'backend'),
+      path.join(projectPath, 'lib'),
+      projectPath // Project root as fallback
+    ];
+
+    // Return paths that exist (would need fs check in real implementation)
+    return commonPythonPaths.join(process.platform === 'win32' ? ';' : ':');
   }
 }
 

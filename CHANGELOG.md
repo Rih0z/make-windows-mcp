@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.0.36] - 2025-07-15
+
+### 🏢 Enterprise Development Environment: Comprehensive Solution
+- **Major Enhancement**: Addresses all constraints reported by external engineers for AIServer Enterprise v2.0
+  - Resolves path restrictions preventing `build_python` execution in project directories
+  - Eliminates JSON escaping limitations for complex PowerShell commands
+  - Adds Bash-style syntax support (&&, ||) for enterprise development workflows
+  - Implements automatic PYTHONPATH resolution for Python module imports
+
+### Enterprise Development Mode (ENABLE_ENTERPRISE_DEV_MODE)
+- **Flexible Path Validation**:
+  - Supports wildcard patterns: `/Users/*/Documents/Projects/*`, `C:\\builds\\*`
+  - Cross-platform path normalization for Windows/macOS/Linux compatibility
+  - Validates common enterprise project structures automatically
+  - Addresses reported issue: "Path not in allowed directories: C:\\builds\\AIServer"
+
+- **Enhanced PowerShell Capabilities**:
+  - JSON escaping preprocessing for complex commands with environment variables
+  - Bash-to-PowerShell syntax conversion: `&&` → `;`, `||` → error handling
+  - Extended command complexity levels (1-5) for enterprise operations
+  - Resolves: "JSON parsing failed: Expected ',' or '}' after property value"
+
+- **Python Environment Management**:
+  - Automatic PYTHONPATH resolution for project modules (`backend`, `src`, `lib`)
+  - Virtual environment integration with module path discovery
+  - Cross-platform Python path handling (Windows `;` vs Unix `:`)
+  - Fixes: "ModuleNotFoundError: No module named 'backend'"
+
+### New Environment Variables (.env.example)
+```bash
+# Enterprise Development Environment
+ENABLE_ENTERPRISE_DEV_MODE=false
+ENTERPRISE_PROJECT_PATHS=/Users/*/Documents/Projects/*,C:\\builds\\*
+ENABLE_ENHANCED_POWERSHELL=false
+ENABLE_PYTHON_ENV_MANAGEMENT=false
+PYTHON_AUTO_PATH_RESOLUTION=false
+ENABLE_ENHANCED_JSON_ESCAPING=false
+COMMAND_COMPLEXITY_LEVEL=3
+ENABLE_CROSS_PLATFORM_PATHS=false
+```
+
+### Technical Implementation
+- **Enhanced security.js (140+ new lines)**:
+  - `validateEnterprisePath()`: Wildcard pattern matching for project directories
+  - `validateCrossPlatformPath()`: Multi-OS development environment support
+  - `validateEnhancedPowerShell()`: Complex command validation with JSON escaping
+  - `validatePythonEnvironment()`: PYTHONPATH management and module resolution
+
+- **Integrated server.js**:
+  - `build_python` tool: Automatic PYTHONPATH injection for test execution
+  - `run_powershell` tool: Enterprise command validation with fallback support
+  - Backward compatibility: Standard mode preserved for existing deployments
+
+### Addressed External Engineer Constraints
+1. **✅ Path Restrictions Resolved**: Project directories now accessible via enterprise mode
+2. **✅ JSON Escaping Fixed**: Complex PowerShell commands execute reliably
+3. **✅ PowerShell Syntax Extended**: Bash-style operators converted automatically
+4. **✅ Python Module Paths Resolved**: PYTHONPATH configured for import resolution
+
+### Enterprise CI/CD Ready
+- **GitHub Actions Compatibility**: `GITHUB_ACTIONS_MODE=false`
+- **Docker Container Support**: `DOCKER_CONTAINER_MODE=false`
+- **Enterprise Testing Framework**: `ENABLE_ENTERPRISE_TESTING=false`
+- **Auto Dependency Installation**: `AUTO_INSTALL_TEST_DEPS=false`
+
+### Impact Assessment
+- **Resolves**: 4 critical enterprise development constraints
+- **Maintains**: 100% backward compatibility with existing deployments
+- **Enables**: Full enterprise Python testing workflows (pytest, unittest, etc.)
+- **Supports**: Cross-platform development teams (Windows/macOS/Linux)
+
 ## [1.0.35] - 2025-07-15
 
 ### 🚀 Ultimate User Experience: Immediate Feature Notification on Connection

@@ -1937,7 +1937,30 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               if (!validation.isValid) {
                 throw new Error(`Command validation failed: ${validation.warnings.join(', ')}`);
               }
-              validatedCommand = security.validatePowerShellCommand(args.command);
+              
+              // Enhanced PowerShell validation for enterprise environments
+              const isEnterpriseMode = process.env.ENABLE_ENTERPRISE_DEV_MODE === 'true';
+              const enhancedPowerShell = process.env.ENABLE_ENHANCED_POWERSHELL === 'true';
+              
+              if (isEnterpriseMode || enhancedPowerShell) {
+                try {
+                  validatedCommand = security.validateEnhancedPowerShell(args.command);
+                  logger.info('Enterprise PowerShell validation successful', { 
+                    clientIP, 
+                    commandLength: args.command.length,
+                    enhancedFeatures: true
+                  });
+                } catch (enterpriseError) {
+                  // Fallback to standard validation if enterprise fails
+                  logger.warn('Enterprise validation failed, falling back to standard', { 
+                    clientIP, 
+                    error: enterpriseError.message 
+                  });
+                  validatedCommand = security.validatePowerShellCommand(args.command);
+                }
+              } else {
+                validatedCommand = security.validatePowerShellCommand(args.command);
+              }
             }
             
             // Enhanced timeout handling with dotnet-aware defaults
@@ -2566,9 +2589,33 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               throw new Error('projectPath is required');
             }
 
+            // Enhanced Python environment validation for enterprise development
+            const isEnterpriseMode = process.env.ENABLE_ENTERPRISE_DEV_MODE === 'true';
+            const pythonEnhanced = process.env.ENABLE_PYTHON_ENV_MANAGEMENT === 'true';
+            
             // Use specialized validation for Python builds
             const buildTool = security.validatePythonBuild(args.projectPath, args.buildTool);
             const validatedPath = args.projectPath; // Already validated in validatePythonBuild
+            
+            // Enhanced Python environment setup for enterprise environments
+            let pythonEnvironment = null;
+            if (isEnterpriseMode || pythonEnhanced) {
+              try {
+                const testCommand = 'python -m pytest tests/';
+                pythonEnvironment = security.validatePythonEnvironment(validatedPath, testCommand);
+                logger.info('Enterprise Python environment validated', { 
+                  clientIP, 
+                  projectPath: validatedPath,
+                  pythonPath: pythonEnvironment.pythonPath,
+                  enhancedMode: true
+                });
+              } catch (enterpriseError) {
+                logger.warn('Enterprise Python validation failed, using standard mode', { 
+                  clientIP, 
+                  error: enterpriseError.message 
+                });
+              }
+            }
             
             // Virtual environment settings
             const useVirtualEnv = args.useVirtualEnv !== false; // Default to true
@@ -2718,6 +2765,19 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
                   workingDirectory: validatedPath,
                   timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
                 };
+                
+                // Enhanced Python environment for enterprise development
+                if (pythonEnvironment && pythonEnvironment.pythonPath) {
+                  buildOptions.environment = {
+                    ...process.env,
+                    PYTHONPATH: pythonEnvironment.pythonPath
+                  };
+                  logger.info('Applied enterprise PYTHONPATH', { 
+                    clientIP, 
+                    pythonPath: pythonEnvironment.pythonPath,
+                    command: cmd
+                  });
+                }
                 
                 if (args.remoteHost) {
                   const validatedHost = security.validateIPAddress(args.remoteHost);
