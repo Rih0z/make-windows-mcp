@@ -55,7 +55,7 @@ describe('New Tools Registration Test', () => {
     const response = await request(app)
       .post('/mcp')
       .set('Authorization', 'Bearer test-token')
-      .send({
+      .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
         method: 'tools/list'
       });
 
@@ -66,9 +66,9 @@ describe('New Tools Registration Test', () => {
     }
     
     expect(response.status).toBe(200);
-    expect(response.body.tools).toBeDefined();
+    expect(response.body.result.tools).toBeDefined();
     
-    const toolNames = response.body.tools.map(t => t.name);
+    const toolNames = response.body.result.tools.map(t => t.name);
     
     // Verify all tools are registered
     expect(toolNames).toContain('build_dotnet');
@@ -81,20 +81,20 @@ describe('New Tools Registration Test', () => {
     expect(toolNames).toContain('file_sync');
     
     // Verify new tools have proper schemas
-    const mcpSelfBuild = response.body.tools.find(t => t.name === 'mcp_self_build');
+    const mcpSelfBuild = response.body.result.tools.find(t => t.name === 'mcp_self_build');
     expect(mcpSelfBuild).toBeDefined();
     expect(mcpSelfBuild.inputSchema.properties.action).toBeDefined();
     expect(mcpSelfBuild.inputSchema.properties.action.enum).toContain('build');
     expect(mcpSelfBuild.inputSchema.properties.action.enum).toContain('test');
     expect(mcpSelfBuild.inputSchema.properties.action.enum).toContain('install');
     
-    const processManager = response.body.tools.find(t => t.name === 'process_manager');
+    const processManager = response.body.result.tools.find(t => t.name === 'process_manager');
     expect(processManager).toBeDefined();
     expect(processManager.inputSchema.properties.action).toBeDefined();
     expect(processManager.inputSchema.properties.action.enum).toContain('start');
     expect(processManager.inputSchema.properties.action.enum).toContain('stop');
     
-    const fileSync = response.body.tools.find(t => t.name === 'file_sync');
+    const fileSync = response.body.result.tools.find(t => t.name === 'file_sync');
     expect(fileSync).toBeDefined();
     expect(fileSync.inputSchema.properties.source).toBeDefined();
     expect(fileSync.inputSchema.properties.destination).toBeDefined();
@@ -113,6 +113,6 @@ describe('New Tools Registration Test', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.content[0].text).toBe('Unknown tool: non_existent_tool');
+    expect(response.body.result.content[0].text).toBe('Unknown tool: non_existent_tool');
   });
 });

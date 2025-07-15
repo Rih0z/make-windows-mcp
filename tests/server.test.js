@@ -78,13 +78,17 @@ describe('MCP Server API', () => {
       
       if (method === 'tools/list') {
         res.json({
-          tools: [
-            { name: 'build_dotnet', description: 'Build a .NET application' },
-            { name: 'run_powershell', description: 'Execute PowerShell commands' },
-            { name: 'ping_host', description: 'Check connectivity to remote host' },
-            { name: 'ssh_command', description: 'Execute command on remote Windows via SSH' },
-            { name: 'run_batch', description: 'Execute batch file in specific directory' }
-          ]
+          jsonrpc: '2.0',
+          id: req.body.id,
+          result: {
+            tools: [
+              { name: 'build_dotnet', description: 'Build a .NET application' },
+              { name: 'run_powershell', description: 'Execute PowerShell commands' },
+              { name: 'ping_host', description: 'Check connectivity to remote host' },
+              { name: 'ssh_command', description: 'Execute command on remote Windows via SSH' },
+              { name: 'run_batch', description: 'Execute batch file in specific directory' }
+            ]
+          }
         });
       } else if (method === 'tools/call') {
         const { name, arguments: args } = params;
@@ -112,13 +116,25 @@ describe('MCP Server API', () => {
               break;
             default:
               logger.warn('Unknown tool requested', { toolName: name });
-              return res.json({ content: [{ type: 'text', text: `Unknown tool: ${name}` }] });
+              return res.json({
+                jsonrpc: '2.0',
+                id: req.body.id,
+                result: { content: [{ type: 'text', text: `Unknown tool: ${name}` }] }
+              });
           }
           
-          res.json({ content: [{ type: 'text', text: 'Success' }] });
+          res.json({
+            jsonrpc: '2.0',
+            id: req.body.id,
+            result: { content: [{ type: 'text', text: 'Success' }] }
+          });
         } catch (error) {
           logger.security('Validation failed', { error: error.message });
-          res.json({ content: [{ type: 'text', text: `Validation error: ${error.message}` }] });
+          res.json({
+            jsonrpc: '2.0',
+            id: req.body.id,
+            result: { content: [{ type: 'text', text: `Validation error: ${error.message}` }] }
+          });
         }
       } else {
         res.json({ error: `Unknown method: ${method}` });
@@ -147,7 +163,7 @@ describe('MCP Server API', () => {
     test('should require authorization for MCP endpoints', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
 
       expect(response.body.error).toContain('Authorization header required');
@@ -157,17 +173,17 @@ describe('MCP Server API', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token-123')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toBeDefined();
+      expect(response.body.result.tools).toBeDefined();
     });
 
     test('should reject invalid authorization token', async () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer invalid-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
 
       expect(response.body.error).toContain('Invalid authorization token');
@@ -181,11 +197,11 @@ describe('MCP Server API', () => {
       const response = await request(app)
         .post('/mcp')
         .set(authHeaders)
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toHaveLength(5);
-      expect(response.body.tools.map(t => t.name)).toEqual([
+      expect(response.body.result.tools).toHaveLength(5);
+      expect(response.body.result.tools.map(t => t.name)).toEqual([
         'build_dotnet',
         'run_powershell',
         'ping_host',
@@ -300,7 +316,7 @@ describe('MCP Server API', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Batch file must be in one of the allowed directories');
+      expect(response.body.result.content[0].text).toContain('Validation error: Batch file must be in one of the allowed directories');
       expect(logger.security).toHaveBeenCalledWith(
         'Validation failed',
         expect.objectContaining({ error: 'Batch file must be in one of the allowed directories' })
@@ -325,7 +341,7 @@ describe('MCP Server API', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Dangerous command detected');
+      expect(response.body.result.content[0].text).toContain('Validation error: Dangerous command detected');
       expect(logger.security).toHaveBeenCalledWith(
         'Validation failed',
         expect.objectContaining({ error: 'Dangerous command detected' })
@@ -345,7 +361,7 @@ describe('MCP Server API', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Unknown tool: unknown_tool');
+      expect(response.body.result.content[0].text).toContain('Unknown tool: unknown_tool');
     });
   });
 });

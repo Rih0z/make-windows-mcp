@@ -228,7 +228,7 @@ describe('Server Coverage Tests', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('SSH error');
+      expect(response.body.result.content[0].text).toContain('SSH error');
     });
 
     test('should save new SSH connection', async () => {
@@ -317,8 +317,8 @@ describe('Server Coverage Tests', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Batch output line 1');
-      expect(response.body.content[0].text).toContain('Warning: something');
+      expect(response.body.result.content[0].text).toContain('Batch output line 1');
+      expect(response.body.result.content[0].text).toContain('Warning: something');
     });
   });
 
@@ -336,7 +336,7 @@ describe('Server Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toBe('Unknown tool: invalid_tool');
+      expect(response.body.result.content[0].text).toBe('Unknown tool: invalid_tool');
     });
 
     test('should handle missing arguments', async () => {
@@ -362,7 +362,7 @@ describe('Server Coverage Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -391,7 +391,7 @@ describe('Server Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Failed to execute command');
+      expect(response.body.result.content[0].text).toContain('Failed to execute command');
     });
 
     test('should handle process crash', async () => {
@@ -415,7 +415,7 @@ describe('Server Coverage Tests', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('terminated by signal');
+      expect(response.body.result.content[0].text).toContain('terminated by signal');
     });
   });
 
@@ -424,16 +424,16 @@ describe('Server Coverage Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.tools).toBeDefined();
-      expect(response.body.tools.length).toBeGreaterThan(0);
-      expect(response.body.tools.map(t => t.name)).toContain('build_dotnet');
-      expect(response.body.tools.map(t => t.name)).toContain('ssh_command');
-      expect(response.body.tools.map(t => t.name)).toContain('run_batch');
+      expect(response.body.result.tools).toBeDefined();
+      expect(response.body.result.tools.length).toBeGreaterThan(0);
+      expect(response.body.result.tools.map(t => t.name)).toContain('build_dotnet');
+      expect(response.body.result.tools.map(t => t.name)).toContain('ssh_command');
+      expect(response.body.result.tools.map(t => t.name)).toContain('run_batch');
     });
   });
 

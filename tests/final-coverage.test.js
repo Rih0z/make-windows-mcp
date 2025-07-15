@@ -95,11 +95,11 @@ describe('Final Coverage Tests', () => {
     test('should handle tools/list request', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toBeDefined();
-      expect(response.body.tools.length).toBeGreaterThan(0);
+      expect(response.body.result.tools).toBeDefined();
+      expect(response.body.result.tools.length).toBeGreaterThan(0);
     });
 
     test('should handle remote command execution with password', async () => {
@@ -137,8 +137,8 @@ describe('Final Coverage Tests', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('SSH Command completed');
-      expect(response.body.content[0].text).toContain('output');
+      expect(response.body.result.content[0].text).toContain('SSH Command completed');
+      expect(response.body.result.content[0].text).toContain('output');
     });
 
     test('should handle spawn process with both stdout and stderr', async () => {
@@ -173,8 +173,8 @@ describe('Final Coverage Tests', () => {
       const response = await responsePromise;
       
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('stdout data');
-      expect(response.body.content[0].text).toContain('stderr data');
+      expect(response.body.result.content[0].text).toContain('stdout data');
+      expect(response.body.result.content[0].text).toContain('stderr data');
     });
 
     test('should log request info correctly', async () => {
@@ -412,7 +412,7 @@ describe('Final Coverage Tests', () => {
     test('should handle missing params in tools/call', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({ method: 'tools/call' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/call' })
         .expect(500);
 
       expect(response.body.error).toBeDefined();

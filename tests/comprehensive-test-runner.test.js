@@ -55,16 +55,16 @@ describe('Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer comprehensive-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.tools).toBeDefined();
-      expect(Array.isArray(response.body.tools)).toBe(true);
-      expect(response.body.tools.length).toBeGreaterThan(15);
+      expect(response.body.result.tools).toBeDefined();
+      expect(Array.isArray(response.body.result.tools)).toBe(true);
+      expect(response.body.result.tools.length).toBeGreaterThan(15);
 
-      const toolNames = response.body.tools.map(t => t.name);
+      const toolNames = response.body.result.tools.map(t => t.name);
       const expectedTools = [
         'run_powershell',
         'build_dotnet', 
@@ -89,7 +89,7 @@ describe('Comprehensive MCP Server Tests', () => {
     test('should reject requests without authentication', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -101,7 +101,7 @@ describe('Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer invalid-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -113,7 +113,7 @@ describe('Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer comprehensive-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -137,8 +137,8 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
-      expect(response.body.content[0].text).toContain('PowerShell test successful');
+      expect(response.body.result.content).toBeDefined();
+      expect(response.body.result.content[0].text).toContain('PowerShell test successful');
     });
 
     test('should handle timeout parameters correctly', async () => {
@@ -157,7 +157,7 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('timeout test');
+      expect(response.body.result.content[0].text).toContain('timeout test');
     });
 
     test('should validate required command parameter', async () => {
@@ -173,7 +173,7 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('command is required');
+      expect(response.body.result.content[0].text).toContain('command is required');
     });
   });
 
@@ -194,7 +194,7 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
+      expect(response.body.result.content).toBeDefined();
     });
 
     test('should validate build types', async () => {
@@ -235,7 +235,7 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation failed');
+      expect(response.body.result.content[0].text).toContain('validation failed');
     });
   });
 
@@ -273,7 +273,7 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('not in allowed directories');
+      expect(response.body.result.content[0].text).toContain('not in allowed directories');
     });
 
     test('should handle working directory parameter', async () => {
@@ -399,14 +399,14 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('MCP Server status');
+      expect(response.body.result.content[0].text).toContain('MCP Server status');
     });
 
     test('should handle update action in dangerous mode', async () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer comprehensive-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/call',
           params: {
             name: 'mcp_self_build',
@@ -548,7 +548,7 @@ describe('Comprehensive MCP Server Tests', () => {
       const responses = await Promise.all(requests);
       responses.forEach((response, index) => {
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).toContain(`Concurrent test ${index}`);
+        expect(response.body.result.content[0].text).toContain(`Concurrent test ${index}`);
       });
     });
   });
@@ -570,18 +570,18 @@ describe('Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('command is required');
+      expect(response.body.result.content[0].text).toContain('command is required');
     });
 
     test('should validate tool schemas are complete', async () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer comprehensive-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
-      response.body.tools.forEach(tool => {
+      response.body.result.tools.forEach(tool => {
         expect(tool.name).toBeDefined();
         expect(tool.description).toBeDefined();
         expect(tool.inputSchema).toBeDefined();

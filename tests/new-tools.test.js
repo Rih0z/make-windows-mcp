@@ -90,7 +90,7 @@ describe('New Tools Tests (v1.0.6)', () => {
       }
       
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Building project');
+      expect(response.body.result.content[0].text).toContain('Building project');
       expect(spawn).toHaveBeenCalledWith('npm', ['run', 'build:all'], expect.any(Object));
     });
 
@@ -110,7 +110,7 @@ describe('New Tools Tests (v1.0.6)', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toBe('Tests skipped by option');
+      expect(response.body.result.content[0].text).toBe('Tests skipped by option');
       expect(spawn).not.toHaveBeenCalled();
     });
 
@@ -130,7 +130,7 @@ describe('New Tools Tests (v1.0.6)', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toBe('Installation requires dangerous mode to be enabled');
+      expect(response.body.result.content[0].text).toBe('Installation requires dangerous mode to be enabled');
     });
 
     test('should handle status action', async () => {
@@ -155,7 +155,7 @@ describe('New Tools Tests (v1.0.6)', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('MCP Server status: Running');
+      expect(response.body.result.content[0].text).toContain('MCP Server status: Running');
     });
   });
 
@@ -267,7 +267,7 @@ describe('New Tools Tests (v1.0.6)', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('File sync completed successfully');
+      expect(response.body.result.content[0].text).toContain('File sync completed successfully');
       expect(spawn).toHaveBeenCalledWith(
         'robocopy',
         expect.arrayContaining(['C:\\source', 'C:\\dest', '*.*', '/E', '/V', '/R:3', '/W:10'])
@@ -297,7 +297,7 @@ describe('New Tools Tests (v1.0.6)', () => {
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('File sync failed with code 8');
+      expect(response.body.result.content[0].text).toContain('File sync failed with code 8');
     });
 
     test('should apply file patterns', async () => {
@@ -338,12 +338,12 @@ describe('New Tools Tests (v1.0.6)', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
       expect(response.status).toBe(200);
-      const toolNames = response.body.tools.map(t => t.name);
+      const toolNames = response.body.result.tools.map(t => t.name);
       expect(toolNames).toContain('mcp_self_build');
       expect(toolNames).toContain('process_manager');
       expect(toolNames).toContain('file_sync');

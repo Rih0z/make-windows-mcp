@@ -54,17 +54,17 @@ describe('Working Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer working-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.tools).toBeDefined();
-      expect(Array.isArray(response.body.tools)).toBe(true);
-      expect(response.body.tools.length).toBeGreaterThan(10);
+      expect(response.body.result.tools).toBeDefined();
+      expect(Array.isArray(response.body.result.tools)).toBe(true);
+      expect(response.body.result.tools.length).toBeGreaterThan(10);
 
       // Check that key tools exist (confirmed from previous test)
-      const toolNames = response.body.tools.map(t => t.name);
+      const toolNames = response.body.result.tools.map(t => t.name);
       expect(toolNames).toContain('run_powershell');
       expect(toolNames).toContain('build_dotnet');
       expect(toolNames).toContain('run_batch');
@@ -75,11 +75,11 @@ describe('Working Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer working-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
-      response.body.tools.forEach(tool => {
+      response.body.result.tools.forEach(tool => {
         expect(tool.name).toBeDefined();
         expect(tool.description).toBeDefined();
         expect(tool.inputSchema).toBeDefined();
@@ -93,7 +93,7 @@ describe('Working Comprehensive MCP Server Tests', () => {
     test('should reject requests without authentication', async () => {
       const response = await request(app)
         .post('/mcp')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -105,7 +105,7 @@ describe('Working Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer invalid-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -117,7 +117,7 @@ describe('Working Comprehensive MCP Server Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer working-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
 
@@ -142,7 +142,7 @@ describe('Working Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
+      expect(response.body.result.content).toBeDefined();
     });
 
     test('should handle Java builds', async () => {
@@ -292,14 +292,14 @@ describe('Working Comprehensive MCP Server Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('MCP Server status');
+      expect(response.body.result.content[0].text).toContain('MCP Server status');
     });
 
     test('should handle update action in dangerous mode', async () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer working-test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/call',
           params: {
             name: 'mcp_self_build',
