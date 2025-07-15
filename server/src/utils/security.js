@@ -166,12 +166,12 @@ class SecurityValidator {
 
     // If not allowed by standard paths and enterprise mode is enabled, check enterprise paths
     if (!isAllowed && isEnterpriseMode) {
-      isAllowed = this.validateEnterprisePath(inputPath, enterprisePaths, crossPlatformMode);
+      isAllowed = this.validateEnterprisePath(normalizedPath, enterprisePaths, crossPlatformMode);
     }
 
     // Special case for cross-platform development
     if (!isAllowed && crossPlatformMode) {
-      isAllowed = this.validateCrossPlatformPath(inputPath);
+      isAllowed = this.validateCrossPlatformPath(normalizedPath);
     }
 
     if (!isAllowed) {
@@ -503,14 +503,19 @@ class SecurityValidator {
     // Extract the first word (the actual command)
     const firstWord = command.trim().split(/\s+/)[0].toLowerCase();
     
+    // For absolute paths, extract just the command name
+    const commandName = firstWord.includes('/') || firstWord.includes('\\') ? 
+      path.basename(firstWord).replace(/\.(exe|cmd|bat)$/i, '') : 
+      firstWord;
+    
     // Check if the command is allowed
     const allAllowedCommands = [
       ...this.allowedCommands,
       ...(process.env.ENABLE_DEV_COMMANDS === 'true' ? this.devCommands : [])
     ];
 
-    if (!allAllowedCommands.includes(firstWord)) {
-      throw new Error(`Build command not allowed: ${firstWord}`);
+    if (!allAllowedCommands.includes(commandName)) {
+      throw new Error(`Build command not allowed: ${commandName}`);
     }
 
     return command;
