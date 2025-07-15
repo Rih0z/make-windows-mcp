@@ -1,6 +1,19 @@
-# Windows MCP Build Server v1.0.32
+# Windows MCP Build Server v1.0.33
 
 汎用的なWindows操作をMCP（Model Context Protocol）経由で実行できるサーバーです。CI/CD自動化、ビルドプロセス、ファイル操作、プロセス管理など、様々なWindows環境での自動化ニーズに対応します。
+
+## 🎉 新機能 v1.0.33 - Python Virtual Environment Support
+
+### 🐍 Python仮想環境完全サポート
+- **問題解決**: 「仮想環境なしではPythonテストが実行できない」という重大な問題を解決
+- **自動環境管理**: 仮想環境の自動作成・アクティベート・パッケージインストール
+- **テスト実行**: pytest、pytest-asyncio等のテスト依存関係を隔離環境でインストール・実行
+- **エンタープライズ対応**: CI/CDワークフローに必要な完全なPython開発環境サポート
+
+### 📊 強化された設定管理
+- すべてのハードコード値を環境変数で設定可能に
+- タイムアウト、ポート番号、パスなどをカスタマイズ可能
+- 後方互換性を保ちながら柔軟性を向上
 
 ## 🚨 緊急修正 v1.0.32 - CRITICAL P0 REGRESSION FIX
 
@@ -866,17 +879,31 @@ Ruby/Rails アプリケーションの包括的なビルド・テスト・デプ
 @windows-build-server build_java projectPath="C:\\projects\\MyAndroidApp" buildTool="gradle" variant="release"
 ```
 
-#### 18. build_python - Python環境ビルド
+#### 18. build_python - Python環境ビルド ✨ v1.0.33 Enhanced with Virtual Environment Support
 ```bash
-# pip環境でのパッケージビルド
-@windows-build-server build_python projectPath="C:\\projects\\MyPythonApp" packageManager="pip" requirements="requirements.txt"
+# 仮想環境を使用したPytestテスト実行（推奨）
+@windows-build-server build_python projectPath="C:\\projects\\MyPythonApp" commands='["test"]' useVirtualEnv=true extraPackages='["pytest", "pytest-asyncio"]'
 
-# conda環境でのビルド
-@windows-build-server build_python projectPath="C:\\projects\\MLProject" packageManager="conda" environment="environment.yml"
+# 仮想環境での依存関係インストールとビルド
+@windows-build-server build_python projectPath="C:\\projects\\MyPythonApp" commands='["install", "build"]' useVirtualEnv=true requirements="requirements-dev.txt"
+
+# 既存の仮想環境を使用
+@windows-build-server build_python projectPath="C:\\projects\\MyPythonApp" commands='["test"]' useVirtualEnv=true venvName="myenv"
 
 # Poetry プロジェクトビルド
-@windows-build-server build_python projectPath="C:\\projects\\MyPoetryApp" packageManager="poetry" target="wheel"
+@windows-build-server build_python projectPath="C:\\projects\\MyPoetryApp" buildTool="poetry" commands='["install", "test", "build"]'
+
+# Condaプロジェクト
+@windows-build-server build_python projectPath="C:\\projects\\MLProject" buildTool="conda" commands='["install", "test"]'
 ```
+
+**新機能（v1.0.33）:**
+- `useVirtualEnv`: 自動的に仮想環境を作成・使用（デフォルト: true）
+- `venvName`: 仮想環境ディレクトリ名（デフォルト: ".venv"）
+- `installDeps`: コマンド実行前に依存関係をインストール（デフォルト: true）
+- `extraPackages`: 追加でインストールするパッケージ（pytest等）
+- 自動的にrequirements.txt、requirements-dev.txt等を検出
+- Windows/macOS/Linux対応の仮想環境パス処理
 
 #### 19. build_node - Node.js/TypeScriptビルド
 ```bash
@@ -1127,6 +1154,21 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `DEV_COMMAND_PATHS` | 開発コマンド実行許可パス（カンマ区切り） | いいえ | C:\\builds\\,C:\\projects\\,C:\\dev\\ |
 | `ALLOWED_BATCH_DIRS` | バッチファイル実行許可ディレクトリ（セミコロン区切り） | いいえ | C:\\builds\\;C:\\builds\\AIServer\\;C:\\Users\\Public\\;C:\\temp\\ |
 | `ENABLE_DANGEROUS_MODE` | ⚠️危険実行モード（全制限解除・レート制限無効化） | いいえ | false |
+
+### v1.0.33で追加された環境変数
+
+| 変数名 | 説明 | デフォルト |
+|--------|------|------------|
+| `POWERSHELL_DEFAULT_TIMEOUT` | PowerShellコマンドのデフォルトタイムアウト（秒） | 300 |
+| `POWERSHELL_MAX_TIMEOUT` | PowerShellコマンドの最大タイムアウト（秒） | 1800 |
+| `DOTNET_BUILD_TIMEOUT` | .NETビルドのタイムアウト（ミリ秒） | 600000 |
+| `CPP_BUILD_TIMEOUT` | C++ビルドのタイムアウト（ミリ秒） | 600000 |
+| `BUILD_BASE_DIR` | ビルド出力ベースディレクトリ | C:\\build |
+| `MCP_SERVER_PATH` | MCPサーバーデフォルトインストールパス | C:\\mcp-server |
+| `DEFAULT_SERVER_PORT` | デフォルトサーバーポート（自動検出無効時） | 8080 |
+| `PHP_SERVE_PORT` | PHP開発サーバーポート | 8000 |
+| `SSH_PORT` | SSH接続ポート | 22 |
+| `FILE_ENCODING_MAX_UPLOAD` | ファイルアップロード最大サイズ（バイト） | 52428800 |
 
 ### v1.0.6で追加された環境変数
 

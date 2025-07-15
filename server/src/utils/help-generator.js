@@ -90,6 +90,48 @@ class HelpGenerator {
           }
         ]
       },
+      build_python: {
+        category: 'build',
+        examples: [
+          {
+            title: 'Run Python Tests with Virtual Environment',
+            code: `{
+  "name": "build_python",
+  "arguments": {
+    "projectPath": "C:/builds/MyPythonProject",
+    "commands": ["test"],
+    "useVirtualEnv": true,
+    "venvName": ".venv",
+    "extraPackages": ["pytest", "pytest-asyncio"],
+    "testRunner": "pytest"
+  }
+}`
+          },
+          {
+            title: 'Install Dependencies and Build',
+            code: `{
+  "name": "build_python",
+  "arguments": {
+    "projectPath": "C:/builds/MyPythonProject",
+    "commands": ["install", "build"],
+    "useVirtualEnv": true,
+    "requirements": "requirements-dev.txt"
+  }
+}`
+          },
+          {
+            title: 'Poetry Project Build',
+            code: `{
+  "name": "build_python",
+  "arguments": {
+    "projectPath": "C:/builds/MyPoetryProject",
+    "buildTool": "poetry",
+    "commands": ["install", "test", "build"]
+  }
+}`
+          }
+        ]
+      },
       encode_file_base64: {
         category: 'files',
         examples: [

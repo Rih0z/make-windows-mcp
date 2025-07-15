@@ -42,11 +42,19 @@ function validateEnvironment() {
   
   // Validate numeric environment variables
   const numericVars = {
-    MCP_SERVER_PORT: { default: 8080, min: 1, max: 65535 },
+    MCP_SERVER_PORT: { default: getNumericEnv('DEFAULT_SERVER_PORT', 8080), min: 1, max: 65535 },
     RATE_LIMIT_REQUESTS: { default: 60, min: 1, max: 1000 },
     RATE_LIMIT_WINDOW: { default: 60000, min: 1000, max: 600000 },
     COMMAND_TIMEOUT: { default: 1800000, min: 1000, max: 3600000 },
-    SSH_TIMEOUT: { default: 30000, min: 1000, max: 300000 }
+    SSH_TIMEOUT: { default: 30000, min: 1000, max: 300000 },
+    POWERSHELL_DEFAULT_TIMEOUT: { default: 300, min: 1, max: 3600 },
+    POWERSHELL_MAX_TIMEOUT: { default: 1800, min: 1, max: 7200 },
+    DOTNET_BUILD_TIMEOUT: { default: 600000, min: 60000, max: 3600000 },
+    CPP_BUILD_TIMEOUT: { default: 600000, min: 60000, max: 3600000 },
+    DEFAULT_SERVER_PORT: { default: 8080, min: 1, max: 65535 },
+    PHP_SERVE_PORT: { default: 8000, min: 1, max: 65535 },
+    SSH_PORT: { default: 22, min: 1, max: 65535 },
+    FILE_ENCODING_MAX_UPLOAD: { default: 52428800, min: 1048576, max: 104857600 }
   };
   
   for (const [varName, config] of Object.entries(numericVars)) {
@@ -363,7 +371,7 @@ app.get('/health', (req, res) => {
       dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
       devCommands: process.env.ENABLE_DEV_COMMANDS === 'true',
       authConfigured: !!process.env.MCP_AUTH_TOKEN,
-      port: getNumericEnv('MCP_SERVER_PORT', 8080)
+      port: getNumericEnv('MCP_SERVER_PORT', getNumericEnv('DEFAULT_SERVER_PORT', 8080))
     }
   });
 });
@@ -430,7 +438,7 @@ app.get('/config/validate', (req, res) => {
       httpsEnabled: process.env.ENABLE_HTTPS === 'true'
     },
     networking: {
-      port: getNumericEnv('MCP_SERVER_PORT', 8080),
+      port: getNumericEnv('MCP_SERVER_PORT', getNumericEnv('DEFAULT_SERVER_PORT', 8080)),
       rateLimiting: {
         enabled: getNumericEnv('RATE_LIMIT_REQUESTS', 60) > 0,
         requestsPerWindow: getNumericEnv('RATE_LIMIT_REQUESTS', 60),
@@ -994,7 +1002,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
                 remoteHost: { type: 'string', description: 'Optional remote host IP (NordVPN mesh)' },
                 timeout: { 
                   type: 'number', 
-                  description: 'Command timeout in seconds (default: 300, max: 1800)',
+                  description: `Command timeout in seconds (default: ${getNumericEnv('POWERSHELL_DEFAULT_TIMEOUT', 300)}, max: ${getNumericEnv('POWERSHELL_MAX_TIMEOUT', 1800)})`,
                   minimum: 1,
                   maximum: 1800
                 }
@@ -1058,7 +1066,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
                 },
                 targetPath: {
                   type: 'string',
-                  description: 'Target installation path (default: C:\\mcp-server)'
+                  description: `Target installation path (default: ${process.env.MCP_SERVER_PATH || 'C:\\mcp-server'})`
                 },
                 options: {
                   type: 'object',
@@ -1179,7 +1187,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           },
           {
             name: 'build_python',
-            description: 'Build and test Python applications',
+            description: 'Build and test Python applications with virtual environment support',
             inputSchema: {
               type: 'object',
               properties: {
@@ -1197,17 +1205,34 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
                   items: { type: 'string' },
                   description: 'Commands to execute (e.g., ["install", "test", "build"])'
                 },
+                useVirtualEnv: {
+                  type: 'boolean',
+                  description: 'Automatically use/create virtual environment (default: true)'
+                },
+                venvName: {
+                  type: 'string',
+                  description: 'Virtual environment directory name (default: ".venv")'
+                },
                 virtualEnv: {
                   type: 'string',
-                  description: 'Virtual environment path or name'
+                  description: 'DEPRECATED: Use venvName instead. Path to existing virtual environment'
                 },
                 pythonVersion: {
                   type: 'string',
                   description: 'Python version requirement (e.g., "3.9", ">=3.8")'
                 },
+                installDeps: {
+                  type: 'boolean',
+                  description: 'Install dependencies before running commands (default: true)'
+                },
                 requirements: {
                   type: 'string',
-                  description: 'Requirements file path (default: requirements.txt)'
+                  description: 'Requirements file path (default: auto-detect requirements.txt, requirements-dev.txt, etc.)'
+                },
+                extraPackages: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional packages to install (e.g., ["pytest", "pytest-asyncio"])'
                 },
                 testRunner: {
                   type: 'string',
@@ -1747,7 +1772,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
                   properties: {
                     maxSizeBytes: { 
                       type: 'number', 
-                      description: 'Maximum file size in bytes (default: 10MB, max: 50MB)',
+                      description: `Maximum file size in bytes (default: 10MB, max: ${getNumericEnv('FILE_ENCODING_MAX_UPLOAD', 52428800)})`,
                       minimum: 1,
                       maximum: 52428800
                     },
@@ -1808,8 +1833,8 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             // Extract project name from path
             const projectName = validatedPath.split('\\').pop().replace('.csproj', '');
             
-            // Fixed directory structure: C:\build\<project-name>\release
-            const buildBaseDir = 'C:\\build';
+            // Fixed directory structure: <BUILD_BASE_DIR>\<project-name>\release
+            const buildBaseDir = process.env.BUILD_BASE_DIR || 'C:\\build';
             const projectDir = `${buildBaseDir}\\${projectName}`;
             const releaseDir = `${projectDir}\\release`;
             
@@ -1891,11 +1916,11 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             
             // Enhanced timeout handling with dotnet-aware defaults
             const maxAllowedTimeout = getNumericEnv('MAX_ALLOWED_TIMEOUT', 3600000); // 60 minutes max
-            let defaultTimeout = getNumericEnv('COMMAND_TIMEOUT', 300000); // 5 minutes default
+            let defaultTimeout = getNumericEnv('POWERSHELL_DEFAULT_TIMEOUT', 300) * 1000; // Use PowerShell default timeout in milliseconds
             
             // Increase default timeout for dotnet commands (initial compilation can be slow)
             if (validatedCommand.toLowerCase().includes('dotnet')) {
-              defaultTimeout = Math.max(defaultTimeout, 600000); // 10 minutes for dotnet commands
+              defaultTimeout = Math.max(defaultTimeout, getNumericEnv('DOTNET_BUILD_TIMEOUT', 600000)); // Use .NET build timeout
             }
             
             const requestedTimeoutMs = args.timeout ? 
@@ -2094,7 +2119,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
         case 'mcp_self_build':
           try {
             const action = args.action;
-            const targetPath = args.targetPath || 'C:\\mcp-server';
+            const targetPath = args.targetPath || process.env.MCP_SERVER_PATH || 'C:\\mcp-server';
             const options = args.options || {};
             
             switch (action) {
@@ -2519,6 +2544,12 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             const buildTool = security.validatePythonBuild(args.projectPath, args.buildTool);
             const validatedPath = args.projectPath; // Already validated in validatePythonBuild
             
+            // Virtual environment settings
+            const useVirtualEnv = args.useVirtualEnv !== false; // Default to true
+            const venvName = args.venvName || args.virtualEnv || '.venv';
+            const venvPath = path.join(validatedPath, venvName);
+            const installDeps = args.installDeps !== false; // Default to true
+            
             // Auto-detect build tool if needed
             let finalBuildTool = buildTool;
             if (buildTool === 'auto') {
@@ -2534,69 +2565,163 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               }
             }
             
-            let command = '';
-            let commandArgs = [];
-            const commands = args.commands || ['install'];
+            let results = [];
+            const commands = args.commands || ['install', 'test'];
             
-            // Build command based on tool
-            if (finalBuildTool === 'pip') {
-              command = 'pip';
-              for (const cmd of commands) {
-                if (cmd === 'install') {
-                  const reqFile = args.requirements || 'requirements.txt';
-                  commandArgs.push('install', '-r', reqFile);
-                } else if (cmd === 'test') {
-                  const testRunner = args.testRunner || 'pytest';
-                  command = testRunner;
-                  commandArgs = [];
-                } else {
-                  commandArgs.push(cmd);
+            // Create virtual environment if needed and using pip
+            if (useVirtualEnv && finalBuildTool === 'pip') {
+              const fs = require('fs');
+              if (!fs.existsSync(venvPath)) {
+                logger.info('Creating virtual environment', { venvPath });
+                const createVenvResult = await executeBuild('python', ['-m', 'venv', venvName], {
+                  workingDirectory: validatedPath,
+                  timeout: 60000 // 1 minute for venv creation
+                });
+                if (!createVenvResult.success) {
+                  throw new Error(`Failed to create virtual environment: ${createVenvResult.error}`);
+                }
+                results.push('✓ Created virtual environment: ' + venvName);
+              } else {
+                results.push('✓ Using existing virtual environment: ' + venvName);
+              }
+            }
+            
+            // Determine Python and pip executables based on virtual environment
+            let pythonExe = 'python';
+            let pipExe = 'pip';
+            
+            if (useVirtualEnv && finalBuildTool === 'pip') {
+              // Use virtual environment executables
+              if (process.platform === 'win32') {
+                pythonExe = path.join(venvPath, 'Scripts', 'python.exe');
+                pipExe = path.join(venvPath, 'Scripts', 'pip.exe');
+              } else {
+                pythonExe = path.join(venvPath, 'bin', 'python');
+                pipExe = path.join(venvPath, 'bin', 'pip');
+              }
+            }
+            
+            // Install dependencies if needed
+            if (installDeps && finalBuildTool === 'pip') {
+              // Auto-detect requirements file
+              const fs = require('fs');
+              let reqFile = args.requirements;
+              if (!reqFile) {
+                const possibleFiles = ['requirements.txt', 'requirements-dev.txt', 'dev-requirements.txt', 'test-requirements.txt'];
+                for (const file of possibleFiles) {
+                  if (fs.existsSync(path.join(validatedPath, file))) {
+                    reqFile = file;
+                    break;
+                  }
                 }
               }
-            } else if (finalBuildTool === 'poetry') {
-              command = 'poetry';
-              commandArgs = [...commands];
-            } else if (finalBuildTool === 'conda') {
-              command = 'conda';
-              commandArgs = [...commands];
-            } else if (finalBuildTool === 'pipenv') {
-              command = 'pipenv';
-              commandArgs = [...commands];
+              
+              if (reqFile && fs.existsSync(path.join(validatedPath, reqFile))) {
+                const installResult = await executeBuild(pipExe, ['install', '-r', reqFile], {
+                  workingDirectory: validatedPath,
+                  timeout: getNumericEnv('COMMAND_TIMEOUT', 600000) // 10 minutes for package installation
+                });
+                if (!installResult.success) {
+                  throw new Error(`Failed to install dependencies: ${installResult.error}`);
+                }
+                results.push(`✓ Installed dependencies from ${reqFile}`);
+              }
+              
+              // Install extra packages if specified
+              if (args.extraPackages && args.extraPackages.length > 0) {
+                const installResult = await executeBuild(pipExe, ['install', ...args.extraPackages], {
+                  workingDirectory: validatedPath,
+                  timeout: getNumericEnv('COMMAND_TIMEOUT', 300000) // 5 minutes for package installation
+                });
+                if (!installResult.success) {
+                  throw new Error(`Failed to install extra packages: ${installResult.error}`);
+                }
+                results.push(`✓ Installed extra packages: ${args.extraPackages.join(', ')}`);
+              }
             }
             
-            const buildOptions = {
-              workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
-            };
-            
-            // Set virtual environment if specified
-            if (args.virtualEnv) {
-              buildOptions.env = { ...process.env, VIRTUAL_ENV: args.virtualEnv };
+            // Execute commands
+            for (const cmd of commands) {
+              let command = '';
+              let commandArgs = [];
+              
+              if (finalBuildTool === 'pip') {
+                if (cmd === 'install') {
+                  if (!installDeps) {
+                    // Only run if not already done above
+                    const reqFile = args.requirements || 'requirements.txt';
+                    command = pipExe;
+                    commandArgs = ['install', '-r', reqFile];
+                  } else {
+                    continue; // Skip, already handled above
+                  }
+                } else if (cmd === 'test') {
+                  const testRunner = args.testRunner || 'pytest';
+                  if (useVirtualEnv) {
+                    // Use test runner from virtual environment
+                    if (process.platform === 'win32') {
+                      command = path.join(venvPath, 'Scripts', testRunner + '.exe');
+                    } else {
+                      command = path.join(venvPath, 'bin', testRunner);
+                    }
+                  } else {
+                    command = testRunner;
+                  }
+                  commandArgs = [];
+                } else if (cmd === 'build') {
+                  command = pythonExe;
+                  commandArgs = ['setup.py', 'build'];
+                } else {
+                  // Custom command
+                  command = pythonExe;
+                  commandArgs = ['-m', cmd];
+                }
+              } else if (finalBuildTool === 'poetry') {
+                command = 'poetry';
+                commandArgs = [cmd];
+              } else if (finalBuildTool === 'conda') {
+                command = 'conda';
+                commandArgs = [cmd];
+              } else if (finalBuildTool === 'pipenv') {
+                command = 'pipenv';
+                commandArgs = [cmd];
+              }
+              
+              if (command) {
+                const buildOptions = {
+                  workingDirectory: validatedPath,
+                  timeout: getNumericEnv('COMMAND_TIMEOUT', 1800000)
+                };
+                
+                if (args.remoteHost) {
+                  const validatedHost = security.validateIPAddress(args.remoteHost);
+                  buildOptions.remoteHost = validatedHost;
+                }
+                
+                // Validate the final command for security
+                const fullCommand = `${command} ${commandArgs.join(' ')}`;
+                security.validateBuildCommand(fullCommand);
+                
+                // Execute command
+                const cmdResult = await executeBuild(command, commandArgs, buildOptions);
+                
+                if (!cmdResult.success) {
+                  throw new Error(`Python ${cmd} failed: ${cmdResult.output || cmdResult.error}`);
+                }
+                
+                results.push(`✓ Executed ${cmd}: ${cmdResult.output}`);
+              }
             }
             
-            if (args.remoteHost) {
-              const validatedHost = security.validateIPAddress(args.remoteHost);
-              buildOptions.remoteHost = validatedHost;
-            }
-            
-            // Validate the final command for security
-            const fullCommand = `${command} ${commandArgs.join(' ')}`;
-            security.validateBuildCommand(fullCommand);
-            
-            // Execute build
-            result = await executeBuild(command, commandArgs, buildOptions);
-            
-            if (!result.success) {
-              throw new Error(`Python build failed: ${result.output || result.error}`);
-            }
-            
-            result = createTextResult(`Python build completed successfully:\n${result.output}`);
+            result = createTextResult(`Python build completed successfully:\n\n${results.join('\n')}`);
             
             logger.info('Python build executed', { 
               clientIP, 
-              buildTool,
+              buildTool: finalBuildTool,
               projectPath: validatedPath,
-              command: `${command} ${commandArgs.join(' ')}`
+              useVirtualEnv,
+              venvName,
+              commands
             });
           } catch (error) {
             result = handleValidationError(error, 'Python build', logger, clientIP, { projectPath: args.projectPath });
@@ -2972,7 +3097,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 600000) // Longer timeout for C++ builds
+              timeout: getNumericEnv('CPP_BUILD_TIMEOUT', 600000) // C++ build timeout
             };
 
             if (args.remoteHost) {
@@ -3200,7 +3325,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
 
             const buildOptions = {
               workingDirectory: validatedPath,
-              timeout: getNumericEnv('COMMAND_TIMEOUT', 600000) // 10 minutes for Android builds
+              timeout: getNumericEnv('COMMAND_TIMEOUT', 600000) // Default timeout for Android builds
             };
 
             if (args.remoteHost) {
@@ -3385,7 +3510,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
 
               case 'serve':
                 command = 'php';
-                commandArgs.push('-S', 'localhost:8000', '-t', 'public');
+                commandArgs.push('-S', `localhost:${getNumericEnv('PHP_SERVE_PORT', 8000)}`, '-t', 'public');
                 break;
 
               case 'build':
@@ -3710,7 +3835,7 @@ async function executeSSHCommand(host, username, password, command) {
       host: host,
       username: username,
       password: password,
-      port: 22,
+      port: getNumericEnv('SSH_PORT', 22),
       readyTimeout: getNumericEnv('SSH_TIMEOUT', 30000)
     });
     

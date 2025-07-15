@@ -2,6 +2,36 @@
 
 ## [1.0.33] - 2025-07-15
 
+### 🚀 Critical Feature: Python Virtual Environment Support
+- **Major Enhancement**: Full virtual environment support in `build_python` tool
+  - Addresses critical issue: "Unable to run Python tests due to lack of virtual environment"
+  - Automatically creates and manages Python virtual environments
+  - Installs test dependencies (pytest, pytest-asyncio, etc.) in isolated environments
+  - Enables proper Python testing workflows for enterprise development
+
+### New Features
+- **Python Virtual Environment Management**:
+  - `useVirtualEnv`: Automatically use/create virtual environment (default: true)
+  - `venvName`: Virtual environment directory name (default: ".venv")
+  - `installDeps`: Install dependencies before running commands (default: true)
+  - `extraPackages`: Install additional packages like pytest, pytest-asyncio
+  - Auto-detects requirements files (requirements.txt, requirements-dev.txt, etc.)
+  - Cross-platform support (Windows/macOS/Linux)
+
+- **Environment Variable Configuration**:
+  - Added comprehensive environment variable support for all hardcoded values
+  - New configuration options in `.env.example`:
+    - `POWERSHELL_DEFAULT_TIMEOUT` / `POWERSHELL_MAX_TIMEOUT`
+    - `DOTNET_BUILD_TIMEOUT` / `CPP_BUILD_TIMEOUT`
+    - `BUILD_BASE_DIR` / `MCP_SERVER_PATH`
+    - `DEFAULT_SERVER_PORT` / `PHP_SERVE_PORT` / `SSH_PORT`
+    - `FILE_ENCODING_MAX_UPLOAD`
+
+### Enhanced
+- **Help Documentation**: Added comprehensive Python virtual environment examples
+- **build_python Tool**: Complete rewrite with intelligent virtual environment handling
+- **Configuration Flexibility**: All timeout and path values now configurable
+
 ### Fixed
 - **Critical Bug Fix**: Fixed JSON-RPC request parsing issue in MCP endpoint
   - Removed double JSON parsing that was causing 400 errors for valid requests
@@ -14,9 +44,15 @@
   - Updated response structure expectations to match actual MCP protocol
 
 ### Technical Details
-- Issue: The server was calling `JSON.stringify(req.body)` and then trying to parse it again with `validateAndParseJsonRpc`, causing parsing errors especially with escaped quotes in commands
-- Solution: Use the already-parsed `req.body` directly since Express middleware has already parsed the JSON
-- Impact: All MCP tool calls were failing with 400 Bad Request errors
+- **Python Virtual Environment Implementation**:
+  - Detects and creates virtual environments automatically
+  - Uses platform-specific paths (Scripts/python.exe on Windows, bin/python on Unix)
+  - Installs dependencies from requirements files or extra packages
+  - Runs tests with isolated Python environments
+- **Environment Variable System**:
+  - Uses `getNumericEnv()` for safe numeric environment variable parsing
+  - Backward compatible with existing configurations
+  - All hardcoded values replaced with configurable options
 
 ## [1.0.32] - 2025-07-11
 
