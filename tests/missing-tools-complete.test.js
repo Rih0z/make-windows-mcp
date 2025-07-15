@@ -47,8 +47,8 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
-      expect(response.body.content[0].text).toContain('PowerShell Test Complete');
+      expect(response.body.result.content).toBeDefined();
+      expect(response.body.result.content[0].text).toContain('PowerShell Test Complete');
     });
 
     test('should handle PowerShell with custom timeout', async () => {
@@ -67,7 +67,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('After sleep');
+      expect(response.body.result.content[0].text).toContain('After sleep');
     });
 
     test('should handle PowerShell with remote execution', async () => {
@@ -102,7 +102,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Validation error');
+      expect(response.body.result.content[0].text).toContain('Validation error');
     });
 
     test('should handle PowerShell script blocks', async () => {
@@ -120,7 +120,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Result is 2');
+      expect(response.body.result.content[0].text).toContain('Result is 2');
     });
   });
 
@@ -140,8 +140,8 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
-      expect(response.body.content[0].text).toContain('Ping result');
+      expect(response.body.result.content).toBeDefined();
+      expect(response.body.result.content[0].text).toContain('Ping result');
     });
 
     test('should handle invalid hostname', async () => {
@@ -159,7 +159,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Ping');
+      expect(response.body.result.content[0].text).toContain('Ping');
     });
 
     test('should validate required host parameter', async () => {
@@ -175,7 +175,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('host is required');
+      expect(response.body.result.content[0].text).toContain('host is required');
     });
 
     test('should handle IP address formats', async () => {
@@ -193,7 +193,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Ping result');
+      expect(response.body.result.content[0].text).toContain('Ping result');
     });
   });
 
@@ -235,7 +235,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('required');
+      expect(response.body.result.content[0].text).toContain('required');
     });
 
     test('should handle SSH connection timeout', async () => {
@@ -277,7 +277,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Validation error');
+      expect(response.body.result.content[0].text).toContain('Validation error');
     });
   });
 
@@ -299,7 +299,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content).toBeDefined();
+      expect(response.body.result.content).toBeDefined();
     });
 
     test('should handle Kotlin Maven builds', async () => {
@@ -337,7 +337,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation failed');
+      expect(response.body.result.content[0].text).toContain('validation failed');
     });
   });
 
@@ -394,7 +394,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Invalid PHP action');
+      expect(response.body.result.content[0].text).toContain('Invalid PHP action');
     });
   });
 
@@ -452,7 +452,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation failed');
+      expect(response.body.result.content[0].text).toContain('validation failed');
     });
   });
 
@@ -569,7 +569,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('テスト');
+      expect(response.body.result.content[0].text).toContain('テスト');
     });
   });
 
@@ -591,7 +591,7 @@ describe('Missing Tools Complete Test Coverage', () => {
       const responses = await Promise.all(pingRequests);
       responses.forEach(response => {
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).toContain('Ping result');
+        expect(response.body.result.content[0].text).toContain('Ping result');
       });
     });
 
@@ -620,7 +620,7 @@ describe('Missing Tools Complete Test Coverage', () => {
         request(app)
           .post('/mcp')
           .set('Authorization', 'Bearer missing-tools-test-token')
-          .send({
+          .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
             method: 'tools/list'
           })
       ];

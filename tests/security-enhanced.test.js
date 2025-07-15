@@ -55,7 +55,7 @@ describe('Enhanced Security Tests', () => {
           .send({
             method: 'tools/call',
             params: {
-              name: 'execute_powershell',
+              name: 'run_powershell',
               arguments: {
                 command: cmd
               }
@@ -63,7 +63,7 @@ describe('Enhanced Security Tests', () => {
           });
 
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).toContain('Security validation failed');
+        expect(response.body.result.content[0].text).toContain('Security validation failed');
       }
     });
 
@@ -83,7 +83,7 @@ describe('Enhanced Security Tests', () => {
           .send({
             method: 'tools/call',
             params: {
-              name: 'execute_powershell',
+              name: 'run_powershell',
               arguments: {
                 command: cmd
               }
@@ -91,7 +91,7 @@ describe('Enhanced Security Tests', () => {
           });
 
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).not.toContain('Security validation failed');
+        expect(response.body.result.content[0].text).not.toContain('Security validation failed');
       }
     });
 
@@ -110,7 +110,7 @@ describe('Enhanced Security Tests', () => {
           .send({
             method: 'tools/call',
             params: {
-              name: 'build_project',
+              name: 'build_dotnet',
               arguments: {
                 projectPath: path,
                 buildType: 'debug'
@@ -119,7 +119,7 @@ describe('Enhanced Security Tests', () => {
           });
 
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).toContain('validation failed');
+        expect(response.body.result.content[0].text).toContain('validation failed');
       }
     });
   });
@@ -151,7 +151,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "dangerous mode test"'
             }
@@ -159,7 +159,7 @@ describe('Enhanced Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).not.toContain('Security validation failed');
+      expect(response.body.result.content[0].text).not.toContain('Security validation failed');
     });
   });
 
@@ -182,7 +182,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'node --version'
             }
@@ -209,7 +209,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "test"'
             }
@@ -227,7 +227,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "test"'
             }
@@ -245,7 +245,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "valid token test"'
             }
@@ -273,7 +273,7 @@ describe('Enhanced Security Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "allowed IP test"'
             }
@@ -350,7 +350,7 @@ describe('Enhanced Security Tests', () => {
             .send({
               method: 'tools/call',
               params: {
-                name: 'execute_powershell',
+                name: 'run_powershell',
                 arguments: {
                   command: 'echo "rate limit test"'
                 }

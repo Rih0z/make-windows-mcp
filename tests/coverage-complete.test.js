@@ -82,7 +82,7 @@ describe('Complete Coverage Tests', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token-123')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/call',
           params: null // Invalid params
         });
@@ -107,7 +107,7 @@ describe('Complete Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Ping failed');
+      expect(response.body.result.content[0].text).toContain('Ping failed');
     });
 
     test('should handle SSH exec errors', async () => {
@@ -136,7 +136,7 @@ describe('Complete Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('SSH Error');
+      expect(response.body.result.content[0].text).toContain('SSH Error');
     });
 
     test('should handle SSH connection errors', async () => {
@@ -161,7 +161,7 @@ describe('Complete Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Connection failed');
+      expect(response.body.result.content[0].text).toContain('Connection failed');
     });
 
     test('should handle SSH stream stderr', async () => {
@@ -197,7 +197,7 @@ describe('Complete Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('STDERR');
+      expect(response.body.result.content[0].text).toContain('STDERR');
     });
 
     test('should handle remote execution without password', async () => {
@@ -218,7 +218,7 @@ describe('Complete Coverage Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('REMOTE_PASSWORD environment variable not set');
+      expect(response.body.result.content[0].text).toContain('REMOTE_PASSWORD environment variable not set');
       
       // Restore
       process.env.REMOTE_PASSWORD = 'testpass';

@@ -186,7 +186,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('SSH Command completed');
+      expect(response.body.result.content[0].text).toContain('SSH Command completed');
       expect(mockSSHConnection.connect).toHaveBeenCalled();
     });
 
@@ -232,7 +232,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('SSH Command completed');
+      expect(response.body.result.content[0].text).toContain('SSH Command completed');
     });
   });
 
@@ -296,7 +296,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('SSH Error: Exec failed');
+      expect(response.body.result.content[0].text).toContain('SSH Error: Exec failed');
     });
 
     test('should handle SSH connection error', async () => {
@@ -325,7 +325,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Connection failed');
+      expect(response.body.result.content[0].text).toContain('Connection failed');
     });
 
     test('should handle SSH stream stderr data', async () => {
@@ -377,8 +377,8 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Standard output');
-      expect(response.body.content[0].text).toContain('STDERR: Error output');
+      expect(response.body.result.content[0].text).toContain('Standard output');
+      expect(response.body.result.content[0].text).toContain('STDERR: Error output');
     });
   });
 
@@ -402,7 +402,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Process error');
+      expect(response.body.result.content[0].text).toContain('Process error');
     });
 
     test('should handle process timeout', async () => {
@@ -466,7 +466,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Exit code: 0');
+      expect(response.body.result.content[0].text).toContain('Exit code: 0');
     });
   });
 
@@ -592,7 +592,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Error: REMOTE_PASSWORD environment variable not set');
+      expect(response.body.result.content[0].text).toContain('Error: REMOTE_PASSWORD environment variable not set');
 
       process.env.REMOTE_PASSWORD = originalPassword;
     });
@@ -617,7 +617,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Error: Failed to decrypt remote password');
+      expect(response.body.result.content[0].text).toContain('Error: Failed to decrypt remote password');
     });
   });
 
@@ -639,7 +639,7 @@ describe('Server Improved Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Ping failed');
+      expect(response.body.result.content[0].text).toContain('Ping failed');
     });
   });
 

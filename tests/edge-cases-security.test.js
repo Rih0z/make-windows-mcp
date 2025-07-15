@@ -49,7 +49,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation failed');
+      expect(response.body.result.content[0].text).toContain('validation failed');
     });
 
     test('should reject directory traversal attempts', async () => {
@@ -69,7 +69,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation failed');
+      expect(response.body.result.content[0].text).toContain('validation failed');
     });
 
     test('should handle missing required parameters', async () => {
@@ -88,7 +88,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('required');
+      expect(response.body.result.content[0].text).toContain('required');
     });
 
     test('should validate allowed actions', async () => {
@@ -107,7 +107,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Invalid');
+      expect(response.body.result.content[0].text).toContain('Invalid');
     });
   });
 
@@ -128,7 +128,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('not allowed');
+      expect(response.body.result.content[0].text).toContain('not allowed');
     });
 
     test('should reject starting dangerous executables', async () => {
@@ -148,7 +148,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('not allowed');
+      expect(response.body.result.content[0].text).toContain('not allowed');
     });
 
     test('should handle process listing safely', async () => {
@@ -185,7 +185,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Invalid');
+      expect(response.body.result.content[0].text).toContain('Invalid');
     });
   });
 
@@ -250,7 +250,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation');
+      expect(response.body.result.content[0].text).toContain('validation');
     });
   });
 
@@ -278,7 +278,7 @@ describe('Edge Cases and Security Tests', () => {
           });
 
         expect(response.status).toBe(200);
-        expect(response.body.content[0].text).toContain('not allowed');
+        expect(response.body.result.content[0].text).toContain('not allowed');
       }
     });
 
@@ -297,7 +297,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('validation');
+      expect(response.body.result.content[0].text).toContain('validation');
     });
   });
 
@@ -371,7 +371,7 @@ describe('Edge Cases and Security Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('required');
+      expect(response.body.result.content[0].text).toContain('required');
     });
 
     test('should show warnings in dangerous mode', async () => {

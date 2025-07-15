@@ -209,7 +209,7 @@ describe('Server Integration Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Connection failed');
+      expect(response.body.result.content[0].text).toContain('Connection failed');
     });
 
     test('should handle SSH exec errors', async () => {
@@ -234,7 +234,7 @@ describe('Server Integration Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Connection failed');
+      expect(response.body.result.content[0].text).toContain('Connection failed');
     });
   });
 
@@ -317,7 +317,7 @@ describe('Server Integration Tests', () => {
           }
         });
 
-      expect(response.body.content[0].text).toContain('REMOTE_PASSWORD environment variable not set');
+      expect(response.body.result.content[0].text).toContain('REMOTE_PASSWORD environment variable not set');
       
       // Restore password
       process.env.REMOTE_PASSWORD = originalPassword;
@@ -338,8 +338,8 @@ describe('Server Integration Tests', () => {
         });
 
       expect(mockPing.promise.probe).toHaveBeenCalledWith('192.168.1.1');
-      expect(response.body.content[0].text).toContain('Ping result for 192.168.1.1');
-      expect(response.body.content[0].text).toContain('Alive: true');
+      expect(response.body.result.content[0].text).toContain('Ping result for 192.168.1.1');
+      expect(response.body.result.content[0].text).toContain('Alive: true');
     });
 
     test('should handle ping failures', async () => {
@@ -356,7 +356,7 @@ describe('Server Integration Tests', () => {
           }
         });
 
-      expect(response.body.content[0].text).toContain('Ping failed for 192.168.1.1');
+      expect(response.body.result.content[0].text).toContain('Ping failed for 192.168.1.1');
     });
   });
 
@@ -390,7 +390,7 @@ describe('Server Integration Tests', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.content[0].text).toContain('Validation error');
+      expect(response.body.result.content[0].text).toContain('Validation error');
     });
   });
 });

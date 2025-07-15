@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.0.34] - 2025-07-15
+
+### 🎯 Enhanced User Experience: Dynamic Help System Strengthening
+- **Critical Fix**: Enhanced MCP connection experience to address external engineer feedback
+  - Strengthened `tools/list` response with immediate Python virtual environment capability notification
+  - Added featured capabilities section highlighting Python venv support in v1.0.33
+  - Enhanced welcome message integration for better discoverability
+
+### Dynamic Help System Improvements (CLAUDE.md 第13条完全実装)
+- **Enhanced tools/list Response**:
+  - Added `welcomeMessage` field with full server capabilities overview  
+  - New `featuredCapabilities` section prominently displays Python virtual environment support
+  - Updated `quickStart` with Python testing example: `build_python` with `useVirtualEnv: true`
+  - Clear messaging: "Python virtual environment support included in v1.0.33!"
+
+### User Experience Enhancements
+- **Immediate Capability Discovery**: Users now see Python venv features immediately upon `tools/list` call
+- **Prevents Feature Discovery Issues**: Addresses cases where users submit improvement requests for already-implemented features
+- **Comprehensive First Contact**: Welcome message + help info + Python examples all visible at initial connection
+
+### Technical Implementation
+- Enhanced `server/src/server.js:1797` with dynamic welcome message generation
+- Integrated `helpGenerator.generateWelcomeMessage()` into tools/list response
+- Python virtual environment capabilities now prominently featured in quick start examples
+
 ## [1.0.33] - 2025-07-15
 
 ### 🚀 Critical Feature: Python Virtual Environment Support

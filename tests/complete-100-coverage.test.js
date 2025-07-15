@@ -153,11 +153,11 @@ describe('Complete 100% Coverage', () => {
       const listRes = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
       
       expect(listRes.body.tools).toBeDefined();
-      expect(listRes.body.tools.length).toBeGreaterThan(0);
+      expect(listRes.body.result.tools.length).toBeGreaterThan(0);
       
       // Test unknown method
       const unknownRes = await request(app)
@@ -176,21 +176,21 @@ describe('Complete 100% Coverage', () => {
       // Missing auth header
       await request(app)
         .post('/mcp')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
       
       // Invalid token
       await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer wrong-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
       
       // Valid token
       await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
     });
 
@@ -422,7 +422,7 @@ describe('Complete 100% Coverage', () => {
         })
         .expect(200);
       
-      expect(res.body.content[0].text).toContain('Unknown tool');
+      expect(res.body.result.content[0].text).toContain('Unknown tool');
     });
 
     test('should handle general errors', async () => {
@@ -433,7 +433,7 @@ describe('Complete 100% Coverage', () => {
       const res = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/call',
           params: null
         })

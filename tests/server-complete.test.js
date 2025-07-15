@@ -297,17 +297,17 @@ describe('Server Complete Coverage', () => {
         .post('/mcp')
         .set('X-Forwarded-For', '192.168.1.100') // Should match 192.168.1.0/24
         .set('Authorization', 'Bearer test-token-123')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toBeDefined();
+      expect(response.body.result.tools).toBeDefined();
     });
 
     test('should block IPs not in whitelist', async () => {
       const response = await request(app)
         .post('/mcp')
         .set('X-Forwarded-For', '10.0.0.1') // Not in allowed range
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(403);
 
       expect(response.body.error).toContain('Access denied from this IP address');
@@ -341,7 +341,7 @@ describe('Server Complete Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Dangerous command detected');
+      expect(response.body.result.content[0].text).toContain('Validation error: Dangerous command detected');
       expect(logger.security).toHaveBeenCalledWith(
         'PowerShell validation failed',
         expect.objectContaining({ error: 'Dangerous command detected' })
@@ -362,7 +362,7 @@ describe('Server Complete Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Directory traversal detected');
+      expect(response.body.result.content[0].text).toContain('Validation error: Directory traversal detected');
     });
 
     test('should handle invalid IP addresses', async () => {
@@ -379,7 +379,7 @@ describe('Server Complete Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Invalid IP address format');
+      expect(response.body.result.content[0].text).toContain('Validation error: Invalid IP address format');
     });
 
     test('should handle invalid SSH credentials', async () => {
@@ -401,7 +401,7 @@ describe('Server Complete Coverage', () => {
         })
         .expect(200);
 
-      expect(response.body.content[0].text).toContain('Validation error: Invalid username');
+      expect(response.body.result.content[0].text).toContain('Validation error: Invalid username');
     });
   });
 
@@ -435,7 +435,7 @@ describe('Server Complete Coverage', () => {
       await request(app)
         .post('/mcp')
         .set('X-Forwarded-For', '10.0.0.1') // IP not in whitelist
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(403);
 
       expect(logger.security).toHaveBeenCalledWith(
@@ -485,7 +485,7 @@ describe('Server Complete Coverage', () => {
         })
         .expect(200); // Our implementation catches errors and returns 200 with error content
 
-      expect(response.body.content[0].text).toContain('Validation error: Unexpected server error');
+      expect(response.body.result.content[0].text).toContain('Validation error: Unexpected server error');
       expect(logger.security).toHaveBeenCalledWith(
         'PowerShell validation failed',
         expect.objectContaining({ error: 'Unexpected server error' })
@@ -523,10 +523,10 @@ describe('Server Complete Coverage', () => {
 
       const response = await request(app)
         .post('/mcp')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
 
-      expect(response.body.tools).toBeDefined();
+      expect(response.body.result.tools).toBeDefined();
 
       process.env.MCP_AUTH_TOKEN = originalToken;
       process.env.ALLOWED_IPS = originalIPs;

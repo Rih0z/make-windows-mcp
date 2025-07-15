@@ -82,7 +82,7 @@ describe('Debug Server Test', () => {
       const response = await request(app)
         .post('/mcp')
         .set('Authorization', 'Bearer test-token')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         });
       

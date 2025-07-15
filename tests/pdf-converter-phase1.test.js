@@ -54,7 +54,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Long running PDF conversion"',
               timeout: 600 // 10 minutes
@@ -89,7 +89,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Test"',
               timeout: 3600 // 60 minutes (exceeds max)
@@ -127,7 +127,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Test"'
               // No timeout specified
@@ -163,7 +163,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Long running command"',
               timeout: 1 // 1 second for quick timeout
@@ -225,7 +225,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'Stop-Process -Name "StandardTaxPdfConverter.UI" -Force'
             }
@@ -277,7 +277,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'C:\\builds\\StandardTaxPdfConverter.UI.exe -input "images" -output "output.pdf"',
               timeout: 600
@@ -320,7 +320,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Test"',
               timeout: 1
@@ -354,7 +354,7 @@ describe('PDF Converter Support - Phase 1', () => {
           id: 1,
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "Test"',
               timeout: 300

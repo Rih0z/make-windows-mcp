@@ -68,7 +68,7 @@ describe('Critical Timeout Bug Fix Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "timeout test"'
             }
@@ -80,7 +80,7 @@ describe('Critical Timeout Bug Fix Tests', () => {
       // The response should succeed without timing out immediately
       // In the bug, commands would timeout after 1.8 seconds
       expect(response.body).toBeDefined();
-      expect(response.body.content).toBeDefined();
+      expect(response.body.result.content).toBeDefined();
     });
 
     test('should handle timeout parameter correctly', async () => {
@@ -90,7 +90,7 @@ describe('Critical Timeout Bug Fix Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "timeout parameter test"',
               timeout: 60 // 1 minute
@@ -111,7 +111,7 @@ describe('Critical Timeout Bug Fix Tests', () => {
         .send({
           method: 'tools/call',
           params: {
-            name: 'execute_powershell',
+            name: 'run_powershell',
             arguments: {
               command: 'echo "max timeout test"',
               timeout: 2000 // Greater than max of 1800 seconds

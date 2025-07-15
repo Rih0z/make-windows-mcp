@@ -1793,14 +1793,27 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           }
         ],
         
-        // Added help information (CLAUDE.md 第13条)
+        // Enhanced welcome message and help information (CLAUDE.md 第13条完全実装)
+        welcomeMessage: helpGenerator.generateWelcomeMessage({
+          version: require('../package.json').version,
+          authConfigured: authManager.isAuthEnabled(),
+          dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
+          tools: 9
+        }),
+        
         helpInfo: {
-          message: '🎉 All tools available! Use /help/quick for examples and /help/tools for detailed documentation.',
+          message: '🎉 All 9 tools available! Python virtual environment support included in v1.0.33!',
+          featuredCapabilities: {
+            '🐍 Python Virtual Environments': 'build_python: Auto-creates .venv, installs deps, runs pytest/unittest',
+            '🔨 Multi-Language Builds': '.NET, Java, Python, Node.js, Go, Rust, C++, Ruby, Docker',
+            '⚡ PowerShell Execution': 'Full Windows automation with timeout controls',
+            '📁 File Operations': 'Base64 encoding, file sync, large file transfers'
+          },
           quickStart: {
-            'Build .NET': 'Use build_dotnet with projectPath and configuration',
-            'Run Commands': 'Use run_powershell with command parameter', 
-            'Encode Files': 'Use encode_file_base64 with filePath',
-            'Get Help': 'Visit /help/quick for comprehensive examples'
+            'Python Testing': 'build_python: {"projectPath": "C:/project", "commands": ["test"], "useVirtualEnv": true}',
+            'Build .NET': 'build_dotnet: {"projectPath": "C:/project.csproj", "configuration": "Release"}',
+            'Run Commands': 'run_powershell: {"command": "Get-Process"}', 
+            'Get Detailed Help': 'Visit /help/tools for comprehensive examples with Python venv'
           },
           helpEndpoints: {
             '/help/quick': 'Quick reference and common examples',

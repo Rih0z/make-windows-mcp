@@ -113,13 +113,13 @@ describe('Enhanced Integration Tests', () => {
       // Step 1: List available tools
       const toolsRes = await request(app)
         .post('/mcp')
-        .send({
+        .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
           method: 'tools/list'
         })
         .expect(200);
       
       expect(toolsRes.body.tools).toHaveLength(5);
-      expect(toolsRes.body.tools.map(t => t.name)).toContain('build_dotnet');
+      expect(toolsRes.body.result.tools.map(t => t.name)).toContain('build_dotnet');
       
       // Step 2: Execute build
       const buildRes = await request(app)
@@ -159,7 +159,7 @@ describe('Enhanced Integration Tests', () => {
           })
           .expect(200);
         
-        expect(res.body.content[0].text).toContain('Exit code: 0');
+        expect(res.body.result.content[0].text).toContain('Exit code: 0');
       }
     });
 
@@ -202,21 +202,21 @@ describe('Enhanced Integration Tests', () => {
       // No auth header
       await request(authApp)
         .post('/mcp')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
       
       // Invalid token
       await request(authApp)
         .post('/mcp')
         .set('Authorization', 'Bearer invalid-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(401);
       
       // Valid token should work
       await request(authApp)
         .post('/mcp')
         .set('Authorization', 'Bearer test-auth-token')
-        .send({ method: 'tools/list' })
+        .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         .expect(200);
         
       // Reset for other tests
@@ -231,7 +231,7 @@ describe('Enhanced Integration Tests', () => {
         requests.push(
           request(app)
             .post('/mcp')
-                .send({ method: 'tools/list' })
+                .send({ jsonrpc: '2.0', id: `test-${Date.now()}-${Math.random()}`, method: 'tools/list' })
         );
       }
       
@@ -270,13 +270,13 @@ describe('Enhanced Integration Tests', () => {
       for (const input of invalidInputs) {
         const res = await request(app)
           .post('/mcp')
-            .send({
+            .send({jsonrpc: '2.0',id: `test-${Date.now()}-${Math.random()}`,
             method: 'tools/call',
             params: input
           })
           .expect(200);
         
-        expect(res.body.content[0].text).toContain('Validation error');
+        expect(res.body.result.content[0].text).toContain('Validation error');
       }
     });
   });
@@ -322,8 +322,8 @@ describe('Enhanced Integration Tests', () => {
         })
         .expect(200);
       
-      expect(res.body.content[0].text).toContain('Exit code: 1');
-      expect(res.body.content[0].text).toContain('Build failed');
+      expect(res.body.result.content[0].text).toContain('Exit code: 1');
+      expect(res.body.result.content[0].text).toContain('Build failed');
     });
 
     test('should handle network failures in SSH', async () => {
@@ -361,7 +361,7 @@ describe('Enhanced Integration Tests', () => {
         })
         .expect(200);
       
-      expect(res.body.content[0].text).toContain('Connection failed');
+      expect(res.body.result.content[0].text).toContain('Connection failed');
     });
   });
 
@@ -391,7 +391,7 @@ describe('Enhanced Integration Tests', () => {
       // All requests should succeed
       responses.forEach(res => {
         expect(res.status).toBe(200);
-        expect(res.body.content[0].text).toContain('Alive: true');
+        expect(res.body.result.content[0].text).toContain('Alive: true');
       });
       
       // Should complete within reasonable time (10 seconds)
@@ -421,7 +421,7 @@ describe('Enhanced Integration Tests', () => {
       
       responses.forEach(res => {
         expect(res.status).toBe(200);
-        expect(res.body.content[0].text).toContain('Build successful');
+        expect(res.body.result.content[0].text).toContain('Build successful');
       });
     });
   });
@@ -460,7 +460,7 @@ describe('Enhanced Integration Tests', () => {
         })
         .expect(200);
       
-      expect(res.body.content[0].text).toContain('Unknown tool');
+      expect(res.body.result.content[0].text).toContain('Unknown tool');
     });
   });
 });
