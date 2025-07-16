@@ -1,5 +1,63 @@
 # Changelog
 
+## [1.0.37] - 2025-07-16
+
+### 🌐 HTTP Client Tool: AI Server Testing Solution
+- **New Tool**: `http_request` - Direct HTTP client bypassing PowerShell JSON limitations
+  - **Problem Solved**: PowerShell JSON escaping failures prevent AI server endpoint testing
+  - **Solution**: Native Node.js HTTP client with enterprise-grade security validation
+  - **Use Case**: Direct testing of localhost AI services (tinyllama, GPT models) without JSON corruption
+
+### HTTP Client Features
+- **JSON Reliability**: Auto-serialization of JSON objects with proper Content-Type headers
+- **Localhost Support**: Designed for AI development workflow testing (localhost:8080, 3000, 8000)
+- **Method Support**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+- **Security**: Domain allowlist, port validation, header sanitization, timeout enforcement
+- **Error Handling**: Comprehensive request/response validation with detailed logging
+
+### Enhanced Tool Capabilities
+- **Direct API Testing**: `{"url": "http://localhost:8080/api/chat", "method": "POST", "json": {"message": "Hello AI", "model": "tinyllama"}}`
+- **Header Management**: Custom headers for authentication and user agents
+- **Body Formats**: Both JSON object auto-serialization and raw string body support
+- **Redirect Handling**: Automatic redirect following with security validation
+- **Timeout Control**: Configurable timeouts (1-300 seconds) for long-running AI inference
+
+### Security Implementation
+- **Domain Validation**: Default localhost-only mode with configurable allowlist
+- **Port Restrictions**: Development ports (3000, 8000, 8080, 5000) allowed by default
+- **Header Filtering**: Forbidden headers (host, content-length) automatically removed
+- **URL Validation**: Protocol restrictions (HTTP/HTTPS only) and malformed URL detection
+- **Request Logging**: Full audit trail for security monitoring
+
+### Environment Variables (.env.example)
+```bash
+# HTTP Client Configuration
+HTTP_LOCALHOST_ONLY=true                    # Restrict to localhost only
+HTTP_ALLOWED_DOMAINS=localhost,127.0.0.1   # Allowed domains (comma-separated)
+HTTP_ALLOWED_PORTS=80,443,3000,8000,8080   # Allowed ports (comma-separated)
+HTTP_REQUEST_TIMEOUT=30000                  # Default timeout (milliseconds)
+HTTP_MAX_TIMEOUT=300000                     # Maximum timeout (milliseconds)
+HTTP_MAX_REDIRECTS=5                        # Maximum redirect follows
+```
+
+### Updated Help System
+- **Dynamic Help**: HTTP client examples added to help generator
+- **AI Testing Examples**: Ready-to-use templates for common AI server testing scenarios
+- **Tool Count**: Updated to 10 tools total (from 9)
+- **Category Enhancement**: Network category now includes HTTP client functionality
+
+### Technical Implementation
+- **New Module**: `server/src/utils/http-client.js` - Enterprise HTTP client with comprehensive validation
+- **Server Integration**: `http_request` tool handler with JSON response parsing
+- **Test Coverage**: Complete test suite for URL validation, security, and error handling
+- **MCP Protocol**: Full JSON-RPC 2.0 compliance with proper error responses
+
+### Impact on AI Development Workflow
+- **Eliminates PowerShell JSON Issues**: Direct HTTP calls avoid shell escaping problems
+- **Faster AI Testing Cycles**: Native JSON handling for complex API payloads
+- **Localhost Development**: Perfect for testing local AI servers during development
+- **Integration Ready**: Works seamlessly with existing MCP authentication and logging
+
 ## [1.0.36] - 2025-07-15
 
 ### 🏢 Enterprise Development Environment: Comprehensive Solution

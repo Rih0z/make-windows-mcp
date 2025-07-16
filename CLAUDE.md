@@ -52,6 +52,9 @@ ai_coding_principles:
     第13条:
       rule: "MCP接続成功時にすべての機能の使い方をクライアントに伝え、新機能追加時も即座に更新する。動的ヘルプシステムで常に最新の機能案内を提供する"
       related_sections: ["dynamic_help_system", "user_experience", "mcp_protocol"]
+    第14条:
+      rule: "一時報告書やメッセージファイルはdocs/messages/フォルダに保存し、使用終了後は削除する"
+      related_sections: ["documentation_management", "execution_checklist"]
 
   project_specific_standards:
     mcp_protocol:
@@ -118,6 +121,7 @@ ai_coding_principles:
       - "APIドキュメントはREADME.mdのMCPツールセクションに記載"
       - "セキュリティ関連の変更は必ずCHANGELOG.mdに記載"
       - "統合ドキュメントは`docs/`ディレクトリに格納"
+      - "一時報告書は`docs/messages/`に保存し、使用終了後は削除する"
     
     version_management:
       principle: "セマンティックバージョニング（MAJOR.MINOR.PATCH）に従う"

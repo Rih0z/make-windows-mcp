@@ -23,7 +23,7 @@ class HelpGenerator {
       },
       network: {
         name: 'Network & Remote',
-        description: 'SSH connections, remote operations, and connectivity',
+        description: 'HTTP requests, SSH connections, remote operations, and connectivity',
         icon: '🌐'
       },
       management: {
@@ -168,6 +168,55 @@ class HelpGenerator {
   "arguments": {
     "command": "systemctl status nginx",
     "remoteHost": "192.168.1.100"
+  }
+}`
+          }
+        ]
+      },
+      http_request: {
+        category: 'network',
+        examples: [
+          {
+            title: 'AI Chat API Request',
+            code: `{
+  "name": "http_request",
+  "arguments": {
+    "url": "http://localhost:8080/api/chat",
+    "method": "POST",
+    "json": {
+      "message": "Hello AI",
+      "model": "tinyllama",
+      "temperature": 0.7
+    },
+    "timeout": 30
+  }
+}`
+          },
+          {
+            title: 'Health Check with Headers',
+            code: `{
+  "name": "http_request",
+  "arguments": {
+    "url": "http://localhost:8080/health",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer your-token",
+      "User-Agent": "MCP-Client/1.0"
+    }
+  }
+}`
+          },
+          {
+            title: 'POST with String Body',
+            code: `{
+  "name": "http_request",
+  "arguments": {
+    "url": "http://localhost:3000/webhook",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": "param1=value1&param2=value2"
   }
 }`
           }

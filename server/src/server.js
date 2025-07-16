@@ -16,6 +16,7 @@ const authManager = require('./utils/auth-manager');
 const portManager = require('./utils/port-manager');
 const helpGenerator = require('./utils/help-generator');
 const powershellExecutor = require('./utils/powershell-enhanced');
+const httpClient = require('./utils/http-client');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -54,7 +55,10 @@ function validateEnvironment() {
     DEFAULT_SERVER_PORT: { default: 8080, min: 1, max: 65535 },
     PHP_SERVE_PORT: { default: 8000, min: 1, max: 65535 },
     SSH_PORT: { default: 22, min: 1, max: 65535 },
-    FILE_ENCODING_MAX_UPLOAD: { default: 52428800, min: 1048576, max: 104857600 }
+    FILE_ENCODING_MAX_UPLOAD: { default: 52428800, min: 1048576, max: 104857600 },
+    HTTP_REQUEST_TIMEOUT: { default: 30000, min: 1000, max: 300000 },
+    HTTP_MAX_TIMEOUT: { default: 300000, min: 60000, max: 600000 },
+    HTTP_MAX_REDIRECTS: { default: 5, min: 0, max: 10 }
   };
   
   for (const [varName, config] of Object.entries(numericVars)) {
@@ -961,7 +965,7 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             },
             quickStart: 'build_python: {"projectPath": "C:/project", "commands": ["test"], "useVirtualEnv": true}',
             version: serverInfo.version,
-            totalTools: 9
+            totalTools: 10
           }
         }
       });
@@ -1803,6 +1807,49 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               },
               required: ['filePath']
             }
+          },
+          {
+            name: 'http_request',
+            description: 'Execute HTTP requests bypassing PowerShell limitations - perfect for AI server testing and JSON API calls',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                url: { 
+                  type: 'string', 
+                  description: 'Target URL (supports localhost for AI server testing)'
+                },
+                method: { 
+                  type: 'string', 
+                  enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+                  description: 'HTTP method'
+                },
+                headers: { 
+                  type: 'object', 
+                  description: 'HTTP headers as key-value pairs'
+                },
+                body: { 
+                  type: 'string', 
+                  description: 'Request body as string'
+                },
+                json: { 
+                  type: 'object', 
+                  description: 'Auto-serialize JSON object (sets Content-Type: application/json)'
+                },
+                timeout: { 
+                  type: 'number', 
+                  default: 30, 
+                  minimum: 1,
+                  maximum: 300,
+                  description: 'Timeout in seconds (default: 30, max: 300)'
+                },
+                followRedirects: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Follow HTTP redirects automatically'
+                }
+              },
+              required: ['url', 'method']
+            }
           }
         ],
         
@@ -1811,21 +1858,23 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           version: require('../package.json').version,
           authConfigured: authManager.isAuthEnabled(),
           dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
-          tools: 9
+          tools: 10
         }),
         
         helpInfo: {
-          message: '🎉 All 9 tools available! Python virtual environment support included in v1.0.33!',
+          message: '🎉 All 10 tools available! HTTP client for AI server testing included in v1.0.37!',
           featuredCapabilities: {
             '🐍 Python Virtual Environments': 'build_python: Auto-creates .venv, installs deps, runs pytest/unittest',
             '🔨 Multi-Language Builds': '.NET, Java, Python, Node.js, Go, Rust, C++, Ruby, Docker',
             '⚡ PowerShell Execution': 'Full Windows automation with timeout controls',
-            '📁 File Operations': 'Base64 encoding, file sync, large file transfers'
+            '📁 File Operations': 'Base64 encoding, file sync, large file transfers',
+            '🌐 HTTP Client': 'Direct API testing with JSON support, bypasses PowerShell limitations'
           },
           quickStart: {
             'Python Testing': 'build_python: {"projectPath": "C:/project", "commands": ["test"], "useVirtualEnv": true}',
             'Build .NET': 'build_dotnet: {"projectPath": "C:/project.csproj", "configuration": "Release"}',
-            'Run Commands': 'run_powershell: {"command": "Get-Process"}', 
+            'Run Commands': 'run_powershell: {"command": "Get-Process"}',
+            'AI Chat Testing': 'http_request: {"url": "http://localhost:8080/api/chat", "method": "POST", "json": {"message": "Hello AI", "model": "tinyllama"}}',
             'Get Detailed Help': 'Visit /help/tools for comprehensive examples with Python venv'
           },
           helpEndpoints: {
@@ -2498,6 +2547,113 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               error: error.message 
             });
             result = handleValidationError(error, 'File encoding', logger, clientIP, { filePath: args.filePath });
+          }
+          break;
+
+        case 'http_request':
+          try {
+            if (!args.url || !args.method) {
+              throw new Error('url and method are required');
+            }
+
+            const startTime = Date.now();
+            
+            // Log the request initiation
+            logger.info('HTTP request initiated', {
+              clientIP,
+              url: args.url,
+              method: args.method,
+              hasHeaders: !!args.headers,
+              hasBody: !!(args.body || args.json),
+              timeout: args.timeout || 30
+            });
+
+            // Execute HTTP request using httpClient
+            const httpResult = await httpClient.executeRequest({
+              url: args.url,
+              method: args.method,
+              headers: args.headers || {},
+              body: args.body,
+              json: args.json,
+              timeout: args.timeout || 30,
+              followRedirects: args.followRedirects !== false
+            });
+
+            const executionTime = Date.now() - startTime;
+
+            if (httpResult.success) {
+              // Try to parse JSON response if applicable
+              let parsedBody = null;
+              const contentType = httpResult.headers['content-type'] || '';
+              
+              if (contentType.includes('application/json') && httpResult.body) {
+                try {
+                  parsedBody = JSON.parse(httpResult.body);
+                } catch (parseError) {
+                  logger.warn('Failed to parse JSON response', { 
+                    requestId: httpResult.requestId, 
+                    error: parseError.message 
+                  });
+                }
+              }
+
+              const responseData = {
+                success: true,
+                statusCode: httpResult.statusCode,
+                statusMessage: httpResult.statusMessage,
+                headers: httpResult.headers,
+                body: httpResult.body,
+                json: parsedBody,
+                executionTime: httpResult.executionTime,
+                requestId: httpResult.requestId,
+                timestamp: new Date().toISOString()
+              };
+
+              result = createTextResult(JSON.stringify(responseData, null, 2));
+
+              logger.info('HTTP request completed successfully', {
+                clientIP,
+                requestId: httpResult.requestId,
+                statusCode: httpResult.statusCode,
+                executionTime: httpResult.executionTime,
+                responseSize: httpResult.body ? httpResult.body.length : 0
+              });
+
+            } else {
+              // Handle request failure
+              const errorData = {
+                success: false,
+                error: httpResult.error,
+                executionTime: httpResult.executionTime,
+                requestId: httpResult.requestId,
+                timestamp: new Date().toISOString(),
+                url: args.url,
+                method: args.method
+              };
+
+              result = createTextResult(JSON.stringify(errorData, null, 2));
+
+              logger.error('HTTP request failed', {
+                clientIP,
+                requestId: httpResult.requestId,
+                error: httpResult.error,
+                executionTime: httpResult.executionTime,
+                url: args.url,
+                method: args.method
+              });
+            }
+
+          } catch (error) {
+            logger.error('HTTP request execution failed', {
+              clientIP,
+              url: args.url,
+              method: args.method,
+              error: error.message
+            });
+            result = handleValidationError(error, 'HTTP request', logger, clientIP, { 
+              url: args.url, 
+              method: args.method 
+            });
           }
           break;
 

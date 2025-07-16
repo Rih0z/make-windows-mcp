@@ -1,7 +1,7 @@
 {
-  "assignedPort": 8080,
+  "assignedPort": 8081,
   "preferredPort": 8080,
-  "timestamp": "2025-07-15T06:21:21.378Z",
+  "timestamp": "2025-07-16T20:21:45.436Z",
   "serverVersion": "1.0.24",
-  "fallbackUsed": false
+  "fallbackUsed": true
 }
