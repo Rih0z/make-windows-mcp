@@ -1,6 +1,89 @@
-# Windows MCP Build Server v1.0.33
+# Windows MCP Build Server v1.0.40
 
 汎用的なWindows操作をMCP（Model Context Protocol）経由で実行できるサーバーです。CI/CD自動化、ビルドプロセス、ファイル操作、プロセス管理など、様々なWindows環境での自動化ニーズに対応します。
+
+## 🎯 Claude Code 簡単セットアップ
+
+### 🚀 自動セットアップ（推奨）
+
+```powershell
+# 管理者権限でPowerShellを起動して実行
+.\setup-claude-code.ps1
+```
+
+### 📋 手動セットアップ
+
+1. **認証トークンの生成**
+```powershell
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+2. **設定ファイルの作成**
+
+**方法1: プロジェクトルートに`.mcp.json`ファイルを作成（推奨）**
+```json
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./server/src/server.js"],
+      "env": {
+        "MCP_AUTH_TOKEN": "your-generated-token-here",
+        "MCP_SERVER_PORT": "8080",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C:\\projects\\;C:\\temp\\",
+        "ENABLE_DEV_COMMANDS": "false"
+      }
+    }
+  }
+}
+```
+
+**方法2: Claude Code設定ファイルを作成**
+   - **Windows**: `%USERPROFILE%\.claude.json`
+   - **macOS**: `~/.claude.json`
+
+```json
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:\\path\\to\\windows-mcp-server\\server\\src\\server.js"],
+      "env": {
+        "MCP_AUTH_TOKEN": "your-generated-token-here",
+        "MCP_SERVER_PORT": "8080",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C\\projects\\;C:\\temp\\",
+        "ENABLE_DEV_COMMANDS": "false"
+      }
+    }
+  }
+}
+```
+
+3. **Claude Codeで接続テスト**
+```
+@windows-build-server tools/list
+```
+
+### 🔧 使用例
+
+```bash
+# .NETプロジェクトビルド
+@windows-build-server build_dotnet projectPath="C:\projects\MyApp.csproj" configuration="Release"
+
+# PowerShellコマンド実行
+@windows-build-server run_powershell command="Get-Process" workingDirectory="C:\temp"
+
+# Javaプロジェクトビルド
+@windows-build-server build_java projectPath="C:\projects\java-app" buildTool="maven"
+```
+
+### 📚 詳細ドキュメント
+
+- **[Claude Code セットアップガイド](CLAUDE_CODE_SETUP.md)** - 詳細な設定手順
+- **[設定テンプレート](claude-config-templates/)** - 環境別設定例
+- **[トラブルシューティング](TROUBLESHOOTING.md)** - 問題解決ガイド
 
 ## 🎉 新機能 v1.0.33 - Python Virtual Environment Support
 

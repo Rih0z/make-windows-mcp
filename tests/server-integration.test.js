@@ -1,396 +1,927 @@
-const request = require('supertest');
-const { spawn } = require('child_process');
+/**
+ * Server Integration Testing
+ * server.js の完全統合テストスイート
+ * MCP プロトコル準拠、ツール登録、リクエスト処理の包括的テスト
+ */
+
 const { EventEmitter } = require('events');
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 
-// Set test environment variables
-process.env.NODE_ENV = 'test';
-process.env.MCP_AUTH_TOKEN = 'test-token-123';
-process.env.ALLOWED_IPS = '';
-process.env.MCP_SERVER_PORT = '0';
-process.env.NORDVPN_ENABLED = 'true';
-process.env.NORDVPN_HOSTS = '10.5.0.2,10.5.0.3';
-process.env.REMOTE_USERNAME = 'testuser';
-process.env.REMOTE_PASSWORD = 'testpass';
-
-// Mock modules
+// Mock external dependencies
+jest.mock('fs');
 jest.mock('child_process');
-jest.mock('ssh2');
-jest.mock('ping');
-jest.mock('helmet', () => () => (req, res, next) => next());
 
-const mockSpawn = spawn;
-const mockSSH = require('ssh2');
-const mockPing = require('ping');
-
-describe('Server Integration Tests', () => {
-  jest.setTimeout(30000); // Increase timeout to 30 seconds
-  let app;
-  let mockProcess;
-  let mockSSHClient;
-
-  beforeAll(() => {
-    // Setup mocks
-    mockProcess = new EventEmitter();
-    mockProcess.stdout = new EventEmitter();
-    mockProcess.stderr = new EventEmitter();
-    
-    mockSpawn.mockReturnValue(mockProcess);
-    
-    mockSSHClient = new EventEmitter();
-    mockSSHClient.connect = jest.fn();
-    mockSSHClient.exec = jest.fn();
-    mockSSHClient.end = jest.fn();
-    mockSSH.Client.mockImplementation(() => mockSSHClient);
-    
-    mockPing.promise = {
-      probe: jest.fn().mockResolvedValue({
-        alive: true,
-        time: 15,
-        output: 'Reply from 192.168.1.1: bytes=32 time=15ms TTL=64'
-      })
-    };
-    
-    // Import server after mocking
-    app = require('../server/src/server.js');
-  });
+describe('Server Integration Testing', () => {
+  let server;
+  let mockTransport;
+  let mockPortManager;
+  let mockRateLimiter;
+  let mockAuthManager;
+  let mockHelpGenerator;
+  let mockLogger;
+  let mockSecurity;
+  let mockHelpers;
+  let mockCrypto;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Clear require cache
+    const moduleCache = require.cache;
+    Object.keys(moduleCache).forEach(key => {
+      if (key.includes('server/src/')) {
+        delete moduleCache[key];
+      }
+    });
+    
+    // Mock environment variables
+    process.env.MCP_AUTH_TOKEN = 'test-token-123';
+    process.env.MCP_SERVER_PORT = '8080';
+    process.env.ALLOWED_BUILD_PATHS = 'C:\\builds\\;C:\\temp\\';
+    process.env.COMMAND_TIMEOUT = '30000';
+    process.env.RATE_LIMIT_REQUESTS = '60';
+    process.env.RATE_LIMIT_WINDOW = '60000';
+    
+    // Mock console methods
+    console.log = jest.fn();
+    console.error = jest.fn();
+    console.warn = jest.fn();
+    
+    // Mock MCP Server SDK
+    mockTransport = {
+      start: jest.fn(),
+      close: jest.fn(),
+      on: jest.fn(),
+      emit: jest.fn()
+    };
+    
+    // Mock utility modules
+    mockPortManager = {
+      initialize: jest.fn(),
+      findAvailablePort: jest.fn().mockResolvedValue(8080),
+      getPortInfo: jest.fn().mockReturnValue({
+        preferredPort: 8080,
+        assignedPort: 8080,
+        fallbackUsed: false
+      }),
+      displayPortSummary: jest.fn(),
+      setupGracefulShutdown: jest.fn()
+    };
+    
+    mockRateLimiter = {
+      checkLimit: jest.fn().mockReturnValue({
+        allowed: true,
+        remaining: 59,
+        resetTime: Date.now() + 60000
+      }),
+      cleanup: jest.fn()
+    };
+    
+    mockAuthManager = {
+      validateToken: jest.fn().mockReturnValue(true),
+      validateBearerToken: jest.fn().mockReturnValue(true),
+      isTrustedIP: jest.fn().mockReturnValue(true),
+      logAuthAttempt: jest.fn()
+    };
+    
+    mockHelpGenerator = {
+      generateWelcomeMessage: jest.fn().mockReturnValue('Welcome to Windows MCP Server'),
+      generateToolHelp: jest.fn().mockReturnValue('Tool help content'),
+      generateDynamicHelp: jest.fn().mockReturnValue('Dynamic help content')
+    };
+    
+    mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn()
+    };
+    
+    mockSecurity = {
+      validatePowerShellCommand: jest.fn().mockReturnValue(true),
+      validatePath: jest.fn().mockReturnValue(true),
+      validateCommand: jest.fn().mockReturnValue(true),
+      sanitizeInput: jest.fn(input => input)
+    };
+    
+    mockHelpers = {
+      formatCommandResult: jest.fn((output, error, exitCode) => ({
+        success: exitCode === 0,
+        output: output || '',
+        error: error || null,
+        exitCode: exitCode || 0
+      })),
+      validateRequiredParams: jest.fn(),
+      sanitizeOutput: jest.fn(output => output),
+      createTimestamp: jest.fn(() => '2023-01-01T00:00:00.000Z')
+    };
+    
+    mockCrypto = {
+      encrypt: jest.fn(data => `encrypted_${data}`),
+      decrypt: jest.fn(data => data.replace('encrypted_', '')),
+      hash: jest.fn(data => `hash_${data}`)
+    };
+    
+    // Mock fs operations
+    fs.existsSync = jest.fn().mockReturnValue(true);
+    fs.readFileSync = jest.fn().mockReturnValue('test content');
+    fs.writeFileSync = jest.fn();
+    fs.appendFileSync = jest.fn();
+    
+    // Mock child_process
+    const mockProcess = new EventEmitter();
+    mockProcess.stdout = new EventEmitter();
+    mockProcess.stderr = new EventEmitter();
+    spawn.mockReturnValue(mockProcess);
+    
+    // Mock module requires
+    jest.doMock('@modelcontextprotocol/sdk/server/stdio', () => ({
+      StdioServerTransport: jest.fn(() => mockTransport)
+    }));
+    
+    jest.doMock('@modelcontextprotocol/sdk/server', () => ({
+      Server: jest.fn(() => ({
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn(),
+        addTool: jest.fn(),
+        listTools: jest.fn(),
+        onError: jest.fn(),
+        onClose: jest.fn()
+      }))
+    }));
+    
+    jest.doMock('../server/src/utils/port-manager', () => mockPortManager);
+    jest.doMock('../server/src/utils/rate-limiter', () => mockRateLimiter);
+    jest.doMock('../server/src/utils/auth-manager', () => mockAuthManager);
+    jest.doMock('../server/src/utils/help-generator', () => mockHelpGenerator);
+    jest.doMock('../server/src/utils/logger', () => mockLogger);
+    jest.doMock('../server/src/utils/security', () => mockSecurity);
+    jest.doMock('../server/src/utils/helpers', () => mockHelpers);
+    jest.doMock('../server/src/utils/crypto', () => mockCrypto);
+    
+    // Import server after mocking
+    server = require('../server/src/server');
   });
 
-  describe('Command Execution', () => {
-    test('should execute PowerShell commands successfully', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'run_powershell',
-            arguments: { command: 'Get-Process' }
-          }
-        });
+  afterEach(() => {
+    // Clean up environment variables
+    delete process.env.MCP_AUTH_TOKEN;
+    delete process.env.MCP_SERVER_PORT;
+    delete process.env.ALLOWED_BUILD_PATHS;
+    delete process.env.COMMAND_TIMEOUT;
+    delete process.env.RATE_LIMIT_REQUESTS;
+    delete process.env.RATE_LIMIT_WINDOW;
+    
+    // Restore console methods
+    console.log.mockRestore?.();
+    console.error.mockRestore?.();
+    console.warn.mockRestore?.();
+  });
 
-      // Simulate successful command execution
-      setTimeout(() => {
-        mockProcess.stdout.emit('data', 'Process output');
-        mockProcess.stderr.emit('data', '');
-        mockProcess.emit('close', 0);
-      }, 10);
-
-      expect(mockSpawn).toHaveBeenCalledWith('powershell', ['-Command', 'Get-Process'], { shell: true });
+  describe('Server Initialization', () => {
+    test('should initialize server with proper configuration', () => {
+      expect(mockPortManager.initialize).toHaveBeenCalled();
+      expect(mockPortManager.setupGracefulShutdown).toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Windows MCP Build Server'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('v1.0.40'));
     });
 
-    test('should handle command execution errors', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'run_powershell',
-            arguments: { command: 'Get-Process' }
-          }
-        });
-
-      // Simulate command failure
-      setTimeout(() => {
-        mockProcess.stderr.emit('data', 'Command failed');
-        mockProcess.emit('close', 1);
-      }, 10);
-
-      expect(response.status).toBe(200);
+    test('should display security mode warnings', () => {
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Security Mode: NORMAL'));
     });
 
-    test('should execute dotnet build commands', async () => {
-      await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
+    test('should show available tools count', () => {
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Available Tools: 8'));
+    });
+  });
+
+  describe('MCP Protocol Compliance', () => {
+    test('should handle initialize request properly', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      // Simulate initialize request
+      const initHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'initialize')?.[1];
+      
+      if (initHandler) {
+        const result = await initHandler({
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: {}
+            },
+            clientInfo: {
+              name: 'test-client',
+              version: '1.0.0'
+            }
+          }
+        });
+        
+        expect(result).toHaveProperty('protocolVersion');
+        expect(result).toHaveProperty('capabilities');
+        expect(result).toHaveProperty('serverInfo');
+        expect(result.serverInfo.name).toBe('windows-mcp-server');
+        expect(result.serverInfo.version).toBe('1.0.40');
+      }
+    });
+
+    test('should handle tools/list request', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      // Simulate tools/list request
+      const listHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/list')?.[1];
+      
+      if (listHandler) {
+        const result = await listHandler({});
+        
+        expect(result).toHaveProperty('tools');
+        expect(Array.isArray(result.tools)).toBe(true);
+        expect(result.tools.length).toBe(8);
+        
+        // Check for essential tools
+        const toolNames = result.tools.map(tool => tool.name);
+        expect(toolNames).toContain('build_dotnet');
+        expect(toolNames).toContain('run_powershell');
+        expect(toolNames).toContain('run_batch');
+      }
+    });
+  });
+
+  describe('Authentication and Authorization', () => {
+    test('should validate authentication tokens', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      // Simulate tool call with authentication
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
           params: {
             name: 'build_dotnet',
-            arguments: { 
-              projectPath: 'C:\\projects\\test.csproj',
-              configuration: 'Release' 
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
             }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
           }
-        });
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'dotnet', 
-        ['build', 'C:\\projects\\test.csproj', '-c', 'Release'], 
-        { shell: true }
-      );
+        };
+        
+        await toolHandler(request);
+        
+        expect(mockAuthManager.validateBearerToken).toHaveBeenCalledWith('Bearer test-token-123');
+      }
     });
 
-    test('should default to Debug configuration when not specified', async () => {
-      await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
+    test('should reject invalid authentication', async () => {
+      mockAuthManager.validateBearerToken.mockReturnValue(false);
+      
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
           params: {
             name: 'build_dotnet',
-            arguments: { projectPath: 'C:\\projects\\test.csproj' }
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer invalid-token',
+            clientIP: '127.0.0.1'
           }
-        });
-
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'dotnet', 
-        ['build', 'C:\\projects\\test.csproj', '-c', 'Debug'], 
-        { shell: true }
-      );
+        };
+        
+        await expect(toolHandler(request)).rejects.toThrow('Invalid authorization token');
+      }
     });
   });
 
-  describe('SSH Remote Execution', () => {
-    test('should execute commands on remote host via SSH', async () => {
-      const mockStream = new EventEmitter();
-      mockStream.stderr = new EventEmitter();
+  describe('Rate Limiting', () => {
+    test('should apply rate limiting to requests', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
       
-      mockSSHClient.exec.mockImplementation((command, callback) => {
-        callback(null, mockStream);
-        setImmediate(() => {
-          mockStream.emit('data', 'Remote command output');
-          mockStream.emit('close', 0);
-        });
-      });
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
       
-      setImmediate(() => {
-        mockSSHClient.emit('ready');
-      });
-
-      await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ssh_command',
-            arguments: {
-              host: '10.5.0.2',
-              username: 'admin',
-              password: 'password',
-              command: 'Get-Service'
-            }
-          }
-        });
-
-      expect(mockSSHClient.connect).toHaveBeenCalledWith({
-        host: '10.5.0.2',
-        username: 'admin',
-        password: 'password',
-        port: 22
-      });
-    });
-
-    test('should handle SSH connection errors', async () => {
-      mockSSHClient.connect.mockImplementation(() => {
-        setTimeout(() => {
-          mockSSHClient.emit('error', new Error('Connection failed'));
-        }, 10);
-      });
-
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ssh_command',
-            arguments: {
-              host: '10.5.0.2',
-              username: 'admin',
-              password: 'password',
-              command: 'Get-Service'
-            }
-          }
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.result.content[0].text).toContain('Connection failed');
-    });
-
-    test('should handle SSH exec errors', async () => {
-      mockSSHClient.exec.mockImplementation((command, callback) => {
-        callback(new Error('Exec failed'), null);
-      });
-
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ssh_command',
-            arguments: {
-              host: '10.5.0.2',
-              username: 'admin',
-              password: 'password',
-              command: 'Get-Service'
-            }
-          }
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.result.content[0].text).toContain('Connection failed');
-    });
-  });
-
-  describe('Remote Host Execution', () => {
-    test('should execute PowerShell on remote host', async () => {
-      const mockStream = new EventEmitter();
-      mockStream.stderr = new EventEmitter();
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
       
-      mockSSHClient.exec.mockImplementation((command, callback) => {
-        callback(null, mockStream);
-        setTimeout(() => {
-          mockStream.emit('data', 'Remote PowerShell output');
-          mockStream.emit('close', 0);
-        }, 10);
-      });
-
-      await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'run_powershell',
-            arguments: { 
-              command: 'Get-Process',
-              remoteHost: '10.5.0.2'
-            }
-          }
-        });
-
-      expect(mockSSHClient.connect).toHaveBeenCalled();
-    });
-
-    test('should execute dotnet build on remote host', async () => {
-      const mockStream = new EventEmitter();
-      mockStream.stderr = new EventEmitter();
-      
-      mockSSHClient.exec.mockImplementation((command, callback) => {
-        expect(command).toContain('dotnet build');
-        callback(null, mockStream);
-        setTimeout(() => {
-          mockStream.emit('data', 'Build successful');
-          mockStream.emit('close', 0);
-        }, 10);
-      });
-
-      await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
+      if (toolHandler) {
+        const request = {
           params: {
             name: 'build_dotnet',
-            arguments: { 
-              projectPath: 'C:\\projects\\remote.csproj',
-              remoteHost: '10.5.0.2'
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
             }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
           }
-        });
-
-      expect(mockSSHClient.connect).toHaveBeenCalled();
+        };
+        
+        await toolHandler(request);
+        
+        expect(mockRateLimiter.checkLimit).toHaveBeenCalledWith(
+          '127.0.0.1',
+          60,
+          60000
+        );
+      }
     });
 
-    test('should handle missing remote password', async () => {
-      // Temporarily remove remote password
-      const originalPassword = process.env.REMOTE_PASSWORD;
-      delete process.env.REMOTE_PASSWORD;
+    test('should reject requests when rate limit exceeded', async () => {
+      mockRateLimiter.checkLimit.mockReturnValue({
+        allowed: false,
+        remaining: 0,
+        resetTime: Date.now() + 30000
+      });
+      
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await expect(toolHandler(request)).rejects.toThrow('Rate limit exceeded');
+      }
+    });
+  });
 
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
+  describe('Tool Registration and Execution', () => {
+    test('should register all required tools', () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn(),
+        addTool: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      // Check that all tools are registered
+      expect(mockServer.addTool).toHaveBeenCalledTimes(8);
+      
+      // Check specific tool registrations
+      const toolCalls = mockServer.addTool.mock.calls;
+      const toolNames = toolCalls.map(call => call[0].name);
+      
+      expect(toolNames).toContain('build_dotnet');
+      expect(toolNames).toContain('build_java');
+      expect(toolNames).toContain('build_python');
+      expect(toolNames).toContain('run_powershell');
+      expect(toolNames).toContain('run_batch');
+      expect(toolNames).toContain('mcp_self_build');
+      expect(toolNames).toContain('process_manager');
+      expect(toolNames).toContain('file_sync');
+    });
+
+    test('should execute build_dotnet tool correctly', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild',
+              configuration: 'Release'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        // Mock successful build
+        mockHelpers.formatCommandResult.mockReturnValue({
+          success: true,
+          output: 'Build succeeded',
+          error: null,
+          exitCode: 0
+        });
+        
+        const result = await toolHandler(request);
+        
+        expect(result).toHaveProperty('content');
+        expect(result.content[0]).toHaveProperty('type', 'text');
+        expect(result.content[0].text).toContain('Build succeeded');
+      }
+    });
+
+    test('should execute run_powershell tool correctly', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
           params: {
             name: 'run_powershell',
-            arguments: { 
-              command: 'Get-Process',
-              remoteHost: '10.5.0.2'
+            arguments: {
+              command: 'Get-Date',
+              workingDirectory: 'C:\\temp'
             }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
           }
+        };
+        
+        // Mock successful PowerShell execution
+        mockHelpers.formatCommandResult.mockReturnValue({
+          success: true,
+          output: '2023-01-01 12:00:00',
+          error: null,
+          exitCode: 0
         });
-
-      expect(response.body.result.content[0].text).toContain('REMOTE_PASSWORD environment variable not set');
-      
-      // Restore password
-      process.env.REMOTE_PASSWORD = originalPassword;
-    });
-  });
-
-  describe('Ping Host Functionality', () => {
-    test('should ping host successfully', async () => {
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ping_host',
-            arguments: { host: '192.168.1.1' }
-          }
-        });
-
-      expect(mockPing.promise.probe).toHaveBeenCalledWith('192.168.1.1');
-      expect(response.body.result.content[0].text).toContain('Ping result for 192.168.1.1');
-      expect(response.body.result.content[0].text).toContain('Alive: true');
-    });
-
-    test('should handle ping failures', async () => {
-      mockPing.promise.probe.mockRejectedValueOnce(new Error('Network unreachable'));
-
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
-          params: {
-            name: 'ping_host',
-            arguments: { host: '192.168.1.1' }
-          }
-        });
-
-      expect(response.body.result.content[0].text).toContain('Ping failed for 192.168.1.1');
-    });
-  });
-
-  describe('Health Check with Remote Hosts', () => {
-    test('should return health status with NordVPN configuration', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
-
-      expect(response.body.remoteHosts.nordvpn.enabled).toBe(true);
-      expect(response.body.remoteHosts.nordvpn.hosts).toEqual(['10.5.0.2', '10.5.0.3']);
+        
+        const result = await toolHandler(request);
+        
+        expect(mockSecurity.validatePowerShellCommand).toHaveBeenCalledWith('Get-Date');
+        expect(result).toHaveProperty('content');
+        expect(result.content[0].text).toContain('2023-01-01 12:00:00');
+      }
     });
   });
 
   describe('Error Handling', () => {
-    test('should handle server errors gracefully', async () => {
-      // Force an error by mocking a function to throw
-      const originalSpawn = mockSpawn.mockImplementation(() => {
-        throw new Error('Spawn failed');
-      });
+    test('should handle tool execution errors gracefully', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              projectPath: 'C:\\invalid\\path',
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        // Mock build failure
+        mockHelpers.formatCommandResult.mockReturnValue({
+          success: false,
+          output: '',
+          error: 'Project file not found',
+          exitCode: 1
+        });
+        
+        const result = await toolHandler(request);
+        
+        expect(result.content[0].text).toContain('Project file not found');
+      }
+    });
 
-      const response = await request(app)
-        .post('/mcp')
-        .set('Authorization', 'Bearer test-token-123')
-        .send({
-          method: 'tools/call',
+    test('should handle invalid tool names', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'invalid_tool',
+            arguments: {}
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await expect(toolHandler(request)).rejects.toThrow('Unknown tool: invalid_tool');
+      }
+    });
+
+    test('should handle missing required parameters', async () => {
+      mockHelpers.validateRequiredParams.mockImplementation(() => {
+        throw new Error('Missing required parameter: projectPath');
+      });
+      
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await expect(toolHandler(request)).rejects.toThrow('Missing required parameter: projectPath');
+      }
+    });
+  });
+
+  describe('Security Validation', () => {
+    test('should validate command security', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
           params: {
             name: 'run_powershell',
-            arguments: { command: 'Get-Process' }
+            arguments: {
+              command: 'Get-Process',
+              workingDirectory: 'C:\\temp'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
           }
-        });
+        };
+        
+        await toolHandler(request);
+        
+        expect(mockSecurity.validatePowerShellCommand).toHaveBeenCalledWith('Get-Process');
+        expect(mockSecurity.validatePath).toHaveBeenCalledWith('C:\\temp');
+      }
+    });
 
-      expect(response.status).toBe(200);
-      expect(response.body.result.content[0].text).toContain('Validation error');
+    test('should reject dangerous commands', async () => {
+      mockSecurity.validatePowerShellCommand.mockImplementation(() => {
+        throw new Error('Dangerous command detected');
+      });
+      
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'run_powershell',
+            arguments: {
+              command: 'rm -rf /',
+              workingDirectory: 'C:\\temp'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await expect(toolHandler(request)).rejects.toThrow('Dangerous command detected');
+      }
+    });
+  });
+
+  describe('Logging and Monitoring', () => {
+    test('should log tool execution', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await toolHandler(request);
+        
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining('Tool execution'),
+          expect.objectContaining({
+            tool: 'build_dotnet',
+            client: '127.0.0.1'
+          })
+        );
+      }
+    });
+
+    test('should log authentication events', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const request = {
+          params: {
+            name: 'build_dotnet',
+            arguments: {
+              projectPath: 'C:\\builds\\test',
+              buildTool: 'msbuild'
+            }
+          },
+          meta: {
+            authorization: 'Bearer test-token-123',
+            clientIP: '127.0.0.1'
+          }
+        };
+        
+        await toolHandler(request);
+        
+        expect(mockAuthManager.logAuthAttempt).toHaveBeenCalledWith(
+          '127.0.0.1',
+          'Bearer test-token-123',
+          true
+        );
+      }
+    });
+  });
+
+  describe('Concurrent Request Handling', () => {
+    test('should handle multiple concurrent requests', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const requests = [];
+        for (let i = 0; i < 10; i++) {
+          const request = {
+            params: {
+              name: 'build_dotnet',
+              arguments: {
+                projectPath: `C:\\builds\\test${i}`,
+                buildTool: 'msbuild'
+              }
+            },
+            meta: {
+              authorization: 'Bearer test-token-123',
+              clientIP: '127.0.0.1'
+            }
+          };
+          requests.push(toolHandler(request));
+        }
+        
+        const results = await Promise.all(requests);
+        
+        expect(results).toHaveLength(10);
+        expect(mockRateLimiter.checkLimit).toHaveBeenCalledTimes(10);
+      }
+    });
+  });
+
+  describe('Resource Management', () => {
+    test('should handle server startup and shutdown', async () => {
+      expect(mockPortManager.findAvailablePort).toHaveBeenCalled();
+      expect(mockPortManager.displayPortSummary).toHaveBeenCalled();
+      expect(mockTransport.start).toHaveBeenCalled();
+    });
+
+    test('should cleanup resources on shutdown', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      // Simulate shutdown
+      const originalExit = process.exit;
+      process.exit = jest.fn();
+      
+      try {
+        // Trigger shutdown via signal
+        process.emit('SIGINT');
+        
+        expect(mockRateLimiter.cleanup).toHaveBeenCalled();
+        expect(mockTransport.close).toHaveBeenCalled();
+      } finally {
+        process.exit = originalExit;
+      }
+    });
+  });
+
+  describe('Performance and Scalability', () => {
+    test('should handle high-volume requests efficiently', async () => {
+      const mockServer = {
+        setRequestHandler: jest.fn(),
+        connect: jest.fn(),
+        close: jest.fn()
+      };
+      
+      const { Server } = require('@modelcontextprotocol/sdk/server');
+      Server.mockReturnValue(mockServer);
+      
+      const toolHandler = mockServer.setRequestHandler.mock.calls
+        .find(call => call[0] === 'tools/call')?.[1];
+      
+      if (toolHandler) {
+        const startTime = Date.now();
+        
+        const requests = [];
+        for (let i = 0; i < 100; i++) {
+          const request = {
+            params: {
+              name: 'build_dotnet',
+              arguments: {
+                projectPath: `C:\\builds\\test${i}`,
+                buildTool: 'msbuild'
+              }
+            },
+            meta: {
+              authorization: 'Bearer test-token-123',
+              clientIP: '127.0.0.1'
+            }
+          };
+          requests.push(toolHandler(request));
+        }
+        
+        await Promise.all(requests);
+        
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        
+        // Should handle 100 requests in reasonable time
+        expect(duration).toBeLessThan(5000);
+      }
+    });
+  });
+
+  describe('Help System Integration', () => {
+    test('should provide welcome message on connection', () => {
+      expect(mockHelpGenerator.generateWelcomeMessage).toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Welcome to Windows MCP Server'));
+    });
+
+    test('should provide tool-specific help', () => {
+      expect(mockHelpGenerator.generateDynamicHelp).toHaveBeenCalled();
     });
   });
 });

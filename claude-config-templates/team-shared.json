@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./server/src/server.js"],
+      "env": {
+        "MCP_AUTH_TOKEN": "team-shared-token-here",
+        "MCP_SERVER_PORT": "8080",
+        "ALLOWED_BUILD_PATHS": "C:\\shared\\builds\\;C:\\team\\projects\\;C:\\shared\\temp\\",
+        "COMMAND_TIMEOUT": "30000",
+        "RATE_LIMIT_REQUESTS": "100",
+        "RATE_LIMIT_WINDOW": "60000",
+        "ENABLE_DEV_COMMANDS": "true",
+        "ENABLE_DANGEROUS_MODE": "false",
+        "LOG_LEVEL": "info",
+        "LOG_ROTATION_SIZE": "20971520",
+        "LOG_ROTATION_FILES": "7",
+        "DEV_COMMAND_PATHS": "C:\\team\\projects\\;C:\\shared\\temp\\",
+        "REMOTE_USERNAME": "team-user",
+        "REMOTE_PASSWORD": "encrypted-team-password",
+        "NORDVPN_ENABLED": "false",
+        "NORDVPN_HOSTS": ""
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./server/src/server.js"],
+      "env": {
+        "MCP_AUTH_TOKEN": "your-secure-token-here",
+        "MCP_SERVER_PORT": "8080",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C:\\projects\\;C:\\temp\\",
+        "COMMAND_TIMEOUT": "30000",
+        "RATE_LIMIT_REQUESTS": "60",
+        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DANGEROUS_MODE": "false",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}

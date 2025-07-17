@@ -275,7 +275,7 @@ describe('Port Manager - 100% Coverage', () => {
         assignedPort: 8081,
         preferredPort: 8080,
         timestamp: expect.any(String),
-        serverVersion: '1.0.24',
+        serverVersion: '1.0.40',
         fallbackUsed: true
       });
     });
