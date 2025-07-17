@@ -88,7 +88,7 @@ class PortManager {
       assignedPort: port,
       preferredPort: this.preferredPort,
       timestamp: new Date().toISOString(),
-      serverVersion: '1.0.24',
+      serverVersion: '1.0.40',
       fallbackUsed: port !== this.preferredPort
     };
     

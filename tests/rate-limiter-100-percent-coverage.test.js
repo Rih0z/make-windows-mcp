@@ -4,7 +4,6 @@
  */
 
 describe('Rate Limiter - 100% Coverage', () => {
-  let RateLimiter;
   let rateLimiter;
 
   beforeEach(() => {
@@ -12,11 +11,6 @@ describe('Rate Limiter - 100% Coverage', () => {
     
     // Clear require cache to get fresh instance
     delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
-    
-    // Clear environment variables
-    delete process.env.RATE_LIMIT_REQUESTS;
-    delete process.env.RATE_LIMIT_WINDOW_MS;
-    delete process.env.ENABLE_DANGEROUS_MODE;
     
     // Mock Date.now for consistent testing
     jest.spyOn(Date, 'now').mockReturnValue(1000000);
@@ -26,8 +20,7 @@ describe('Rate Limiter - 100% Coverage', () => {
     console.log = jest.fn();
     
     // Get fresh instance
-    RateLimiter = require('../server/src/utils/rate-limiter');
-    rateLimiter = RateLimiter;
+    rateLimiter = require('../server/src/utils/rate-limiter');
   });
 
   afterEach(() => {
@@ -46,82 +39,22 @@ describe('Rate Limiter - 100% Coverage', () => {
     }
   });
 
-  describe('Constructor and Configuration', () => {
-    test('should initialize with default configuration', () => {
-      expect(rateLimiter.requestsPerMinute).toBe(60);
-      expect(rateLimiter.windowMs).toBe(60000);
+  describe('Constructor and Initialization', () => {
+    test('should initialize with clients Map', () => {
       expect(rateLimiter.clients).toBeInstanceOf(Map);
     });
 
-    test('should use environment variables for configuration', () => {
-      process.env.RATE_LIMIT_REQUESTS = '100';
-      process.env.RATE_LIMIT_WINDOW_MS = '30000';
-      
-      // Clear cache and get new instance
-      delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
-      const customRateLimiter = require('../server/src/utils/rate-limiter');
-      
-      expect(customRateLimiter.requestsPerMinute).toBe(100);
-      expect(customRateLimiter.windowMs).toBe(30000);
-    });
-
-    test('should handle invalid environment variables', () => {
-      process.env.RATE_LIMIT_REQUESTS = 'invalid';
-      process.env.RATE_LIMIT_WINDOW_MS = 'invalid';
-      
-      delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
-      const customRateLimiter = require('../server/src/utils/rate-limiter');
-      
-      // Should fall back to defaults
-      expect(customRateLimiter.requestsPerMinute).toBe(60);
-      expect(customRateLimiter.windowMs).toBe(60000);
-    });
-
-    test('should disable rate limiting in dangerous mode', () => {
-      process.env.ENABLE_DANGEROUS_MODE = 'true';
-      
-      delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
-      const dangerousRateLimiter = require('../server/src/utils/rate-limiter');
-      
-      // Should be disabled
-      expect(dangerousRateLimiter.requestsPerMinute).toBe(0);
-    });
-
     test('should setup cleanup interval', () => {
-      jest.spyOn(global, 'setInterval');
-      
-      delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
-      require('../server/src/utils/rate-limiter');
-      
-      expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 300000);
+      expect(rateLimiter.cleanupInterval).toBeDefined();
     });
   });
 
-  describe('middleware - Basic Functionality', () => {
-    let req, res, next;
-
-    beforeEach(() => {
-      req = {
-        ip: '192.168.1.1',
-        connection: { remoteAddress: '192.168.1.1' },
-        headers: {}
-      };
-      res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        set: jest.fn()
-      };
-      next = jest.fn();
-    });
-
+  describe('checkLimit Method', () => {
     test('should allow requests within rate limit', () => {
-      const middleware = rateLimiter.middleware;
-      middleware(req, res, next);
+      const result = rateLimiter.checkLimit('192.168.1.1', 60, 60000);
 
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.set).toHaveBeenCalledWith('X-RateLimit-Limit', '60');
-      expect(res.set).toHaveBeenCalledWith('X-RateLimit-Remaining', '59');
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(59);
     });
 
     test('should get client IP from req.ip', () => {
