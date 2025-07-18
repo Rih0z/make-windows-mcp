@@ -1,5 +1,55 @@
 # Windows MCP Build Server v1.0.42
 
+## 🌟 このリポジトリについて
+
+**Windows MCP Build Server**は、Claude CodeからWindows環境を完全制御できる革新的なMCP（Model Context Protocol）サーバーです。AIアシスタントが直接Windows操作を実行し、開発・運用・自動化を劇的に効率化します。
+
+### 🎯 解決する課題
+
+- **Windows環境での開発効率化**: .NET、Java、Python、Node.js等の多言語ビルド自動化
+- **CI/CDパイプライン構築**: Jenkins、GitHub Actions等との統合
+- **リモート開発環境管理**: SSH、NordVPN Mesh対応でどこからでもアクセス
+- **セキュアな運用**: 3段階のセキュリティモード（通常/開発/危険）
+- **エンタープライズ対応**: 認証、レート制限、監査ログ完備
+
+### 🚀 ユーザーにとってのメリット
+
+#### 👩‍💻 **開発者**
+- **ワンクリック環境構築**: 複雑な環境設定をAIが自動化
+- **多言語対応**: 20+の言語・フレームワークをサポート
+- **リアルタイム実行**: Claude Codeから直接Windows操作が可能
+- **デバッグ効率化**: エラーログ、プロセス監視をAIが分析
+
+#### 🏢 **エンタープライズ**
+- **セキュリティ重視**: 認証、IP制限、コマンド検証の多層防御
+- **監査対応**: 全操作のログ記録、証跡管理
+- **スケーラビリティ**: 複数サーバー対応、負荷分散
+- **コスト削減**: 手動作業の大幅削減、運用効率化
+
+#### 🔧 **DevOps エンジニア**
+- **CI/CD統合**: 既存パイプラインとの seamless統合
+- **インフラ管理**: サーバー監視、プロセス管理の自動化
+- **災害復旧**: 自動バックアップ、復旧プロセス
+- **パフォーマンス監視**: リアルタイムメトリクス、アラート
+
+### 💡 実用例
+
+```powershell
+# Claude Codeから直接実行可能
+@windows-build-server build_dotnet project_path="C:\MyApp" configuration="Release"
+@windows-build-server run_powershell command="Get-Process | Where-Object CPU -gt 50"
+@windows-build-server file_sync source="C:\Dev" destination="\\server\backup"
+```
+
+### 🌍 対応環境
+
+- **OS**: Windows 10/11, Windows Server 2019/2022
+- **ランタイム**: Node.js 18+, PowerShell 5.1+
+- **ネットワーク**: ローカル、リモート、NordVPN Mesh
+- **認証**: Bearer Token、IP制限、セキュリティグループ
+
+---
+
 汎用的なWindows操作をMCP（Model Context Protocol）経由で実行できるサーバーです。CI/CD自動化、ビルドプロセス、ファイル操作、プロセス管理など、様々なWindows環境での自動化ニーズに対応します。
 
 ## 🎯 Claude Code 簡単セットアップ
