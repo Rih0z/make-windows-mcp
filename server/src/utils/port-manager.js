@@ -19,11 +19,24 @@ class PortManager {
   
   /**
    * Initialize with preferred port from environment
+   * Supports both single port (8080) and range (8080-8089)
    */
   initialize() {
-    this.preferredPort = parseInt(process.env.MCP_SERVER_PORT) || 8080;
-    this.portRangeStart = this.preferredPort;
-    this.portRangeEnd = this.preferredPort + this.maxAttempts;
+    const portConfig = process.env.MCP_SERVER_PORT || '8080';
+    
+    if (portConfig.includes('-')) {
+      // Range format: "8080-8089"
+      const [startPort, endPort] = portConfig.split('-').map(p => parseInt(p.trim()));
+      this.preferredPort = isNaN(startPort) ? 8080 : startPort;
+      this.portRangeStart = isNaN(startPort) ? 8080 : startPort;
+      this.portRangeEnd = isNaN(endPort) ? 8090 : endPort;
+    } else {
+      // Single port format: "8080"
+      const parsedPort = parseInt(portConfig);
+      this.preferredPort = isNaN(parsedPort) ? 8080 : parsedPort;
+      this.portRangeStart = this.preferredPort;
+      this.portRangeEnd = this.preferredPort + this.maxAttempts;
+    }
   }
   
   /**
@@ -180,4 +193,4 @@ class PortManager {
 }
 
 // Export singleton instance
-module.exports = new PortManager();
+module.exports = PortManager;

@@ -1,4 +1,4 @@
-# Windows MCP Build Server v1.0.40
+# Windows MCP Build Server v1.0.42
 
 汎用的なWindows操作をMCP（Model Context Protocol）経由で実行できるサーバーです。CI/CD自動化、ビルドプロセス、ファイル操作、プロセス管理など、様々なWindows環境での自動化ニーズに対応します。
 
@@ -21,6 +21,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 2. **設定ファイルの作成**
 
 **方法1: プロジェクトルートに`.mcp.json`ファイルを作成（推奨）**
+
+まず、認証トークンを`.env`ファイルで管理：
+```bash
+# .env ファイル（Git除外対象）
+MCP_AUTH_TOKEN=your-generated-token-here
+```
+
+次に、`.mcp.json`ファイルを作成：
 ```json
 {
   "mcpServers": {
@@ -29,9 +37,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
       "command": "node",
       "args": ["./server/src/server.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-generated-token-here",
-        "MCP_SERVER_PORT": "8080",
-        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C:\\projects\\;C:\\temp\\",
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "ENABLE_DEV_COMMANDS": "false"
       }
     }
@@ -39,7 +46,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 }
 ```
 
+**⚠️ セキュリティ重要**: 認証トークン(`MCP_AUTH_TOKEN`)は`.mcp.json`に記載せず、必ず`.env`ファイルで管理してください。
+
 **方法2: Claude Code設定ファイルを作成**
+
+`.env`ファイルで認証トークンを管理した上で：
    - **Windows**: `%USERPROFILE%\.claude.json`
    - **macOS**: `~/.claude.json`
 
@@ -51,15 +62,16 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
       "command": "node",
       "args": ["C:\\path\\to\\windows-mcp-server\\server\\src\\server.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-generated-token-here",
-        "MCP_SERVER_PORT": "8080",
-        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C\\projects\\;C:\\temp\\",
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "ENABLE_DEV_COMMANDS": "false"
       }
     }
   }
 }
 ```
+
+**注意**: こちらの方法でも、`MCP_AUTH_TOKEN`は`.env`ファイルで管理し、Claude Code設定ファイルには記載しないでください。
 
 3. **Claude Codeで接続テスト**
 ```

@@ -1,8 +1,78 @@
-# Detailed Setup Guide
+# Windows MCP Server - 完全セットアップガイド
 
-## Table of Contents
-1. [Windows VM Setup](#windows-vm-setup)
-2. [Mac Client Setup](#mac-client-setup)
+## 🎯 v1.0.42 新機能対応版
+
+このガイドでは、最新のセキュリティ強化とポート範囲機能に対応したセットアップ手順を説明します。
+
+## 🚀 クイックスタート（推奨）
+
+### 1. 自動セットアップ
+```powershell
+# 1. リポジトリをクローン
+git clone https://github.com/your-repo/windows-mcp-server.git
+cd windows-mcp-server
+
+# 2. 依存関係をインストール
+npm run install:all
+
+# 3. 自動セットアップを実行
+.\setup-claude-code.ps1
+```
+
+これで完了！Claude Codeで以下を試してください：
+```
+@windows-build-server tools/list
+```
+
+## 🔧 手動セットアップ
+
+### ステップ1: 環境準備
+```powershell
+# Node.js v18+が必要
+node --version
+
+# PowerShell 5.1+が必要
+$PSVersionTable.PSVersion
+```
+
+### ステップ2: 認証設定
+```powershell
+# 認証トークンを生成
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+生成されたトークンを`.env`ファイルに保存：
+```env
+MCP_AUTH_TOKEN=your-generated-token-here
+MCP_SERVER_PORT=8080-8089
+ALLOWED_BUILD_PATHS=C:\builds\
+ENABLE_DEV_COMMANDS=false
+ENABLE_DANGEROUS_MODE=false
+LOG_LEVEL=info
+```
+
+### ステップ3: Claude Code設定
+プロジェクトルートに`.mcp.json`を作成：
+```json
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./server/src/server.js"],
+      "env": {
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\",
+        "COMMAND_TIMEOUT": "30000",
+        "RATE_LIMIT_REQUESTS": "60",
+        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DANGEROUS_MODE": "false",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}
+```
 3. [Security Configuration](#security-configuration)
 4. [Testing the Connection](#testing-the-connection)
 5. [Advanced Configuration](#advanced-configuration)

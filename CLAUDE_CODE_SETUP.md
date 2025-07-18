@@ -50,11 +50,11 @@ copy .env.example .env
 MCP_AUTH_TOKEN=your-secure-token-here
 
 # 🌐 サーバー設定
-MCP_SERVER_PORT=8080
+MCP_SERVER_PORT=8080-8089
 MCP_SERVER_HOST=localhost
 
 # 📁 ビルドパス設定
-ALLOWED_BUILD_PATHS=C:\builds\;C:\projects\;C:\temp\
+ALLOWED_BUILD_PATHS=C:\builds\
 
 # ⏱️ タイムアウト設定
 COMMAND_TIMEOUT=30000
@@ -97,9 +97,8 @@ cd ~/.config/claude-code/mcp_settings
       "command": "node",
       "args": ["./server/src/server.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-secure-token-here",
-        "MCP_SERVER_PORT": "8080",
-        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C:\\projects\\;C:\\temp\\",
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
         "ENABLE_DEV_COMMANDS": "false",
@@ -120,9 +119,8 @@ cd ~/.config/claude-code/mcp_settings
       "command": "node",
       "args": ["C:\\path\\to\\windows-mcp-server\\server\\src\\server.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-secure-token-here",
-        "MCP_SERVER_PORT": "8080",
-        "ALLOWED_BUILD_PATHS": "C:\\builds\\;C:\\projects\\;C:\\temp\\",
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
         "ENABLE_DEV_COMMANDS": "false",
@@ -135,12 +133,19 @@ cd ~/.config/claude-code/mcp_settings
 
 ### 5. 自動セットアップスクリプトの実行
 
-便利な自動セットアップスクリプトを使用：
+便利な自動セットアップスクリプトを使用（推奨）：
 
 ```powershell
 # 管理者権限でPowerShellを起動
 .\setup-claude-code.ps1
 ```
+
+このスクリプトは以下を自動実行します：
+- 認証トークンの自動生成
+- `.env`ファイルの作成
+- `.mcp.json`ファイルの作成（トークンなし）
+- ポート範囲設定（8080-8089）
+- セキュアなビルドパス設定（C:\builds\）
 
 ### 6. 接続テスト
 

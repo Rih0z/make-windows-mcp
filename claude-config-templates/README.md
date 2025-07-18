@@ -80,18 +80,39 @@
 
 ### 必須設定項目
 
-1. **MCP_AUTH_TOKEN**: セキュアなトークンに変更
+1. **MCP_AUTH_TOKEN**: `.env`ファイルで管理（`.mcp.json`には記載しない）
 2. **server.js のパス**: 実際のインストールパスに変更
 3. **ALLOWED_BUILD_PATHS**: 許可するビルドパスに変更
+
+### セキュリティ設定
+
+**正しい設定方法**:
+```bash
+# .env ファイル（Git除外対象）
+MCP_AUTH_TOKEN=your-secure-32-character-token-here
+```
+
+```json
+// .mcp.json ファイル（Git追跡対象）
+{
+  "mcpServers": {
+    "windows-build-server": {
+      "env": {
+        "MCP_SERVER_PORT": "8080-8089",
+        "ALLOWED_BUILD_PATHS": "C:\\builds\\"
+      }
+    }
+  }
+}
+```
 
 ### オプション設定項目
 
 ```json
 {
   "env": {
-    "MCP_AUTH_TOKEN": "your-token-here",
-    "MCP_SERVER_PORT": "8080",
-    "ALLOWED_BUILD_PATHS": "C:\\your\\paths\\",
+    "MCP_SERVER_PORT": "8080-8089",
+    "ALLOWED_BUILD_PATHS": "C:\\builds\\",
     "COMMAND_TIMEOUT": "30000",
     "RATE_LIMIT_REQUESTS": "60",
     "ENABLE_DEV_COMMANDS": "false",
@@ -100,6 +121,8 @@
   }
 }
 ```
+
+**⚠️ 重要**: `MCP_AUTH_TOKEN`は`.env`ファイルで管理し、`.mcp.json`には記載しないでください。
 
 ## 🔒 セキュリティ設定
 

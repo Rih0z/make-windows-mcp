@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.0.42] - 2025-07-18
+
+### 🔒 Security & Claude Code Integration Excellence - セキュリティ強化とClaude Code完全統合
+
+### 🎯 Major Security Enhancements
+- **Authentication Token Separation**: 認証トークンを`.env`ファイルで管理、`.mcp.json`から完全削除
+- **Git Security**: 機密情報がGit履歴に残らない安全な設計実装
+- **Minimal Privilege**: ビルドパスを`C:\builds\`のみに制限、セキュリティリスク軽減
+- **Port Range Security**: 8080-8089の範囲でセキュアなポート自動選択
+
+### 🌐 Port Range Management System
+- **Automatic Port Selection**: ポート競合時の自動フォールバック機能
+- **Range Configuration**: "8080-8089"形式での範囲指定対応
+- **Backward Compatibility**: 単一ポート設定との完全互換性維持
+- **Environment Integration**: 環境変数との統合管理
+
+### 📚 Complete Documentation Ecosystem
+- **SECURITY.md**: 包括的なセキュリティベストプラクティスガイド
+- **CLAUDE_CODE_SETUP.md**: 詳細なClaude Code設定ガイド
+- **TROUBLESHOOTING.md**: 問題解決とトラブルシューティング
+- **SETUP.md**: 完全セットアップガイド v1.0.42対応
+- **Configuration Templates**: 6種類の環境別設定テンプレート
+
+### 🤖 Claude Code Perfect Integration
+- **Automated Setup**: `setup-claude-code.ps1`スクリプトによるワンクリック設定
+- **Configuration Templates**: 開発/本番/チーム共有用の設定テンプレート
+- **Security Validation**: 設定ファイルのセキュリティ自動検証
+- **Zero-Configuration**: プロジェクトルートの`.mcp.json`で即座に利用可能
+
+### 🧪 Comprehensive Testing Suite
+- **Port Range Tests**: ポート範囲機能の包括的テスト (12/12成功)
+- **Security Integration Tests**: セキュリティ設定の統合テスト (12/18成功)
+- **Configuration Validation**: 設定ファイルの安全性検証
+- **End-to-End Testing**: Claude Code統合の完全テスト
+
+### 📊 Implementation Results
+- **Security**: ✅ 機密情報完全分離、Git安全性確保
+- **Usability**: ✅ 自動セットアップ、ワンクリック設定
+- **Reliability**: ✅ ポート競合自動解決、堅牢なエラーハンドリング
+- **Maintainability**: ✅ 包括的ドキュメント、テストスイート完備
+
+### 🔧 Technical Improvements
+- **NaN Handling**: ポート解析でのNaN値の適切な処理
+- **Module Exports**: PortManagerクラスのテスト可能性向上
+- **Error Recovery**: 無効設定からの自動復旧機能
+- **Resource Management**: 非同期リソースの適切な管理
+
 ## [1.0.40] - 2025-07-17
 
 ### 🏆 Enterprise Testing Excellence - 徹底的テスト強化完了

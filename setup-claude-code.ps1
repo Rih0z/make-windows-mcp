@@ -3,8 +3,8 @@
 
 param(
     [string]$AuthToken = "",
-    [string]$ServerPort = "8080",
-    [string]$AllowedPaths = "C:\builds\;C:\projects\;C:\temp\",
+    [string]$ServerPort = "8080-8089",
+    [string]$AllowedPaths = "C:\builds\",
     [string]$Scope = "mcp",
     [switch]$Force = $false,
     [switch]$DangerousMode = $false
@@ -169,7 +169,6 @@ function New-ClaudeCodeConfig {
                 command = "node"
                 args = @($serverPath)
                 env = @{
-                    MCP_AUTH_TOKEN = $Token
                     MCP_SERVER_PORT = $Port
                     ALLOWED_BUILD_PATHS = $Paths
                     COMMAND_TIMEOUT = "30000"

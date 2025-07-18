@@ -53,11 +53,16 @@ node server\src\server.js
   "mcpServers": {
     "windows-build-server": {
       "env": {
-        "MCP_SERVER_PORT": "8081"
+        "MCP_SERVER_PORT": "8081-8090"
       }
     }
   }
 }
+```
+
+または`.env`ファイルで設定：
+```env
+MCP_SERVER_PORT=8081-8090
 ```
 
 ### 問題2: タイムアウトエラー
@@ -75,12 +80,19 @@ Error: MCP_TIMEOUT exceeded
   "mcpServers": {
     "windows-build-server": {
       "env": {
+        "MCP_SERVER_PORT": "8080-8089",
         "MCP_TIMEOUT": "60000",
         "COMMAND_TIMEOUT": "60000"
       }
     }
   }
 }
+```
+
+または`.env`ファイルで設定：
+```env
+MCP_SERVER_PORT=8080-8089
+COMMAND_TIMEOUT=60000
 ```
 
 2. **システムリソースの確認**
