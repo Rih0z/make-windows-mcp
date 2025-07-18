@@ -14,7 +14,22 @@
 
 ### 🚀 ユーザーにとってのメリット
 
+#### 🌟 **最重要メリット：開発環境と実行環境の完全分離**
+
+**普段の開発は好きな環境で、ビルド・デプロイ・テストは別環境で実行可能**
+
+- **🍎 Mac開発者**: macOS上でVSCode/Claude Codeを使用し、Windows環境でビルド・実行
+- **🐧 Linux開発者**: Ubuntu/Arch等の慣れ親しんだ環境で開発し、Windows固有処理を実行
+- **💻 Windows開発者**: 開発マシンから別のWindows VMやサーバーにビルド処理を委譲
+
+```bash
+# macOS/LinuxのClaude Codeから直接Windows環境を制御
+@windows-build-server build_dotnet project_path="/Users/dev/MyApp" configuration="Release"
+@windows-build-server run_powershell command="Get-WindowsFeature | Where-Object State -eq 'Installed'"
+```
+
 #### 👩‍💻 **開発者**
+- **環境に束縛されない開発**: 好きなOS・エディタで開発し、Windows特有の処理は別環境で実行
 - **ワンクリック環境構築**: 複雑な環境設定をAIが自動化
 - **多言語対応**: 20+の言語・フレームワークをサポート
 - **リアルタイム実行**: Claude Codeから直接Windows操作が可能
@@ -34,11 +49,39 @@
 
 ### 💡 実用例
 
-```powershell
-# Claude Codeから直接実行可能
-@windows-build-server build_dotnet project_path="C:\MyApp" configuration="Release"
+#### 🌍 **クロスプラットフォーム開発の典型的ワークフロー**
+
+```bash
+# 1. macOS/LinuxでClaude Codeを使用して開発
+# 2. Windows環境でビルド・テスト・デプロイを実行
+
+# .NET Coreアプリケーションのビルド
+@windows-build-server build_dotnet project_path="C:\builds\MyApp" configuration="Release"
+
+# Javaアプリケーションのビルド
+@windows-build-server build_java project_path="C:\builds\JavaApp" build_tool="gradle"
+
+# Python仮想環境でのテスト実行
+@windows-build-server build_python project_path="C:\builds\PythonApp" create_venv="true"
+
+# Windows固有の設定確認
 @windows-build-server run_powershell command="Get-Process | Where-Object CPU -gt 50"
-@windows-build-server file_sync source="C:\Dev" destination="\\server\backup"
+
+# ファイル同期・デプロイメント
+@windows-build-server file_sync source="C:\builds\MyApp\bin\Release" destination="\\production\deploy"
+```
+
+#### 🔄 **開発環境分離の実際の使用例**
+
+```bash
+# Mac開発者の典型的な1日
+# 1. macOS上でVSCode/Claude Codeで開発
+# 2. Gitにコミット・プッシュ
+# 3. Windows環境で最新コードを取得してビルド・テスト
+
+@windows-build-server run_powershell command="cd C:\builds\MyProject && git pull origin main"
+@windows-build-server build_dotnet project_path="C:\builds\MyProject" configuration="Release"
+@windows-build-server run_powershell command="cd C:\builds\MyProject && dotnet test"
 ```
 
 ### 🌍 対応環境
