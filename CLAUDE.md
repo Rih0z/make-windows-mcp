@@ -237,6 +237,87 @@ ai_coding_principles:
       - "process_manager - Windowsプロセス・サービス管理"
       - "file_sync - 大容量ファイル同期（robocopy統合）"
 
+  project_structure_organization:
+    reorganization_date: "2025-07-18"
+    reorganization_version: "v1.0.42"
+    status: "PROFESSIONAL_ENTERPRISE_STRUCTURE_ACHIEVED"
+    
+    before_reorganization:
+      issues:
+        - "64 unorganized test files in flat structure"
+        - "Duplicate documentation files (docs/CLAUDE.md vs CLAUDE.md)"
+        - "Multiple unnecessary .env files (.env.local, .env.test)"
+        - "Configuration templates scattered (claude-config-templates/)"
+        - "No clear separation of test types"
+        - "Non-professional file organization"
+      
+    after_reorganization:
+      structure:
+        tests:
+          - "tests/unit/ - 単体テスト (32ファイル)"
+          - "tests/integration/ - 統合テスト (7ファイル)"
+          - "tests/security/ - セキュリティテスト (10ファイル)"
+          - "tests/legacy/ - レガシー・バグ修正テスト (6ファイル)"
+          - "tests/helpers/ - テストヘルパー"
+          - "tests/fixtures/ - テストデータ"
+        
+        config:
+          - "config/claude-code/ - Claude Code設定テンプレート"
+          - "config/environments/ - 環境別設定（将来拡張用）"
+        
+        docs:
+          - "docs/api/ - API仕様・機能ガイド"
+          - "docs/architecture/ - アーキテクチャ文書"
+          - "docs/setup/ - セットアップガイド（将来移動予定）"
+          - "docs/messages/ - 開発履歴・メッセージ"
+        
+        server:
+          - "server/src/ - サーバーソースコード"
+          - "server/setup/ - サーバーセットアップスクリプト"
+        
+        client:
+          - "client/src/ - クライアントソースコード"
+          - "client/setup/ - クライアントセットアップスクリプト"
+        
+        root_level:
+          - "Core documentation (README.md, SECURITY.md, etc.)"
+          - "Configuration files (.mcp.json, .env.example)"
+          - "Project management files (package.json, jest.config.js)"
+          - "Setup automation (setup-claude-code.ps1)"
+      
+      improvements:
+        - "✅ 64→55テストファイル: 重複削除・統合"
+        - "✅ カテゴリ別テスト分類: unit/integration/security/legacy"
+        - "✅ 設定ファイル統合: config/claude-code/"
+        - "✅ ドキュメント階層化: api/architecture分離"
+        - "✅ 不要ファイル削除: .env.local, .env.test, 重複docs"
+        - "✅ プロフェッショナル構造: エンタープライズ標準達成"
+      
+      structure_compliance:
+        - "✅ Node.js標準プロジェクト構造準拠"
+        - "✅ テストフレームワーク (Jest) ベストプラクティス"
+        - "✅ 設定管理ベストプラクティス"
+        - "✅ ドキュメント階層化"
+        - "✅ 関心の分離原則"
+    
+    maintenance_guidelines:
+      test_organization:
+        - "新しい単体テストは tests/unit/ に配置"
+        - "統合テストは tests/integration/ に配置"
+        - "セキュリティテストは tests/security/ に配置"
+        - "バグ修正テストは tests/legacy/ に配置"
+      
+      configuration_management:
+        - "Claude Code設定は config/claude-code/ で管理"
+        - "環境別設定は config/environments/ で管理"
+        - "テンプレートファイルは適切なREADME.mdを含める"
+      
+      documentation_structure:
+        - "API仕様は docs/api/ に配置"
+        - "アーキテクチャ文書は docs/architecture/ に配置"
+        - "開発履歴は docs/messages/ に保持"
+        - "重複ドキュメントの作成禁止"
+
   how_to_use_scripts:
     existing_scripts:
       server_setup:

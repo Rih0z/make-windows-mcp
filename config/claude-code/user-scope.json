@@ -12,7 +12,7 @@
         "SSH_TIMEOUT": "5000",
         "RATE_LIMIT_REQUESTS": "60",
         "RATE_LIMIT_WINDOW": "60000",
-        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DEV_COMMANDS": "true",
         "ENABLE_DANGEROUS_MODE": "false",
         "LOG_LEVEL": "info",
         "LOG_ROTATION_SIZE": "10485760",

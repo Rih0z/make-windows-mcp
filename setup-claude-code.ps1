@@ -7,7 +7,8 @@ param(
     [string]$AllowedPaths = "C:\builds\",
     [string]$Scope = "mcp",
     [switch]$Force = $false,
-    [switch]$DangerousMode = $false
+    [switch]$DangerousMode = $false,
+    [switch]$EnableDevCommands = $true
 )
 
 # スクリプトの設定
@@ -125,7 +126,7 @@ RATE_LIMIT_REQUESTS=60
 RATE_LIMIT_WINDOW=60000
 
 # 🔒 セキュリティ設定
-ENABLE_DEV_COMMANDS=false
+ENABLE_DEV_COMMANDS=$($EnableDevCommands.ToString().ToLower())
 ENABLE_DANGEROUS_MODE=$(if ($DangerousMode) { "true" } else { "false" })
 
 # 📊 ログ設定
@@ -174,7 +175,7 @@ function New-ClaudeCodeConfig {
                     COMMAND_TIMEOUT = "30000"
                     RATE_LIMIT_REQUESTS = "60"
                     RATE_LIMIT_WINDOW = "60000"
-                    ENABLE_DEV_COMMANDS = "false"
+                    ENABLE_DEV_COMMANDS = if ($EnableDevCommands) { "true" } else { "false" }
                     ENABLE_DANGEROUS_MODE = if ($DangerousMode) { "true" } else { "false" }
                     LOG_LEVEL = "info"
                 }

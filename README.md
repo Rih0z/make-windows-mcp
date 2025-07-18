@@ -39,7 +39,7 @@ MCP_AUTH_TOKEN=your-generated-token-here
       "env": {
         "MCP_SERVER_PORT": "8080-8089",
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
-        "ENABLE_DEV_COMMANDS": "false"
+        "ENABLE_DEV_COMMANDS": "true"
       }
     }
   }
@@ -47,6 +47,16 @@ MCP_AUTH_TOKEN=your-generated-token-here
 ```
 
 **⚠️ セキュリティ重要**: 認証トークン(`MCP_AUTH_TOKEN`)は`.mcp.json`に記載せず、必ず`.env`ファイルで管理してください。
+
+**🛠️ 開発モード機能 (ENABLE_DEV_COMMANDS: true)**:
+- **システム診断**: `tasklist`, `netstat`, `type` - プロセス・ネットワーク・ファイル確認
+- **ファイル操作**: `findstr`, `echo`, `set`, `call` - 高度なファイル検索・設定
+- **制御構文**: `if`, `for`, `cd`, `start` - 条件分岐・ループ・ディレクトリ移動
+- **コマンド連結**: `&`, `&&`, `||`, `|` - 複数コマンドの組み合わせ実行
+- **Git操作**: 追加のGitコマンドとオプション
+- **パッケージ管理**: pip, npm, yarn等の追加オプション
+
+**注意**: 開発モードは追加機能を提供しますが、セキュリティ制限は維持されます。
 
 **方法2: Claude Code設定ファイルを作成**
 
@@ -64,7 +74,7 @@ MCP_AUTH_TOKEN=your-generated-token-here
       "env": {
         "MCP_SERVER_PORT": "8080-8089",
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
-        "ENABLE_DEV_COMMANDS": "false"
+        "ENABLE_DEV_COMMANDS": "true"
       }
     }
   }
@@ -94,7 +104,7 @@ MCP_AUTH_TOKEN=your-generated-token-here
 ### 📚 詳細ドキュメント
 
 - **[Claude Code セットアップガイド](CLAUDE_CODE_SETUP.md)** - 詳細な設定手順
-- **[設定テンプレート](claude-config-templates/)** - 環境別設定例
+- **[設定テンプレート](config/claude-code/)** - 環境別設定例
 - **[トラブルシューティング](TROUBLESHOOTING.md)** - 問題解決ガイド
 
 ## 🎉 新機能 v1.0.33 - Python Virtual Environment Support
@@ -1244,7 +1254,7 @@ gemini-cli mcp add windows-build-server      # Gemini-CLI使用時
 | `MAX_LOG_FILES` | 保持するログファイル数 | いいえ | 5 |
 | `COMMAND_TIMEOUT` | コマンド実行タイムアウト（ms） | いいえ | 300000 |
 | `MAX_SSH_CONNECTIONS` | 最大SSH同時接続数 | いいえ | 5 |
-| `ENABLE_DEV_COMMANDS` | 開発コマンドモード有効化 | いいえ | false |
+| `ENABLE_DEV_COMMANDS` | 開発コマンドモード有効化 | いいえ | true |
 | `ALLOWED_DEV_COMMANDS` | 許可する開発コマンド（カンマ区切り） | いいえ | tasklist,netstat,type,python,pip,node,npm,git,if,for,findstr,echo,set,call,start,cd |
 | `DEV_COMMAND_PATHS` | 開発コマンド実行許可パス（カンマ区切り） | いいえ | C:\\builds\\,C:\\projects\\,C:\\dev\\ |
 | `ALLOWED_BATCH_DIRS` | バッチファイル実行許可ディレクトリ（セミコロン区切り） | いいえ | C:\\builds\\;C:\\builds\\AIServer\\;C:\\Users\\Public\\;C:\\temp\\ |

@@ -65,7 +65,7 @@ RATE_LIMIT_REQUESTS=60
 RATE_LIMIT_WINDOW=60000
 
 # 🔒 セキュリティ設定
-ENABLE_DEV_COMMANDS=false
+ENABLE_DEV_COMMANDS=true
 ENABLE_DANGEROUS_MODE=false
 ```
 
@@ -101,7 +101,7 @@ cd ~/.config/claude-code/mcp_settings
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
-        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DEV_COMMANDS": "true",
         "ENABLE_DANGEROUS_MODE": "false",
         "LOG_LEVEL": "info"
       }
@@ -123,7 +123,7 @@ cd ~/.config/claude-code/mcp_settings
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
-        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DEV_COMMANDS": "true",
         "ENABLE_DANGEROUS_MODE": "false"
       }
     }

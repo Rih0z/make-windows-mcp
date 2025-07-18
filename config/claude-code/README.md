@@ -115,7 +115,7 @@ MCP_AUTH_TOKEN=your-secure-32-character-token-here
     "ALLOWED_BUILD_PATHS": "C:\\builds\\",
     "COMMAND_TIMEOUT": "30000",
     "RATE_LIMIT_REQUESTS": "60",
-    "ENABLE_DEV_COMMANDS": "false",
+    "ENABLE_DEV_COMMANDS": "true",
     "ENABLE_DANGEROUS_MODE": "false",
     "LOG_LEVEL": "info"
   }
@@ -132,7 +132,7 @@ MCP_AUTH_TOKEN=your-secure-32-character-token-here
 - `RATE_LIMIT_REQUESTS`: 1000（高い値）
 
 ### 本番環境
-- `ENABLE_DEV_COMMANDS`: false
+- `ENABLE_DEV_COMMANDS`: true（デフォルト、開発機能有効）
 - `ENABLE_DANGEROUS_MODE`: false
 - `RATE_LIMIT_REQUESTS`: 30（低い値）
 

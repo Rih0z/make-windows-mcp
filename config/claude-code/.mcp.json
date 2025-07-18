@@ -9,7 +9,7 @@
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
-        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DEV_COMMANDS": "true",
         "ENABLE_DANGEROUS_MODE": "false",
         "LOG_LEVEL": "info"
       }

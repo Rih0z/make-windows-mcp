@@ -46,7 +46,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 MCP_AUTH_TOKEN=your-generated-token-here
 MCP_SERVER_PORT=8080-8089
 ALLOWED_BUILD_PATHS=C:\builds\
-ENABLE_DEV_COMMANDS=false
+ENABLE_DEV_COMMANDS=true
 ENABLE_DANGEROUS_MODE=false
 LOG_LEVEL=info
 ```
@@ -65,7 +65,7 @@ LOG_LEVEL=info
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
         "COMMAND_TIMEOUT": "30000",
         "RATE_LIMIT_REQUESTS": "60",
-        "ENABLE_DEV_COMMANDS": "false",
+        "ENABLE_DEV_COMMANDS": "true",
         "ENABLE_DANGEROUS_MODE": "false",
         "LOG_LEVEL": "info"
       }

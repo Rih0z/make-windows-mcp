@@ -25,7 +25,7 @@ MCP_AUTH_TOKEN=your-secure-32-character-token-here
       "env": {
         "MCP_SERVER_PORT": "8080-8089",
         "ALLOWED_BUILD_PATHS": "C:\\builds\\",
-        "ENABLE_DEV_COMMANDS": "false"
+        "ENABLE_DEV_COMMANDS": "true"
       }
     }
   }
@@ -52,7 +52,7 @@ MCP_AUTH_TOKEN=your-secure-32-character-token-here
 ```env
 # 最小限の権限（推奨）
 ALLOWED_BUILD_PATHS=C:\builds\
-ENABLE_DEV_COMMANDS=false
+ENABLE_DEV_COMMANDS=true
 ENABLE_DANGEROUS_MODE=false
 ```
 
@@ -122,7 +122,7 @@ credentials.json
 
 #### 本番環境
 - `ENABLE_DANGEROUS_MODE=false`（必須）
-- `ENABLE_DEV_COMMANDS=false`（推奨）
+- `ENABLE_DEV_COMMANDS=true`（推奨）
 - `ALLOWED_BUILD_PATHS=C:\builds\`（最小限）
 - `RATE_LIMIT_REQUESTS=30`（低い値）
 - `LOG_LEVEL=warn`（最小限のログ）
