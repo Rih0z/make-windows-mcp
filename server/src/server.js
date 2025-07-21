@@ -18,6 +18,7 @@ const portManager = new PortManager();
 const helpGenerator = require('./utils/help-generator');
 const powershellExecutor = require('./utils/powershell-enhanced');
 const httpClient = require('./utils/http-client');
+const ProjectDetector = require('./utils/project-detector');
 const { getClientIP, createTextResult, handleValidationError, getNumericEnv, createDirCommand } = require('./utils/helpers');
 
 // Validate critical environment variables
@@ -1884,6 +1885,29 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               },
               required: ['url', 'jsonPayload']
             }
+          },
+          {
+            name: 'environment_info',
+            description: 'Display Windows MCP environment information and optimal project recommendations',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                projectPath: { 
+                  type: 'string', 
+                  description: 'Optional: Path to project directory for project-specific analysis and recommendations'
+                },
+                includeSystemInfo: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Include Windows system information (.NET SDKs, PowerShell version, etc.)'
+                },
+                analyzeProject: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Analyze project type and provide build environment recommendations'
+                }
+              }
+            }
           }
         ],
         
@@ -1892,11 +1916,11 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
           version: require('../package.json').version,
           authConfigured: authManager.isAuthEnabled(),
           dangerousMode: process.env.ENABLE_DANGEROUS_MODE === 'true',
-          tools: 10
+          tools: 11
         }),
         
         helpInfo: {
-          message: '🎉 All 10 tools available! HTTP client for AI server testing included in v1.0.37!',
+          message: '🎉 All 11 tools available! Environment info and project analysis included in v1.0.44!',
           featuredCapabilities: {
             '🐍 Python Virtual Environments': 'build_python: Auto-creates .venv, installs deps, runs pytest/unittest',
             '🔨 Multi-Language Builds': '.NET, Java, Python, Node.js, Go, Rust, C++, Ruby, Docker',
@@ -2802,6 +2826,132 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               method: args.method || 'POST',
               hasJsonPayload: !!args.jsonPayload
             });
+          }
+          break;
+
+        case 'environment_info':
+          try {
+            const startTime = Date.now();
+            const info = [];
+            
+            // Basic environment information
+            info.push('🔧 Windows MCP Server Environment');
+            info.push('═'.repeat(50));
+            info.push(`📅 Timestamp: ${new Date().toISOString()}`);
+            info.push(`🌐 Client IP: ${clientIP}`);
+            info.push(`⚙️  Server Version: v${require('../package.json').version}`);
+            info.push(`🖥️  Platform: Windows (${process.platform})`);
+            info.push(`📦 Node.js: ${process.version}`);
+            info.push('');
+
+            // Windows environment details
+            if (args.includeSystemInfo !== false) {
+              info.push('🏗️  Windows Build Environment');
+              info.push('─'.repeat(30));
+              
+              try {
+                // PowerShell version check
+                const psVersionResult = await executeBuild('powershell.exe', [
+                  '-Command', '$PSVersionTable.PSVersion.ToString()'
+                ]);
+                if (psVersionResult.success) {
+                  info.push(`💙 PowerShell: ${psVersionResult.output.trim()}`);
+                }
+
+                // .NET SDK versions
+                const dotnetResult = await executeBuild('dotnet.exe', ['--list-sdks']);
+                if (dotnetResult.success && dotnetResult.output) {
+                  const sdks = dotnetResult.output.trim().split('\n').slice(0, 3);
+                  info.push(`🔷 .NET SDKs: ${sdks.length} installed`);
+                  sdks.forEach(sdk => info.push(`   • ${sdk.trim()}`));
+                }
+
+                // Windows SDK check
+                const winSdkResult = await executeBuild('powershell.exe', [
+                  '-Command', 'Get-ItemProperty "HKLM:\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\*" | Select-Object -ExpandProperty ProductVersion -ErrorAction SilentlyContinue | Sort-Object -Unique'
+                ]);
+                if (winSdkResult.success && winSdkResult.output.trim()) {
+                  const winSdks = winSdkResult.output.trim().split('\n').slice(0, 3);
+                  info.push(`🪟 Windows SDKs: ${winSdks.length} found`);
+                  winSdks.forEach(sdk => info.push(`   • ${sdk.trim()}`));
+                }
+
+              } catch (systemError) {
+                info.push(`⚠️  System info query failed: ${systemError.message}`);
+              }
+              
+              info.push('');
+            }
+
+            // Available build tools
+            info.push('🛠️  Available Build Tools');
+            info.push('─'.repeat(25));
+            info.push('• build_dotnet - .NET applications (WPF, WinForms, WinUI, Core)');
+            info.push('• build_python - Python applications with virtual environments');
+            info.push('• build_java - Java applications (Maven, Gradle)');
+            info.push('• build_nodejs - Node.js applications and React/Vue projects');
+            info.push('• build_go - Go applications and modules');
+            info.push('• build_rust - Rust applications using Cargo');
+            info.push('• build_cpp - C++ applications with MSVC/MinGW');
+            info.push('• run_powershell - Direct PowerShell command execution');
+            info.push('• run_batch - Windows batch file execution');
+            info.push('• http_json_request - AI chat API testing without escaping');
+            info.push('');
+
+            // Connection status
+            info.push('🌐 Connection Status');
+            info.push('─'.repeat(20));
+            info.push('✅ MCP Server: Active and responding');
+            info.push(`🔐 Authentication: ${authManager.isAuthEnabled() ? 'Enabled' : 'Disabled'}`);
+            info.push(`⚡ Dangerous Mode: ${process.env.ENABLE_DANGEROUS_MODE === 'true' ? '🟡 Enabled' : '🟢 Disabled'}`);
+            info.push(`📝 Rate Limiting: ${process.env.ENABLE_DANGEROUS_MODE === 'true' ? 'Bypassed' : 'Active'}`);
+            info.push('');
+
+            // Project analysis (optional)
+            if (args.analyzeProject && args.projectPath) {
+              const detector = new ProjectDetector();
+              const detection = await detector.detectProject(args.projectPath);
+              
+              info.push('🔍 Project Analysis');
+              info.push('─'.repeat(20));
+              info.push(detector.generateReport(detection));
+              info.push('');
+            }
+
+            // Environment recommendations
+            info.push('💡 Environment Recommendations');
+            info.push('─'.repeat(30));
+            info.push('🎯 For WPF/WinForms/WinUI: This Windows environment is OPTIMAL');
+            info.push('🎯 For .NET Core/Standard: Cross-platform compatible');
+            info.push('🎯 For Xamarin/MAUI: Consider macOS for iOS development');
+            info.push('🎯 For Docker apps: Use container-based builds');
+            info.push('');
+
+            // Usage examples
+            info.push('📋 Quick Usage Examples');
+            info.push('─'.repeat(25));
+            info.push('🔨 Build WPF app: build_dotnet project_path="C:/MyWpfApp.csproj" configuration="Release"');
+            info.push('🐍 Python with venv: build_python project_path="C:/MyPython" action="test" create_venv="true"');
+            info.push('🌐 Test AI server: http_json_request url="http://localhost:8090/api/chat" jsonPayload={"message":"Hello"}');
+            info.push('⚡ Run PowerShell: run_powershell command="Get-Process | Where-Object {$_.ProcessName -like \'*python*\'}"');
+            
+            const executionTime = Date.now() - startTime;
+
+            logger.info('Environment info generated', {
+              clientIP,
+              includeSystemInfo: args.includeSystemInfo !== false,
+              analyzeProject: !!args.analyzeProject,
+              projectPath: args.projectPath || 'none',
+              executionTime
+            });
+
+            result = createTextResult(info.join('\n'));
+          } catch (error) {
+            logger.error('Environment info generation failed', {
+              clientIP,
+              error: error.message
+            });
+            result = handleValidationError(error, 'Environment info', logger, clientIP, args);
           }
           break;
 

@@ -273,6 +273,40 @@ class HelpGenerator {
           }
         ]
       },
+      environment_info: {
+        category: 'management',
+        examples: [
+          {
+            title: 'Basic Environment Information',
+            code: `{
+  "name": "environment_info",
+  "arguments": {
+    "includeSystemInfo": true
+  }
+}`
+          },
+          {
+            title: 'Project Analysis with Environment Check',
+            code: `{
+  "name": "environment_info", 
+  "arguments": {
+    "projectPath": "C:/MyWpfApp",
+    "analyzeProject": true,
+    "includeSystemInfo": true
+  }
+}`
+          },
+          {
+            title: 'Quick Status Check',
+            code: `{
+  "name": "environment_info",
+  "arguments": {
+    "includeSystemInfo": false
+  }
+}`
+          }
+        ]
+      },
       mcp_self_build: {
         category: 'management',
         examples: [
