@@ -1,4 +1,4 @@
-# Windows MCP Build Server v1.0.42
+# Windows MCP Build Server v1.0.44
 
 ## 🌟 このプロジェクトについて
 
@@ -6,17 +6,56 @@
 
 ### 🎯 できること
 
-- 🍎 **Mac開発者**: macOS + Claude Code → Windows環境でビルド
+- 🍎 **Mac開発者**: macOS + Claude Code → Windows環境でWPF/WinFormsビルド
 - 🐧 **Linux開発者**: Ubuntu/Arch等 → Windows固有処理実行  
 - 💻 **Windows開発者**: ローカル → リモートWindows環境で処理
+- 🔧 **自動プロジェクト判定**: WPF/MAUI/Xamarinプロジェクト自動検出と最適環境推奨
 
 ### 💡 使用例
 
 ```bash
+# 環境分析とプロジェクト自動判定（New in v1.0.44）
+@windows-build-server environment_info projectPath="C:\MyWpfApp" analyzeProject=true
+
 # Claude Codeから直接実行
 @windows-build-server build_dotnet project_path="C:\MyApp" configuration="Release"
 @windows-build-server run_powershell command="Get-Process"
 @windows-build-server build_python project_path="C:\PythonApp" create_venv="true"
+```
+
+## 📚 詳細な使用方法
+
+**詳しい設定手順・使用方法・トラブルシューティングについては、以下のドキュメントをご覧ください:**
+
+### 👥 [外部ユーザー向け接続ガイド](./EXTERNAL_USER_GUIDE.md)
+- **完全な設定手順**: Windows環境セットアップからクライアント設定まで
+- **実際のワークフロー**: WPF/Python/フルスタック開発の具体例
+- **トラブルシューティング**: 接続・認証・ビルドエラーの解決方法
+- **高度な設定**: セキュリティ・リモートホスト・環境変数設定
+- **運用・監視**: ログ確認・メンテナンス・ベストプラクティス
+
+**新機能（v1.0.44）:**
+- 🔍 **environment_info**: 環境分析・プロジェクト判定ツール
+- 🎯 **ProjectDetector**: WPF/WinForms/MAUI自動検出エンジン
+- 📊 **Build Strategy**: プロジェクトタイプ別最適ツール推奨
+- 🌐 **System Intelligence**: .NET SDK/PowerShell/Windows SDK検出
+
+## ⚡ クイックスタート
+
+**初回利用の方は、詳細な手順を [外部ユーザー向け接続ガイド](./EXTERNAL_USER_GUIDE.md) でご確認ください。**
+
+```powershell
+# 1. Windows環境でのセットアップ
+git clone https://github.com/your-repo/windows-mcp-server.git
+cd windows-mcp-server
+npm install
+npm run dangerous
+
+# 2. 環境確認（Claude Codeから実行）
+@windows-build-server environment_info includeSystemInfo=true
+
+# 3. プロジェクトビルド例
+@windows-build-server build_dotnet project_path="C:/MyWpfApp.csproj" configuration="Release"
 ```
 
 ## 🚀 インストール方法
