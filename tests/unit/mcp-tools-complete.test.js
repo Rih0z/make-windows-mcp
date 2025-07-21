@@ -19,8 +19,8 @@ describe('Complete MCP Tools Test Suite', () => {
     process.env.ALLOWED_BUILD_PATHS = 'C:\\builds\\,C:\\projects\\';
     process.env.ALLOWED_BATCH_DIRS = 'C:\\builds\\;C:\\temp\\';
     
-    delete require.cache[require.resolve('../server/src/server')];
-    app = require('../server/src/server');
+    delete require.cache[require.resolve('../../server/src/server')];
+    app = require('../../server/src/server');
   });
 
   afterAll(() => {
@@ -276,8 +276,8 @@ describe('Complete MCP Tools Test Suite', () => {
     test('should reject update in normal mode', async () => {
       // Temporarily disable dangerous mode
       process.env.ENABLE_DANGEROUS_MODE = 'false';
-      delete require.cache[require.resolve('../server/src/server')];
-      const normalApp = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      const normalApp = require('../../server/src/server');
 
       const response = await request(normalApp)
         .post('/mcp')

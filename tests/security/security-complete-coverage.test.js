@@ -1,4 +1,4 @@
-const SecurityValidator = require('../server/src/utils/security');
+const SecurityValidator = require('../../server/src/utils/security');
 const path = require('path');
 
 describe('Security Validator - Complete Coverage', () => {

@@ -1,5 +1,5 @@
 // Test crypto without mocking to get real coverage
-const crypto = require('../server/src/utils/crypto');
+const crypto = require('../../server/src/utils/crypto');
 
 describe('CryptoManager Real Coverage', () => {
   let originalEnv;

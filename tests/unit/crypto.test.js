@@ -1,4 +1,4 @@
-const crypto = require('../server/src/utils/crypto');
+const crypto = require('../../server/src/utils/crypto');
 
 describe('CryptoManager', () => {
   let originalEnv;

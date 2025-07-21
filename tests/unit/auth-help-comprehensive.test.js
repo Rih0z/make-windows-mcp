@@ -13,8 +13,8 @@ describe('Auth Manager & Help Generator Comprehensive Testing', () => {
     jest.clearAllMocks();
     
     // Clear require cache
-    delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-    delete require.cache[require.resolve('../server/src/utils/help-generator')];
+    delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+    delete require.cache[require.resolve('../../server/src/utils/help-generator')];
     
     // Mock environment variables
     process.env.MCP_AUTH_TOKEN = 'test-token-123';
@@ -31,8 +31,8 @@ describe('Auth Manager & Help Generator Comprehensive Testing', () => {
     jest.spyOn(fs, 'writeFileSync').mockImplementation();
     
     // Get fresh instances
-    authManager = require('../server/src/utils/auth-manager');
-    helpGenerator = require('../server/src/utils/help-generator');
+    authManager = require('../../server/src/utils/auth-manager');
+    helpGenerator = require('../../server/src/utils/help-generator');
   });
 
   afterEach(() => {
@@ -158,8 +158,8 @@ describe('Auth Manager & Help Generator Comprehensive Testing', () => {
     test('should handle authentication in dangerous mode', () => {
       process.env.ENABLE_DANGEROUS_MODE = 'true';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const dangerousAuthManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const dangerousAuthManager = require('../../server/src/utils/auth-manager');
       
       // Should bypass authentication in dangerous mode
       expect(dangerousAuthManager.validateToken('any-token')).toBe(true);
@@ -455,8 +455,8 @@ describe('Auth Manager & Help Generator Comprehensive Testing', () => {
       delete process.env.MCP_AUTH_TOKEN;
       process.env.AUTH_REQUIRED = 'false';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const noAuthManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const noAuthManager = require('../../server/src/utils/auth-manager');
       
       expect(() => noAuthManager.validateToken('any-token')).not.toThrow();
     });

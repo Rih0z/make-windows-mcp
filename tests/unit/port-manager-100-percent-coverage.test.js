@@ -27,7 +27,7 @@ describe('Port Manager - 100% Coverage', () => {
     jest.clearAllMocks();
     
     // Clear require cache to get fresh instance
-    delete require.cache[require.resolve('../server/src/utils/port-manager')];
+    delete require.cache[require.resolve('../../server/src/utils/port-manager')];
     
     // Mock net.createServer
     mockServer = {
@@ -46,7 +46,7 @@ describe('Port Manager - 100% Coverage', () => {
     delete process.env.MCP_SERVER_PORT;
     
     // Get fresh instance
-    PortManager = require('../server/src/utils/port-manager');
+    PortManager = require('../../server/src/utils/port-manager');
     portManager = PortManager;
   });
 

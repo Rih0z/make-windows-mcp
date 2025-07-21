@@ -5,7 +5,7 @@
  */
 
 const request = require('supertest');
-const security = require('../server/src/utils/security');
+const security = require('../../server/src/utils/security');
 
 describe('Enhanced Security Tests', () => {
   let app;
@@ -35,8 +35,8 @@ describe('Enhanced Security Tests', () => {
       process.env.ENABLE_DANGEROUS_MODE = 'false';
       process.env.ENABLE_DEV_COMMANDS = 'false';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should block dangerous commands in normal mode', async () => {
@@ -130,8 +130,8 @@ describe('Enhanced Security Tests', () => {
       process.env.ALLOWED_IPS = '';
       process.env.ENABLE_DANGEROUS_MODE = 'true';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should display warning when dangerous mode is enabled', async () => {
@@ -171,8 +171,8 @@ describe('Enhanced Security Tests', () => {
       process.env.ENABLE_DEV_COMMANDS = 'true';
       process.env.DEV_COMMAND_PATHS = 'C:\\dev\\,C:\\projects\\';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should allow dev commands in allowed paths', async () => {
@@ -199,8 +199,8 @@ describe('Enhanced Security Tests', () => {
       process.env.MCP_AUTH_TOKEN = 'secure-test-token-123';
       process.env.ALLOWED_IPS = '';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should reject requests without authentication', async () => {
@@ -261,8 +261,8 @@ describe('Enhanced Security Tests', () => {
       process.env.MCP_AUTH_TOKEN = 'test-token';
       process.env.ALLOWED_IPS = '127.0.0.1,192.168.1.100';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should allow requests from allowed IPs', async () => {
@@ -335,8 +335,8 @@ describe('Enhanced Security Tests', () => {
       process.env.RATE_LIMIT_REQUESTS = '5';
       process.env.RATE_LIMIT_WINDOW = '60000';
       
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     test('should apply rate limiting after threshold', async () => {

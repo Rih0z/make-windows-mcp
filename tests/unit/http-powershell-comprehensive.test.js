@@ -15,8 +15,8 @@ describe('HTTP Client & PowerShell Enhanced Comprehensive Testing', () => {
     jest.clearAllMocks();
     
     // Clear require cache
-    delete require.cache[require.resolve('../server/src/utils/http-client')];
-    delete require.cache[require.resolve('../server/src/utils/powershell-enhanced')];
+    delete require.cache[require.resolve('../../server/src/utils/http-client')];
+    delete require.cache[require.resolve('../../server/src/utils/powershell-enhanced')];
     
     // Mock console methods
     console.log = jest.fn();
@@ -31,8 +31,8 @@ describe('HTTP Client & PowerShell Enhanced Comprehensive Testing', () => {
     jest.spyOn(http, 'request').mockImplementation();
     
     // Get fresh instances
-    httpClient = require('../server/src/utils/http-client');
-    powershellEnhanced = require('../server/src/utils/powershell-enhanced');
+    httpClient = require('../../server/src/utils/http-client');
+    powershellEnhanced = require('../../server/src/utils/powershell-enhanced');
   });
 
   afterEach(() => {

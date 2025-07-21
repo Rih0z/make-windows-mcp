@@ -3,8 +3,8 @@
  * セキュリティ脆弱性の検証とペネトレーションテスト
  */
 
-const securityValidator = require('../server/src/utils/security');
-const rateLimiter = require('../server/src/utils/rate-limiter');
+const securityValidator = require('../../server/src/utils/security');
+const rateLimiter = require('../../server/src/utils/rate-limiter');
 
 describe('Security Penetration Testing', () => {
   beforeEach(() => {

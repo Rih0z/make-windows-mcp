@@ -8,7 +8,7 @@ describe('Port Range Configuration Tests', () => {
   
   beforeAll(() => {
     // Import PortManager
-    PortManager = require('../server/src/utils/port-manager');
+    PortManager = require('../../server/src/utils/port-manager');
   });
 
   beforeEach(() => {

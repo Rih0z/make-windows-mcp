@@ -10,7 +10,7 @@ describe('Security Validator - Fixed Coverage', () => {
     jest.clearAllMocks();
     
     // Clear require cache to get fresh instance
-    delete require.cache[require.resolve('../server/src/utils/security')];
+    delete require.cache[require.resolve('../../server/src/utils/security')];
     
     // Clear environment variables before each test
     delete process.env.ENABLE_DEV_COMMANDS;
@@ -25,7 +25,7 @@ describe('Security Validator - Fixed Coverage', () => {
     delete process.env.ENTERPRISE_PROJECT_PATHS;
     
     // Get fresh instance (singleton)
-    securityValidator = require('../server/src/utils/security');
+    securityValidator = require('../../server/src/utils/security');
   });
 
   afterEach(() => {
@@ -99,8 +99,8 @@ describe('Security Validator - Fixed Coverage', () => {
 
     test('should respect custom command length limit', () => {
       process.env.MAX_COMMAND_LENGTH = '100';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const customValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const customValidator = require('../../server/src/utils/security');
       
       const longCommand = 'a'.repeat(101);
       expect(() => customValidator.validatePowerShellCommand(longCommand))
@@ -139,8 +139,8 @@ describe('Security Validator - Fixed Coverage', () => {
 
     test('should handle development mode with allowed dev commands', () => {
       process.env.ENABLE_DEV_COMMANDS = 'true';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const devValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const devValidator = require('../../server/src/utils/security');
       
       const result = devValidator.validatePowerShellCommand('netstat -an');
       expect(result).toBe("netstat -an");
@@ -148,8 +148,8 @@ describe('Security Validator - Fixed Coverage', () => {
 
     test('should validate command chaining in development mode', () => {
       process.env.ENABLE_DEV_COMMANDS = 'true';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const devValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const devValidator = require('../../server/src/utils/security');
       
       // Use commands that are in default devCommands
       const result = devValidator.validatePowerShellCommand('echo hello && echo world');
@@ -207,8 +207,8 @@ describe('Security Validator - Fixed Coverage', () => {
 
     test('should handle custom allowed build paths', () => {
       process.env.ALLOWED_BUILD_PATHS = 'C:\\custom\\,D:\\custom\\';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const customValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const customValidator = require('../../server/src/utils/security');
       
       const result = customValidator.validatePath('C:\\custom\\project');
       expect(result).toBe('C:\\custom\\project');
@@ -217,8 +217,8 @@ describe('Security Validator - Fixed Coverage', () => {
     test('should handle enterprise mode', () => {
       process.env.ENABLE_ENTERPRISE_DEV_MODE = 'true';
       process.env.ENTERPRISE_PROJECT_PATHS = 'C:\\enterprise\\';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const enterpriseValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const enterpriseValidator = require('../../server/src/utils/security');
       
       const result = enterpriseValidator.validatePath('C:\\enterprise\\project');
       expect(result).toBe('C:\\enterprise\\project');
@@ -227,8 +227,8 @@ describe('Security Validator - Fixed Coverage', () => {
     test('should handle cross-platform paths', () => {
       process.env.ENABLE_CROSS_PLATFORM_PATHS = 'true';
       process.env.ALLOWED_BUILD_PATHS = '/Users/test/Documents/Projects/';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const crossValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const crossValidator = require('../../server/src/utils/security');
       
       const result = crossValidator.validatePath('/Users/test/Documents/Projects/myproject');
       expect(result).toBe('\\Users\\test\\Documents\\Projects\\myproject');
@@ -305,8 +305,8 @@ describe('Security Validator - Fixed Coverage', () => {
 
     test('should handle custom allowed batch directories', () => {
       process.env.ALLOWED_BATCH_DIRS = 'C:\\custom\\;D:\\custom\\';
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const customValidator = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const customValidator = require('../../server/src/utils/security');
       
       const result = customValidator.validateBatchFilePath('C:\\custom\\test.bat');
       expect(result).toBe('C:\\custom\\test.bat');

@@ -222,6 +222,57 @@ class HelpGenerator {
           }
         ]
       },
+      http_json_request: {
+        category: 'network',
+        examples: [
+          {
+            title: 'AI Chat Server Testing (No Escaping Issues)',
+            code: `{
+  "name": "http_json_request",
+  "arguments": {
+    "url": "http://localhost:8090/api/chat",
+    "method": "POST",
+    "jsonPayload": {
+      "message": "Hello, how are you?",
+      "model": "tinyllama",
+      "temperature": 0.7,
+      "max_tokens": 100
+    },
+    "timeout": 30
+  }
+}`
+          },
+          {
+            title: 'Complex JSON with Nested Objects',
+            code: `{
+  "name": "http_json_request", 
+  "arguments": {
+    "url": "http://localhost:8090/api/advanced",
+    "jsonPayload": {
+      "query": {
+        "filters": {
+          "category": "AI",
+          "status": "active"
+        },
+        "options": {
+          "include_metadata": true,
+          "format": "detailed"
+        }
+      },
+      "settings": {
+        "timeout": 5000,
+        "retry_count": 3
+      }
+    },
+    "headers": {
+      "X-API-Version": "2.0",
+      "Authorization": "Bearer token-example"
+    }
+  }
+}`
+          }
+        ]
+      },
       mcp_self_build: {
         category: 'management',
         examples: [

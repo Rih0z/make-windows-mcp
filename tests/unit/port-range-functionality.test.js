@@ -3,7 +3,7 @@
  * Tests the new port range parsing and selection functionality
  */
 
-const PortManager = require('../server/src/utils/port-manager');
+const PortManager = require('../../server/src/utils/port-manager');
 const net = require('net');
 
 describe('Port Range Functionality Tests', () => {

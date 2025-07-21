@@ -14,9 +14,9 @@ describe('Utils Files Comprehensive Testing', () => {
     jest.clearAllMocks();
     
     // Clear require cache
-    delete require.cache[require.resolve('../server/src/utils/crypto')];
-    delete require.cache[require.resolve('../server/src/utils/helpers')];
-    delete require.cache[require.resolve('../server/src/utils/logger')];
+    delete require.cache[require.resolve('../../server/src/utils/crypto')];
+    delete require.cache[require.resolve('../../server/src/utils/helpers')];
+    delete require.cache[require.resolve('../../server/src/utils/logger')];
     
     // Mock console methods
     console.log = jest.fn();
@@ -24,9 +24,9 @@ describe('Utils Files Comprehensive Testing', () => {
     console.warn = jest.fn();
     
     // Get fresh instances
-    crypto = require('../server/src/utils/crypto');
-    helpers = require('../server/src/utils/helpers');
-    logger = require('../server/src/utils/logger');
+    crypto = require('../../server/src/utils/crypto');
+    helpers = require('../../server/src/utils/helpers');
+    logger = require('../../server/src/utils/logger');
   });
 
   afterEach(() => {

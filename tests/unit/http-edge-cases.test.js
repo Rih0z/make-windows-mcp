@@ -7,26 +7,26 @@ const request = require('supertest');
 const express = require('express');
 
 // Mock the http-client module
-jest.mock('../server/src/utils/http-client', () => {
+jest.mock('../../server/src/utils/http-client', () => {
   return {
     executeRequest: jest.fn()
   };
 });
 
 // Mock other dependencies
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn()
 }));
 
-jest.mock('../server/src/utils/auth-manager', () => ({
+jest.mock('../../server/src/utils/auth-manager', () => ({
   isAuthEnabled: () => false,
   validateToken: () => true,
   extractToken: () => 'valid-token'
 }));
 
-jest.mock('../server/src/utils/rate-limiter', () => ({
+jest.mock('../../server/src/utils/rate-limiter', () => ({
   middleware: (req, res, next) => next()
 }));
 
@@ -39,7 +39,7 @@ describe('HTTP Request Tool - Edge Cases and Error Handling', () => {
     jest.clearAllMocks();
 
     // Get the mocked http client
-    httpClient = require('../server/src/utils/http-client');
+    httpClient = require('../../server/src/utils/http-client');
 
     // Create a minimal Express app with our MCP endpoint
     app = express();

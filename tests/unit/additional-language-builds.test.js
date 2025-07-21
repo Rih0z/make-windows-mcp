@@ -5,14 +5,14 @@ const fs = require('fs');
 
 // Mock the dependencies
 jest.mock('child_process');
-jest.mock('../server/src/utils/logger');
-jest.mock('../server/src/utils/helpers');
-jest.mock('../server/src/utils/security');
+jest.mock('../../server/src/utils/logger');
+jest.mock('../../server/src/utils/helpers');
+jest.mock('../../server/src/utils/security');
 
 const { spawn } = require('child_process');
-const logger = require('../server/src/utils/logger');
-const helpers = require('../server/src/utils/helpers');
-const security = require('../server/src/utils/security');
+const logger = require('../../server/src/utils/logger');
+const helpers = require('../../server/src/utils/helpers');
+const security = require('../../server/src/utils/security');
 
 describe('Additional Language Build Tools', () => {
   let app;
@@ -59,7 +59,7 @@ describe('Additional Language Build Tools', () => {
     // Setup app for testing
     app = express();
     app.use(express.json());
-    app.use(require('../server/src/server'));
+    app.use(require('../../server/src/server'));
   });
 
   describe('build_go Tool', () => {

@@ -82,7 +82,7 @@ describe('Load and Endurance Testing', () => {
     }));
     
     // Mock utilities with performance considerations
-    jest.doMock('../server/src/utils/port-manager', () => ({
+    jest.doMock('../../server/src/utils/port-manager', () => ({
       initialize: jest.fn(),
       findAvailablePort: jest.fn().mockResolvedValue(8080),
       getPortInfo: jest.fn().mockReturnValue({ 
@@ -95,7 +95,7 @@ describe('Load and Endurance Testing', () => {
       cleanup: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/rate-limiter', () => ({
+    jest.doMock('../../server/src/utils/rate-limiter', () => ({
       checkLimit: jest.fn().mockReturnValue({ 
         allowed: true, 
         remaining: 999,
@@ -109,13 +109,13 @@ describe('Load and Endurance Testing', () => {
       })
     }));
     
-    jest.doMock('../server/src/utils/auth-manager', () => ({
+    jest.doMock('../../server/src/utils/auth-manager', () => ({
       validateBearerToken: jest.fn().mockReturnValue(true),
       isTrustedIP: jest.fn().mockReturnValue(true),
       logAuthAttempt: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/logger', () => ({
+    jest.doMock('../../server/src/utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
@@ -127,13 +127,13 @@ describe('Load and Endurance Testing', () => {
       })
     }));
     
-    jest.doMock('../server/src/utils/security', () => ({
+    jest.doMock('../../server/src/utils/security', () => ({
       validatePowerShellCommand: jest.fn().mockReturnValue(true),
       validatePath: jest.fn().mockReturnValue(true),
       sanitizeInput: jest.fn(input => input)
     }));
     
-    jest.doMock('../server/src/utils/helpers', () => ({
+    jest.doMock('../../server/src/utils/helpers', () => ({
       formatCommandResult: jest.fn((output, error, exitCode) => ({
         success: exitCode === 0,
         output: output || '',
@@ -146,7 +146,7 @@ describe('Load and Endurance Testing', () => {
     }));
     
     // Import server after mocking
-    serverInstance = require('../server/src/server');
+    serverInstance = require('../../server/src/server');
   });
 
   afterEach(() => {
@@ -517,7 +517,7 @@ describe('Load and Endurance Testing', () => {
 
   describe('Rate Limiting Under Load', () => {
     test('should enforce rate limits under high load', async () => {
-      const mockRateLimiter = require('../server/src/utils/rate-limiter');
+      const mockRateLimiter = require('../../server/src/utils/rate-limiter');
       let requestCount = 0;
       
       mockRateLimiter.checkLimit.mockImplementation(() => {

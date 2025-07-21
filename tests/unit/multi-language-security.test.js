@@ -1,4 +1,4 @@
-const security = require('../server/src/utils/security');
+const security = require('../../server/src/utils/security');
 
 describe('Multi-Language Build Security', () => {
   beforeEach(() => {

@@ -31,11 +31,11 @@ describe('Enhanced Integration Tests', () => {
     setupMocks();
     
     // Clear rate limiter
-    const rateLimiter = require('../server/src/utils/rate-limiter');
+    const rateLimiter = require('../../server/src/utils/rate-limiter');
     rateLimiter.clear();
     
     // Fresh app instance
-    app = require('../server/src/server.js');
+    app = require('../../server/src/server.js');
   });
 
   function setupMocks() {
@@ -191,13 +191,13 @@ describe('Enhanced Integration Tests', () => {
       process.env.MCP_AUTH_TOKEN = 'test-auth-token';
       
       // Clear rate limiter
-      jest.doMock('../server/src/utils/rate-limiter', () => {
-        const original = jest.requireActual('../server/src/utils/rate-limiter');
+      jest.doMock('../../server/src/utils/rate-limiter', () => {
+        const original = jest.requireActual('../../server/src/utils/rate-limiter');
         original.clear();
         return original;
       });
       
-      const authApp = require('../server/src/server.js');
+      const authApp = require('../../server/src/server.js');
       
       // No auth header
       await request(authApp)
@@ -307,7 +307,7 @@ describe('Enhanced Integration Tests', () => {
       
       // Clear module cache and reload
       jest.resetModules();
-      const testApp = require('../server/src/server.js');
+      const testApp = require('../../server/src/server.js');
       
       const res = await request(testApp)
         .post('/mcp')
@@ -342,8 +342,8 @@ describe('Enhanced Integration Tests', () => {
       });
       
       // Re-require the module to get the new mock
-      delete require.cache[require.resolve('../server/src/server.js')];
-      const newApp = require('../server/src/server.js');
+      delete require.cache[require.resolve('../../server/src/server.js')];
+      const newApp = require('../../server/src/server.js');
       
       const res = await request(newApp)
         .post('/mcp')

@@ -4,29 +4,29 @@ const request = require('supertest');
 // Mock all dependencies
 jest.mock('child_process');
 jest.mock('fs');
-jest.mock('../server/src/utils/security', () => ({
+jest.mock('../../server/src/utils/security', () => ({
   validateBuildPath: jest.fn().mockImplementation(path => path),
   validateIPAddress: jest.fn().mockImplementation(ip => ip),
   validatePowerShellCommand: jest.fn().mockImplementation(cmd => cmd),
   validateBatchFilePath: jest.fn().mockImplementation(path => path)
 }));
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   security: jest.fn(),
   access: jest.fn()
 }));
-jest.mock('../server/src/utils/rate-limiter', () => ({
+jest.mock('../../server/src/utils/rate-limiter', () => ({
   checkRateLimit: jest.fn().mockReturnValue(true)
 }));
-jest.mock('../server/src/utils/crypto', () => ({
+jest.mock('../../server/src/utils/crypto', () => ({
   initializeKey: jest.fn(),
   encryptionEnabled: false
 }));
 
 // Mock helpers
-jest.mock('../server/src/utils/helpers', () => ({
+jest.mock('../../server/src/utils/helpers', () => ({
   getClientIP: jest.fn().mockReturnValue('127.0.0.1'),
   createTextResult: jest.fn().mockImplementation(text => ({
     content: [{ type: 'text', text }]
@@ -47,8 +47,8 @@ describe('New Tools Registration Test', () => {
     process.env.ENABLE_DANGEROUS_MODE = 'false';
     
     // Re-require server
-    delete require.cache[require.resolve('../server/src/server')];
-    app = require('../server/src/server');
+    delete require.cache[require.resolve('../../server/src/server')];
+    app = require('../../server/src/server');
   });
 
   test('should list new tools in tools/list response', async () => {

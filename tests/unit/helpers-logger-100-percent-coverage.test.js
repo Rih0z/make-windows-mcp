@@ -8,6 +8,12 @@ const path = require('path');
 
 // Mock file system
 jest.mock('fs', () => ({
+  existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
+  appendFileSync: jest.fn(),
+  statSync: jest.fn().mockReturnValue({ size: 1000 }),
+  readdirSync: jest.fn().mockReturnValue([]),
+  unlinkSync: jest.fn(),
   promises: {
     mkdir: jest.fn(),
     access: jest.fn(),
@@ -28,8 +34,8 @@ describe('Helpers and Logger - 100% Coverage', () => {
     jest.clearAllMocks();
     
     // Clear require cache
-    delete require.cache[require.resolve('../server/src/utils/helpers')];
-    delete require.cache[require.resolve('../server/src/utils/logger')];
+    delete require.cache[require.resolve('../../server/src/utils/helpers')];
+    delete require.cache[require.resolve('../../server/src/utils/logger')];
     
     // Mock console methods
     console.log = jest.fn();
@@ -39,8 +45,8 @@ describe('Helpers and Logger - 100% Coverage', () => {
     // Mock Date for consistent testing
     jest.spyOn(Date.prototype, 'toISOString').mockReturnValue('2023-01-01T00:00:00.000Z');
     
-    helpers = require('../server/src/utils/helpers');
-    logger = require('../server/src/utils/logger');
+    helpers = require('../../server/src/utils/helpers');
+    logger = require('../../server/src/utils/logger');
   });
 
   afterEach(() => {

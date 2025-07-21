@@ -1,4 +1,4 @@
-const security = require('../server/src/utils/security');
+const security = require('../../server/src/utils/security');
 
 describe('Security Validator Comprehensive Tests', () => {
   describe('Development Mode Command Validation', () => {
@@ -131,7 +131,7 @@ describe('Security Validator Comprehensive Tests', () => {
       
       // Reset the module to pick up new env var
       jest.resetModules();
-      const freshSecurity = require('../server/src/utils/security');
+      const freshSecurity = require('../../server/src/utils/security');
 
       expect(() => freshSecurity.validatePowerShellCommand('custom1 arg1 arg2')).not.toThrow();
       expect(() => freshSecurity.validatePowerShellCommand('custom2')).not.toThrow();

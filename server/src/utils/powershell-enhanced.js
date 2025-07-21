@@ -13,6 +13,101 @@ class PowerShellExecutor {
   }
 
   /**
+   * Preprocess command for enhanced JSON handling and here-string support
+   * @param {string} command - Original PowerShell command
+   * @param {Object} options - Processing options
+   * @returns {string} - Enhanced PowerShell command
+   */
+  preprocessCommand(command, options = {}) {
+    const {
+      enableJsonEscaping = process.env.ENABLE_ENHANCED_JSON_ESCAPING === 'true',
+      enableHereStrings = process.env.ENABLE_POWERSHELL_HERE_STRINGS === 'true',
+      complexityLevel = parseInt(process.env.COMMAND_COMPLEXITY_LEVEL || '3')
+    } = options;
+
+    let processedCommand = command;
+
+    // Enhanced JSON escaping for AI server API testing
+    if (enableJsonEscaping) {
+      processedCommand = this.enhanceJsonEscaping(processedCommand);
+    }
+
+    // Here-string support for complex JSON payloads
+    if (enableHereStrings) {
+      processedCommand = this.convertToHereStrings(processedCommand);
+    }
+
+    // Bash-style operator conversion for cross-platform compatibility
+    if (complexityLevel >= 4) {
+      processedCommand = this.convertBashOperators(processedCommand);
+    }
+
+    return processedCommand;
+  }
+
+  /**
+   * Enhance JSON escaping for AI API testing
+   * @param {string} command - Command with JSON strings
+   * @returns {string} - Command with enhanced JSON escaping
+   */
+  enhanceJsonEscaping(command) {
+    // Pattern to find JSON-like strings in Invoke-WebRequest -Body parameters
+    const jsonBodyPattern = /-Body\s+"([^"]+)"/gi;
+    
+    return command.replace(jsonBodyPattern, (match, jsonStr) => {
+      try {
+        // Try to parse and re-stringify to ensure proper escaping
+        const parsed = JSON.parse(jsonStr.replace(/\\"/g, '"'));
+        const properJson = JSON.stringify(parsed).replace(/"/g, '\\"');
+        return match.replace(jsonStr, properJson);
+      } catch (error) {
+        // If parsing fails, apply basic escaping improvements
+        const improved = jsonStr
+          .replace(/([^\\])"/g, '$1\\"')  // Escape unescaped quotes
+          .replace(/\\\\\\/g, '\\');       // Fix over-escaped backslashes
+        return match.replace(jsonStr, improved);
+      }
+    });
+  }
+
+  /**
+   * Convert complex JSON to PowerShell here-strings
+   * @param {string} command - Command with embedded JSON
+   * @returns {string} - Command using here-strings
+   */
+  convertToHereStrings(command) {
+    // Pattern to identify complex JSON strings (containing nested quotes or objects)
+    const complexJsonPattern = /-Body\s+"(\{[^}]*"[^}]*\}[^}]*)"(?=\s|$)/gi;
+    
+    return command.replace(complexJsonPattern, (match, jsonStr) => {
+      // Convert to here-string format
+      const cleanJson = jsonStr.replace(/\\"/g, '"');
+      const hereStringVersion = `$jsonBody = @"\n${cleanJson}\n"@; $jsonBody`;
+      
+      // Replace in the command
+      return match.replace(`"${jsonStr}"`, '$jsonBody') + `\n${hereStringVersion}`;
+    });
+  }
+
+  /**
+   * Convert Bash-style operators to PowerShell equivalents
+   * @param {string} command - Command with Bash operators
+   * @returns {string} - PowerShell-compatible command
+   */
+  convertBashOperators(command) {
+    return command
+      // Convert && to PowerShell semicolon chaining with error checking
+      .replace(/\s*&&\s*/g, '; if ($LASTEXITCODE -eq 0) { ')
+      // Convert || to PowerShell error handling
+      .replace(/\s*\|\|\s*/g, ' } else { ')
+      // Close any opened conditional blocks
+      .replace(/$/g, (match, offset, string) => {
+        const openBraces = (string.match(/if \(\$LASTEXITCODE -eq 0\) \{/g) || []).length;
+        return ' }'.repeat(openBraces) + match;
+      });
+  }
+
+  /**
    * Execute PowerShell command with enhanced encoding and error handling
    * @param {string} command - PowerShell command to execute
    * @param {Object} options - Execution options
@@ -23,11 +118,16 @@ class PowerShellExecutor {
       timeout = 300000, // 5 minutes default
       streaming = false,
       workingDirectory = null,
-      onStream = null
+      onStream = null,
+      enhancedMode = process.env.ENABLE_ENHANCED_POWERSHELL === 'true'
     } = options;
 
     const processId = ++this.processCounter;
     const startTime = Date.now();
+
+    // Preprocess command for enhanced JSON handling if enabled
+    const processedCommand = enhancedMode ? 
+      this.preprocessCommand(command, options) : command;
 
     // Fixed PowerShell arguments - removed invalid parameters
     const args = [
@@ -45,7 +145,7 @@ class PowerShellExecutor {
         
         # Execute the actual command
         try {
-          ${command}
+          ${processedCommand}
         } catch {
           Write-Error "PowerShell execution failed: $($_.Exception.Message)";
           exit 1;

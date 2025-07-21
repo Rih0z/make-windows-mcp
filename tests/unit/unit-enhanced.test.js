@@ -23,7 +23,7 @@ describe('Enhanced Unit Tests', () => {
     let security;
 
     beforeEach(() => {
-      security = require('../server/src/utils/security');
+      security = require('../../server/src/utils/security');
     });
 
     describe('PowerShell Command Validation', () => {
@@ -188,7 +188,7 @@ describe('Enhanced Unit Tests', () => {
     let rateLimiter;
 
     beforeEach(() => {
-      rateLimiter = require('../server/src/utils/rate-limiter');
+      rateLimiter = require('../../server/src/utils/rate-limiter');
       rateLimiter.clear();
     });
 
@@ -236,7 +236,7 @@ describe('Enhanced Unit Tests', () => {
     });
 
     test('should clean up old client data', () => {
-      const rateLimiter = require('../server/src/utils/rate-limiter');
+      const rateLimiter = require('../../server/src/utils/rate-limiter');
       
       // Add some old data
       rateLimiter.clients.set('old-client', {
@@ -274,16 +274,16 @@ describe('Enhanced Unit Tests', () => {
 
     beforeEach(() => {
       // Fresh logger instance
-      delete require.cache[require.resolve('../server/src/utils/logger')];
-      logger = require('../server/src/utils/logger');
+      delete require.cache[require.resolve('../../server/src/utils/logger')];
+      logger = require('../../server/src/utils/logger');
     });
 
     test('should respect log levels', () => {
       const originalLevel = process.env.LOG_LEVEL;
       process.env.LOG_LEVEL = 'warn';
       
-      delete require.cache[require.resolve('../server/src/utils/logger')];
-      const restrictiveLogger = require('../server/src/utils/logger');
+      delete require.cache[require.resolve('../../server/src/utils/logger')];
+      const restrictiveLogger = require('../../server/src/utils/logger');
       
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
@@ -340,8 +340,8 @@ describe('Enhanced Unit Tests', () => {
     test('should create log directory if missing', () => {
       fs.existsSync.mockReturnValue(false);
       
-      delete require.cache[require.resolve('../server/src/utils/logger')];
-      require('../server/src/utils/logger');
+      delete require.cache[require.resolve('../../server/src/utils/logger')];
+      require('../../server/src/utils/logger');
       
       expect(fs.mkdirSync).toHaveBeenCalledWith(
         expect.stringContaining('logs'),
@@ -360,8 +360,8 @@ describe('Enhanced Unit Tests', () => {
       delete process.env.LOG_LEVEL;
       
       // Should use defaults
-      delete require.cache[require.resolve('../server/src/utils/security')];
-      const security = require('../server/src/utils/security');
+      delete require.cache[require.resolve('../../server/src/utils/security')];
+      const security = require('../../server/src/utils/security');
       
       expect(() => security.validatePath('C:\\projects\\test.csproj')).not.toThrow();
       
@@ -376,8 +376,8 @@ describe('Enhanced Unit Tests', () => {
       process.env.ALLOWED_IPS = '192.168.1.1,invalid-ip,::1,';
       
       // Should handle gracefully
-      delete require.cache[require.resolve('../server/src/server')];
-      expect(() => require('../server/src/server')).not.toThrow();
+      delete require.cache[require.resolve('../../server/src/server')];
+      expect(() => require('../../server/src/server')).not.toThrow();
       
       process.env.ALLOWED_IPS = originalEnv;
     });
@@ -385,7 +385,7 @@ describe('Enhanced Unit Tests', () => {
 
   describe('Memory and Resource Management', () => {
     test('should clean up resources properly', () => {
-      const rateLimiter = require('../server/src/utils/rate-limiter');
+      const rateLimiter = require('../../server/src/utils/rate-limiter');
       
       // Add test data
       for (let i = 0; i < 100; i++) {
@@ -402,8 +402,8 @@ describe('Enhanced Unit Tests', () => {
     test('should handle module reloading', () => {
       // Load module multiple times
       for (let i = 0; i < 5; i++) {
-        delete require.cache[require.resolve('../server/src/utils/logger')];
-        const logger = require('../server/src/utils/logger');
+        delete require.cache[require.resolve('../../server/src/utils/logger')];
+        const logger = require('../../server/src/utils/logger');
         expect(logger).toBeDefined();
       }
     });

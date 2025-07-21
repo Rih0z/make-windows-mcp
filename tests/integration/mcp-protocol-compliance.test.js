@@ -68,7 +68,7 @@ describe('MCP Protocol Compliance Testing', () => {
     }));
     
     // Mock utilities
-    jest.doMock('../server/src/utils/port-manager', () => ({
+    jest.doMock('../../server/src/utils/port-manager', () => ({
       initialize: jest.fn(),
       findAvailablePort: jest.fn().mockResolvedValue(8080),
       getPortInfo: jest.fn().mockReturnValue({
@@ -81,7 +81,7 @@ describe('MCP Protocol Compliance Testing', () => {
       cleanup: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/rate-limiter', () => ({
+    jest.doMock('../../server/src/utils/rate-limiter', () => ({
       checkLimit: jest.fn().mockReturnValue({
         allowed: true,
         remaining: 59,
@@ -90,28 +90,28 @@ describe('MCP Protocol Compliance Testing', () => {
       cleanup: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/auth-manager', () => ({
+    jest.doMock('../../server/src/utils/auth-manager', () => ({
       validateToken: jest.fn().mockReturnValue(true),
       validateBearerToken: jest.fn().mockReturnValue(true),
       isTrustedIP: jest.fn().mockReturnValue(true),
       logAuthAttempt: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/logger', () => ({
+    jest.doMock('../../server/src/utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
       debug: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/security', () => ({
+    jest.doMock('../../server/src/utils/security', () => ({
       validatePowerShellCommand: jest.fn().mockReturnValue(true),
       validatePath: jest.fn().mockReturnValue(true),
       validateCommand: jest.fn().mockReturnValue(true),
       sanitizeInput: jest.fn(input => input)
     }));
     
-    jest.doMock('../server/src/utils/helpers', () => ({
+    jest.doMock('../../server/src/utils/helpers', () => ({
       formatCommandResult: jest.fn((output, error, exitCode) => ({
         success: exitCode === 0,
         output: output || '',
@@ -123,14 +123,14 @@ describe('MCP Protocol Compliance Testing', () => {
       createTimestamp: jest.fn(() => '2023-01-01T00:00:00.000Z')
     }));
     
-    jest.doMock('../server/src/utils/help-generator', () => ({
+    jest.doMock('../../server/src/utils/help-generator', () => ({
       generateWelcomeMessage: jest.fn().mockReturnValue('Welcome to Windows MCP Server'),
       generateToolHelp: jest.fn().mockReturnValue('Tool help content'),
       generateDynamicHelp: jest.fn().mockReturnValue('Dynamic help content')
     }));
     
     // Import server after mocking
-    serverInstance = require('../server/src/server');
+    serverInstance = require('../../server/src/server');
   });
 
   afterEach(() => {
@@ -599,7 +599,7 @@ describe('MCP Protocol Compliance Testing', () => {
       
       if (callHandler) {
         // Mock rate limiter to return exceeded
-        const mockRateLimiter = require('../server/src/utils/rate-limiter');
+        const mockRateLimiter = require('../../server/src/utils/rate-limiter');
         mockRateLimiter.checkLimit.mockReturnValue({
           allowed: false,
           remaining: 0,
@@ -648,7 +648,7 @@ describe('MCP Protocol Compliance Testing', () => {
           }
         };
         
-        const mockSecurity = require('../server/src/utils/security');
+        const mockSecurity = require('../../server/src/utils/security');
         
         await callHandler(request);
         
@@ -675,7 +675,7 @@ describe('MCP Protocol Compliance Testing', () => {
           }
         };
         
-        const mockHelpers = require('../server/src/utils/helpers');
+        const mockHelpers = require('../../server/src/utils/helpers');
         
         await callHandler(request);
         
@@ -704,7 +704,7 @@ describe('MCP Protocol Compliance Testing', () => {
           }
         };
         
-        const mockLogger = require('../server/src/utils/logger');
+        const mockLogger = require('../../server/src/utils/logger');
         
         await callHandler(request);
         
@@ -727,7 +727,7 @@ describe('MCP Protocol Compliance Testing', () => {
       mockTransport.start.mockRejectedValue(new Error('Transport failed'));
       
       // Should not throw unhandled error
-      expect(() => require('../server/src/server')).not.toThrow();
+      expect(() => require('../../server/src/server')).not.toThrow();
     });
 
     test('should cleanup transport on shutdown', () => {

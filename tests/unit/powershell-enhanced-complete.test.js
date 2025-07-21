@@ -1,4 +1,4 @@
-const PowerShellExecutor = require('../server/src/utils/powershell-enhanced');
+const PowerShellExecutor = require('../../server/src/utils/powershell-enhanced');
 const { spawn } = require('child_process');
 const EventEmitter = require('events');
 
@@ -6,7 +6,7 @@ const EventEmitter = require('events');
 jest.mock('child_process');
 
 // Mock logger
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn()

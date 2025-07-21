@@ -3,7 +3,7 @@
  * Comprehensive testing for all methods and edge cases in security.js
  */
 
-const SecurityValidator = require('../server/src/utils/security');
+const SecurityValidator = require('../../server/src/utils/security');
 
 describe('Security Validator - 100% Coverage', () => {
   let validator;

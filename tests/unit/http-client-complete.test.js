@@ -1,4 +1,4 @@
-const HttpClient = require('../server/src/utils/http-client');
+const HttpClient = require('../../server/src/utils/http-client');
 const http = require('http');
 const https = require('https');
 
@@ -7,7 +7,7 @@ jest.mock('http');
 jest.mock('https');
 
 // Mock logger
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn()
@@ -46,8 +46,8 @@ describe('HTTP Client - Complete Coverage', () => {
     https.request = jest.fn(() => mockRequest);
 
     // Clear any cached modules
-    delete require.cache[require.resolve('../server/src/utils/http-client')];
-    httpClient = require('../server/src/utils/http-client');
+    delete require.cache[require.resolve('../../server/src/utils/http-client')];
+    httpClient = require('../../server/src/utils/http-client');
   });
 
   afterEach(() => {
@@ -85,8 +85,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should enforce localhost-only mode', () => {
       process.env.HTTP_LOCALHOST_ONLY = 'true';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const localhostClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const localhostClient = require('../../server/src/utils/http-client');
       
       expect(() => localhostClient.validateUrl('http://example.com')).toThrow('Only localhost requests are allowed');
       expect(() => localhostClient.validateUrl('http://localhost:8080')).not.toThrow();
@@ -96,8 +96,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should validate allowed domains', () => {
       process.env.HTTP_ALLOWED_DOMAINS = 'localhost,example.com,*.test.com';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const domainClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const domainClient = require('../../server/src/utils/http-client');
       
       expect(() => domainClient.validateUrl('http://localhost:8080')).not.toThrow();
       expect(() => domainClient.validateUrl('http://example.com')).not.toThrow();
@@ -108,8 +108,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should validate wildcard domains', () => {
       process.env.HTTP_ALLOWED_DOMAINS = '*.example.com,localhost';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const wildcardClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const wildcardClient = require('../../server/src/utils/http-client');
       
       expect(() => wildcardClient.validateUrl('http://api.example.com')).not.toThrow();
       expect(() => wildcardClient.validateUrl('http://sub.api.example.com')).not.toThrow();
@@ -120,8 +120,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should allow all domains with wildcard', () => {
       process.env.HTTP_ALLOWED_DOMAINS = '*';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const openClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const openClient = require('../../server/src/utils/http-client');
       
       expect(() => openClient.validateUrl('http://any-domain.com')).not.toThrow();
       expect(() => openClient.validateUrl('https://another-domain.org')).not.toThrow();
@@ -145,8 +145,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should use custom allowed ports from environment', () => {
       process.env.HTTP_ALLOWED_PORTS = '8080,9000,3000';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const customPortClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const customPortClient = require('../../server/src/utils/http-client');
       
       expect(customPortClient.isPortAllowed(8080)).toBe(true);
       expect(customPortClient.isPortAllowed(9000)).toBe(true);
@@ -268,8 +268,8 @@ describe('HTTP Client - Complete Coverage', () => {
     test('should use custom max timeout from environment', () => {
       process.env.HTTP_MAX_TIMEOUT = '600000';
       
-      delete require.cache[require.resolve('../server/src/utils/http-client')];
-      const customTimeoutClient = require('../server/src/utils/http-client');
+      delete require.cache[require.resolve('../../server/src/utils/http-client')];
+      const customTimeoutClient = require('../../server/src/utils/http-client');
       
       expect(() => customTimeoutClient.validateTimeout(500)).not.toThrow();
       expect(() => customTimeoutClient.validateTimeout(700)).toThrow();

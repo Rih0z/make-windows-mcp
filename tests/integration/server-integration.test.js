@@ -153,17 +153,17 @@ describe('Server Integration Testing', () => {
       }))
     }));
     
-    jest.doMock('../server/src/utils/port-manager', () => mockPortManager);
-    jest.doMock('../server/src/utils/rate-limiter', () => mockRateLimiter);
-    jest.doMock('../server/src/utils/auth-manager', () => mockAuthManager);
-    jest.doMock('../server/src/utils/help-generator', () => mockHelpGenerator);
-    jest.doMock('../server/src/utils/logger', () => mockLogger);
-    jest.doMock('../server/src/utils/security', () => mockSecurity);
-    jest.doMock('../server/src/utils/helpers', () => mockHelpers);
-    jest.doMock('../server/src/utils/crypto', () => mockCrypto);
+    jest.doMock('../../server/src/utils/port-manager', () => mockPortManager);
+    jest.doMock('../../server/src/utils/rate-limiter', () => mockRateLimiter);
+    jest.doMock('../../server/src/utils/auth-manager', () => mockAuthManager);
+    jest.doMock('../../server/src/utils/help-generator', () => mockHelpGenerator);
+    jest.doMock('../../server/src/utils/logger', () => mockLogger);
+    jest.doMock('../../server/src/utils/security', () => mockSecurity);
+    jest.doMock('../../server/src/utils/helpers', () => mockHelpers);
+    jest.doMock('../../server/src/utils/crypto', () => mockCrypto);
     
     // Import server after mocking
-    server = require('../server/src/server');
+    server = require('../../server/src/server');
   });
 
   afterEach(() => {

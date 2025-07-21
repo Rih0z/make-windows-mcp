@@ -1,4 +1,4 @@
-const AuthManager = require('../server/src/utils/auth-manager');
+const AuthManager = require('../../server/src/utils/auth-manager');
 
 describe('Auth Manager - Complete Coverage', () => {
   let originalEnv;
@@ -21,8 +21,8 @@ describe('Auth Manager - Complete Coverage', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token-123456789';
       
       // Create new instance by requiring the module again
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.isAuthEnabled()).toBe(true);
       expect(authManager.getExpectedTokenLength()).toBe(25);
@@ -31,8 +31,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should initialize with disabled auth for default token', () => {
       process.env.MCP_AUTH_TOKEN = 'change-this-to-a-secure-random-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.isAuthEnabled()).toBe(false);
     });
@@ -40,8 +40,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should initialize with disabled auth for missing token', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.isAuthEnabled()).toBe(false);
     });
@@ -49,8 +49,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should initialize with disabled auth for empty token', () => {
       process.env.MCP_AUTH_TOKEN = '';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.isAuthEnabled()).toBe(false);
     });
@@ -127,8 +127,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should validate correct token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken('test-secure-token');
       expect(isValid).toBe(true);
@@ -137,8 +137,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should reject incorrect token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken('wrong-token');
       expect(isValid).toBe(false);
@@ -147,8 +147,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should allow any token when auth is disabled', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken('any-token');
       expect(isValid).toBe(true);
@@ -157,8 +157,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should reject null token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken(null);
       expect(isValid).toBe(false);
@@ -167,8 +167,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should reject undefined token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken(undefined);
       expect(isValid).toBe(false);
@@ -177,8 +177,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should reject non-string token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken(123);
       expect(isValid).toBe(false);
@@ -187,8 +187,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should reject empty string token when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const isValid = authManager.validateToken('');
       expect(isValid).toBe(false);
@@ -293,8 +293,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return expected token length when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token-123456789';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.getExpectedTokenLength()).toBe(25);
     });
@@ -302,8 +302,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return 0 when auth is disabled', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.getExpectedTokenLength()).toBe(0);
     });
@@ -311,8 +311,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return expected token partial when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token-123456789';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.getExpectedTokenPartial()).toBe('test...6789');
     });
@@ -320,8 +320,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return "none" when auth is disabled', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       expect(authManager.getExpectedTokenPartial()).toBe('none');
     });
@@ -331,8 +331,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should generate diagnostics when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token-123456789';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('wrong-token', 'Bearer wrong-token');
       
@@ -347,8 +347,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should generate diagnostics when auth is disabled', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('any-token', 'Bearer any-token');
       
@@ -360,8 +360,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should include character differences in diagnostics', () => {
       process.env.MCP_AUTH_TOKEN = 'test-token-123';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('test-token-124', 'Bearer test-token-124');
       
@@ -373,8 +373,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should handle missing auth header in diagnostics', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('test-token', null);
       
@@ -385,8 +385,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should handle empty provided token in diagnostics', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics(null, 'Bearer ');
       
@@ -397,8 +397,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should limit character differences to 5 for security', () => {
       process.env.MCP_AUTH_TOKEN = 'abcdefghijklmnop';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('1234567890123456', 'Bearer 1234567890123456');
       
@@ -410,8 +410,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return session health when auth is enabled', () => {
       process.env.MCP_AUTH_TOKEN = 'test-secure-token';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const health = authManager.getSessionHealth();
       
@@ -425,8 +425,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should return session health when auth is disabled', () => {
       delete process.env.MCP_AUTH_TOKEN;
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const health = authManager.getSessionHealth();
       
@@ -496,8 +496,8 @@ describe('Auth Manager - Complete Coverage', () => {
     test('should handle diagnostics with different token lengths', () => {
       process.env.MCP_AUTH_TOKEN = 'short';
       
-      delete require.cache[require.resolve('../server/src/utils/auth-manager')];
-      const authManager = require('../server/src/utils/auth-manager');
+      delete require.cache[require.resolve('../../server/src/utils/auth-manager')];
+      const authManager = require('../../server/src/utils/auth-manager');
       
       const diagnostics = authManager.generateDiagnostics('much-longer-token', 'Bearer much-longer-token');
       

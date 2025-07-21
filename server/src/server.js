@@ -1850,6 +1850,41 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
               },
               required: ['url', 'method']
             }
+          },
+          {
+            name: 'http_json_request',
+            description: 'Specialized HTTP JSON request tool designed for AI chat API testing - eliminates PowerShell escaping issues',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                url: { 
+                  type: 'string', 
+                  description: 'Target URL (optimized for localhost AI servers like http://localhost:8090/api/chat)'
+                },
+                method: { 
+                  type: 'string', 
+                  enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+                  default: 'POST',
+                  description: 'HTTP method (defaults to POST for AI chat)'
+                },
+                jsonPayload: { 
+                  type: 'object', 
+                  description: 'JSON payload object - automatically serialized and escaped (e.g., {"message":"Hello AI","model":"tinyllama"})'
+                },
+                headers: { 
+                  type: 'object', 
+                  description: 'Additional HTTP headers (Content-Type: application/json is automatic)'
+                },
+                timeout: { 
+                  type: 'number', 
+                  default: 30, 
+                  minimum: 1,
+                  maximum: 300,
+                  description: 'Timeout in seconds for AI server response'
+                }
+              },
+              required: ['url', 'jsonPayload']
+            }
           }
         ],
         
@@ -2653,6 +2688,120 @@ app.post('/mcp', validateJSONRPC, async (req, res) => {
             result = handleValidationError(error, 'HTTP request', logger, clientIP, { 
               url: args.url, 
               method: args.method 
+            });
+          }
+          break;
+
+        case 'http_json_request':
+          try {
+            if (!args.url || !args.jsonPayload) {
+              throw new Error('url and jsonPayload are required');
+            }
+
+            const startTime = Date.now();
+            
+            // Log the JSON request initiation
+            logger.info('HTTP JSON request initiated', {
+              clientIP,
+              url: args.url,
+              method: args.method || 'POST',
+              hasJsonPayload: !!args.jsonPayload,
+              hasHeaders: !!args.headers,
+              timeout: args.timeout || 30
+            });
+
+            // Prepare headers with automatic Content-Type
+            const headers = {
+              'Content-Type': 'application/json',
+              ...(args.headers || {})
+            };
+
+            // Execute HTTP request using httpClient with JSON payload
+            const httpResult = await httpClient.executeRequest({
+              url: args.url,
+              method: args.method || 'POST',
+              headers: headers,
+              json: args.jsonPayload, // Use the json parameter for proper serialization
+              timeout: args.timeout || 30,
+              followRedirects: false // Usually false for API endpoints
+            });
+
+            const executionTime = Date.now() - startTime;
+
+            if (httpResult.success) {
+              // Try to parse JSON response
+              let parsedBody = null;
+              const contentType = httpResult.headers['content-type'] || '';
+              
+              if (contentType.includes('application/json') && httpResult.body) {
+                try {
+                  parsedBody = JSON.parse(httpResult.body);
+                } catch (parseError) {
+                  logger.warn('Failed to parse JSON response', { 
+                    requestId: httpResult.requestId, 
+                    error: parseError.message 
+                  });
+                }
+              }
+
+              const responseData = {
+                success: true,
+                statusCode: httpResult.statusCode,
+                statusMessage: httpResult.statusMessage,
+                headers: httpResult.headers,
+                body: httpResult.body,
+                json: parsedBody,
+                executionTime: executionTime,
+                url: args.url,
+                method: args.method || 'POST'
+              };
+
+              logger.info('HTTP JSON request completed successfully', {
+                clientIP,
+                url: args.url,
+                method: args.method || 'POST',
+                statusCode: httpResult.statusCode,
+                executionTime,
+                responseBodyLength: httpResult.body ? httpResult.body.length : 0,
+                hasJsonResponse: !!parsedBody
+              });
+
+              result = createTextResult(JSON.stringify(responseData, null, 2));
+            } else {
+              const errorResponse = {
+                success: false,
+                error: httpResult.error,
+                statusCode: httpResult.statusCode,
+                statusMessage: httpResult.statusMessage,
+                executionTime: executionTime,
+                url: args.url,
+                method: args.method || 'POST',
+                timestamp: new Date().toISOString()
+              };
+
+              logger.error('HTTP JSON request failed', {
+                clientIP,
+                url: args.url,
+                method: args.method || 'POST',
+                error: httpResult.error,
+                statusCode: httpResult.statusCode,
+                executionTime
+              });
+
+              result = createTextResult(JSON.stringify(errorResponse, null, 2));
+            }
+          } catch (error) {
+            logger.error('HTTP JSON request exception', { 
+              clientIP, 
+              error: error.message,
+              url: args.url,
+              method: args.method || 'POST'
+            });
+            
+            result = handleValidationError(error, 'HTTP JSON request', logger, clientIP, { 
+              url: args.url, 
+              method: args.method || 'POST',
+              hasJsonPayload: !!args.jsonPayload
             });
           }
           break;

@@ -5,16 +5,16 @@ const {
   getNumericEnv,
   createDirCommand,
   executeCommand 
-} = require('../server/src/utils/helpers');
+} = require('../../server/src/utils/helpers');
 
 // Mock logger
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   security: jest.fn(),
   warn: jest.fn(),
   error: jest.fn()
 }));
 
-const logger = require('../server/src/utils/logger');
+const logger = require('../../server/src/utils/logger');
 
 describe('Helpers Utils', () => {
   beforeEach(() => {

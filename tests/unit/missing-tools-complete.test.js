@@ -23,8 +23,8 @@ describe('Missing Tools Complete Test Coverage', () => {
     process.env.DEV_COMMAND_PATHS = 'C:\\builds\\,C:\\projects\\,C:\\dev\\';
     process.env.ENABLE_DEV_COMMANDS = 'true';
     
-    delete require.cache[require.resolve('../server/src/server')];
-    app = require('../server/src/server');
+    delete require.cache[require.resolve('../../server/src/server')];
+    app = require('../../server/src/server');
   });
 
   afterAll(() => {

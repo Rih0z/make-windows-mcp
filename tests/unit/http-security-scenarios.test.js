@@ -7,27 +7,27 @@ const request = require('supertest');
 const express = require('express');
 
 // Mock the http-client module
-jest.mock('../server/src/utils/http-client', () => {
+jest.mock('../../server/src/utils/http-client', () => {
   return {
     executeRequest: jest.fn()
   };
 });
 
 // Mock other dependencies
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   security: jest.fn()
 }));
 
-jest.mock('../server/src/utils/auth-manager', () => ({
+jest.mock('../../server/src/utils/auth-manager', () => ({
   isAuthEnabled: () => true,
   validateToken: jest.fn(),
   extractToken: jest.fn()
 }));
 
-jest.mock('../server/src/utils/rate-limiter', () => ({
+jest.mock('../../server/src/utils/rate-limiter', () => ({
   middleware: jest.fn((req, res, next) => next())
 }));
 
@@ -41,8 +41,8 @@ describe('HTTP Request Tool - Security Scenarios', () => {
     jest.clearAllMocks();
 
     // Get the mocked modules
-    httpClient = require('../server/src/utils/http-client');
-    authManager = require('../server/src/utils/auth-manager');
+    httpClient = require('../../server/src/utils/http-client');
+    authManager = require('../../server/src/utils/auth-manager');
 
     // Default auth setup
     authManager.validateToken.mockReturnValue(true);
@@ -430,7 +430,7 @@ describe('HTTP Request Tool - Security Scenarios', () => {
 
   describe('Rate Limiting and DoS Protection', () => {
     test('should handle rate limiting for excessive requests', async () => {
-      const rateLimiter = require('../server/src/utils/rate-limiter');
+      const rateLimiter = require('../../server/src/utils/rate-limiter');
       
       // Mock rate limiter to reject request
       rateLimiter.middleware.mockImplementation((req, res, next) => {

@@ -23,8 +23,8 @@ describe('Edge Cases and Security Tests', () => {
     process.env.DEV_COMMAND_PATHS = 'C:\\builds\\,C:\\projects\\';
     process.env.ENABLE_DEV_COMMANDS = 'false';
     
-    delete require.cache[require.resolve('../server/src/server')];
-    app = require('../server/src/server');
+    delete require.cache[require.resolve('../../server/src/server')];
+    app = require('../../server/src/server');
   });
 
   afterAll(() => {
@@ -350,8 +350,8 @@ describe('Edge Cases and Security Tests', () => {
   describe('Dangerous Mode Security Boundaries', () => {
     beforeEach(() => {
       process.env.ENABLE_DANGEROUS_MODE = 'true';
-      delete require.cache[require.resolve('../server/src/server')];
-      app = require('../server/src/server');
+      delete require.cache[require.resolve('../../server/src/server')];
+      app = require('../../server/src/server');
     });
 
     afterEach(() => {

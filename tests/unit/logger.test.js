@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const logger = require('../server/src/utils/logger');
+const logger = require('../../server/src/utils/logger');
 
 // Mock fs module
 jest.mock('fs');
@@ -66,7 +66,7 @@ describe('Logger', () => {
       fsMock.readdirSync = jest.fn().mockReturnValue([]);
       
       // Now require logger which will call createLogDirectory
-      require('../server/src/utils/logger');
+      require('../../server/src/utils/logger');
       
       expect(fsMock.mkdirSync).toHaveBeenCalledWith(mockLogDir, { recursive: true });
     });

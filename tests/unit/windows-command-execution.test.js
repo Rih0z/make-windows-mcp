@@ -32,7 +32,7 @@ describe('Windows Command Execution Testing', () => {
     // Mock environment
     process.env.MCP_AUTH_TOKEN = 'test-windows-token';
     process.env.MCP_SERVER_PORT = '8080';
-    process.env.ALLOWED_BUILD_PATHS = 'C:\\builds\\;C:\\temp\\;C:\\projects\\';
+    process.env.ALLOWED_BUILD_PATHS = 'C:\\builds\\;C:\\temp\\;C:\\projects";
     process.env.COMMAND_TIMEOUT = '30000';
     
     // Mock console methods
@@ -62,7 +62,7 @@ describe('Windows Command Execution Testing', () => {
     jest.spyOn(os, 'type').mockReturnValue('Windows_NT');
     
     // Mock all utility modules
-    jest.doMock('../server/src/utils/port-manager', () => ({
+    jest.doMock('../../server/src/utils/port-manager', () => ({
       initialize: jest.fn(),
       findAvailablePort: jest.fn().mockResolvedValue(8080),
       getPortInfo: jest.fn().mockReturnValue({ preferredPort: 8080, assignedPort: 8080 }),
@@ -71,32 +71,32 @@ describe('Windows Command Execution Testing', () => {
       cleanup: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/rate-limiter', () => ({
+    jest.doMock('../../server/src/utils/rate-limiter', () => ({
       checkLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 59 }),
       cleanup: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/auth-manager', () => ({
+    jest.doMock('../../server/src/utils/auth-manager', () => ({
       validateBearerToken: jest.fn().mockReturnValue(true),
       isTrustedIP: jest.fn().mockReturnValue(true),
       logAuthAttempt: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/logger', () => ({
+    jest.doMock('../../server/src/utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
       debug: jest.fn()
     }));
     
-    jest.doMock('../server/src/utils/security', () => ({
+    jest.doMock('../../server/src/utils/security', () => ({
       validatePowerShellCommand: jest.fn().mockReturnValue(true),
       validatePath: jest.fn().mockReturnValue(true),
       validateBatchCommand: jest.fn().mockReturnValue(true),
       sanitizeInput: jest.fn(input => input)
     }));
     
-    jest.doMock('../server/src/utils/helpers', () => ({
+    jest.doMock('../../server/src/utils/helpers', () => ({
       formatCommandResult: jest.fn((output, error, exitCode) => ({
         success: exitCode === 0,
         output: output || '',
@@ -131,7 +131,7 @@ describe('Windows Command Execution Testing', () => {
     }));
     
     // Import server after mocking
-    serverInstance = require('../server/src/server');
+    serverInstance = require('../../server/src/server');
   });
 
   afterEach(() => {
@@ -317,7 +317,7 @@ describe('Windows Command Execution Testing', () => {
         
         // Mock error
         setTimeout(() => {
-          mockProcess.stderr.emit('data', Buffer.from('Get-NonExistentCommand : The term \\'Get-NonExistentCommand\\' is not recognized'));
+          mockProcess.stderr.emit('data', Buffer.from('Get-NonExistentCommand : The term "Get-NonExistentCommand" is not recognized'));
           mockProcess.emit('close', 1);
         }, 10);
         
@@ -439,7 +439,7 @@ describe('Windows Command Execution Testing', () => {
           'dotnet',
           ['build', 'C:\\projects\\MyApp.csproj', '-c', 'Release'],
           expect.objectContaining({
-            cwd: 'C:\\projects\\'
+            cwd: 'C:\\projects"
           })
         );
         
@@ -508,7 +508,7 @@ describe('Windows Command Execution Testing', () => {
         
         // Mock build failure
         setTimeout(() => {
-          mockProcess.stderr.emit('data', Buffer.from('Program.cs(10,15): error CS0103: The name \\'undefined\\' does not exist in the current context'));
+          mockProcess.stderr.emit('data', Buffer.from('Program.cs(10,15): error CS0103: The name "undefined" does not exist in the current context'));
           mockProcess.emit('close', 1);
         }, 10);
         
@@ -912,7 +912,7 @@ describe('Windows Command Execution Testing', () => {
             name: 'run_powershell',
             arguments: {
               command: 'Get-ChildItem',
-              workingDirectory: 'C:\\builds\\'
+              workingDirectory: 'C:\\builds"
             }
           },
           meta: {
@@ -921,7 +921,7 @@ describe('Windows Command Execution Testing', () => {
           }
         };
         
-        const mockSecurity = require('../server/src/utils/security');
+        const mockSecurity = require('../../server/src/utils/security');
         
         // Mock directory listing
         setTimeout(() => {
@@ -931,7 +931,7 @@ describe('Windows Command Execution Testing', () => {
         
         const response = await callHandler(request);
         
-        expect(mockSecurity.validatePath).toHaveBeenCalledWith('C:\\builds\\');
+        expect(mockSecurity.validatePath).toHaveBeenCalledWith('C:\\builds");
         expect(response.content[0].text).toContain('file1.txt');
       }
     });
@@ -942,7 +942,7 @@ describe('Windows Command Execution Testing', () => {
         .find(call => call[0] === 'tools/call')?.[1];
       
       if (callHandler) {
-        const mockSecurity = require('../server/src/utils/security');
+        const mockSecurity = require('../../server/src/utils/security');
         mockSecurity.validatePath.mockImplementation(() => {
           throw new Error('Path not allowed');
         });

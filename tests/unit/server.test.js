@@ -21,13 +21,13 @@ jest.mock('child_process', () => ({
 }));
 
 // Mock the utilities
-jest.mock('../server/src/utils/security');
-jest.mock('../server/src/utils/rate-limiter');
-jest.mock('../server/src/utils/logger');
+jest.mock('../../server/src/utils/security');
+jest.mock('../../server/src/utils/rate-limiter');
+jest.mock('../../server/src/utils/logger');
 
-const security = require('../server/src/utils/security');
-const rateLimiter = require('../server/src/utils/rate-limiter');
-const logger = require('../server/src/utils/logger');
+const security = require('../../server/src/utils/security');
+const rateLimiter = require('../../server/src/utils/rate-limiter');
+const logger = require('../../server/src/utils/logger');
 
 describe('MCP Server API', () => {
   let app;

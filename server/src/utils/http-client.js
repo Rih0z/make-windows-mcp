@@ -84,8 +84,21 @@ class HttpClient {
   isPortAllowed(port) {
     const allowedPorts = process.env.HTTP_ALLOWED_PORTS;
     if (!allowedPorts) {
-      // Default allowed ports for development
-      return [80, 443, 3000, 8000, 8080, 8888, 5000, 3001, 4000, 5173, 5174].includes(port);
+      // Enhanced default allowed ports for development servers
+      // Includes common AI server, web development, and testing ports
+      const defaultPorts = [
+        80, 443,                    // Standard web ports
+        3000, 3001,                 // React, Node.js dev servers
+        4000, 5000,                 // Development servers
+        8000, 8080, 8090, 8888,     // AI servers, web servers, proxies
+        5173, 5174,                 // Vite dev servers
+        7000, 9000,                 // Additional development ports
+        6000, 6001,                 // Jest, testing servers
+        4200,                       // Angular dev server
+        8983,                       // Solr
+        9200, 9300                  // Elasticsearch
+      ];
+      return defaultPorts.includes(port);
     }
     
     const ports = allowedPorts.split(',').map(p => parseInt(p.trim()));

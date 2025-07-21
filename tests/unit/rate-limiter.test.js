@@ -1,4 +1,4 @@
-const rateLimiter = require('../server/src/utils/rate-limiter');
+const rateLimiter = require('../../server/src/utils/rate-limiter');
 
 describe('Rate Limiter', () => {
   beforeEach(() => {

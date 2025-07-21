@@ -9,7 +9,7 @@ jest.mock('child_process');
 jest.mock('fs');
 
 // Mock security module
-jest.mock('../server/src/utils/security', () => ({
+jest.mock('../../server/src/utils/security', () => ({
   validateBuildPath: jest.fn().mockImplementation(path => path),
   validateIPAddress: jest.fn().mockImplementation(ip => ip),
   validatePowerShellCommand: jest.fn().mockImplementation(cmd => cmd),
@@ -17,7 +17,7 @@ jest.mock('../server/src/utils/security', () => ({
 }));
 
 // Mock logger
-jest.mock('../server/src/utils/logger', () => ({
+jest.mock('../../server/src/utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
@@ -26,12 +26,12 @@ jest.mock('../server/src/utils/logger', () => ({
 }));
 
 // Mock rate limiter
-jest.mock('../server/src/utils/rate-limiter', () => ({
+jest.mock('../../server/src/utils/rate-limiter', () => ({
   checkRateLimit: jest.fn().mockReturnValue(true)
 }));
 
 // Mock crypto
-jest.mock('../server/src/utils/crypto', () => ({
+jest.mock('../../server/src/utils/crypto', () => ({
   initializeKey: jest.fn(),
   encryptionEnabled: false
 }));
@@ -57,8 +57,8 @@ describe('New Tools Tests (v1.0.6)', () => {
     spawn.mockReturnValue(mockProcess);
     
     // Re-require server
-    delete require.cache[require.resolve('../server/src/server')];
-    app = require('../server/src/server');
+    delete require.cache[require.resolve('../../server/src/server')];
+    app = require('../../server/src/server');
   });
 
   describe('mcp_self_build tool', () => {

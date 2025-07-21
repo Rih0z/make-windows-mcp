@@ -10,13 +10,13 @@ describe('Rate Limiter - Fixed Coverage', () => {
     jest.clearAllMocks();
     
     // Clear require cache to get fresh instance
-    delete require.cache[require.resolve('../server/src/utils/rate-limiter')];
+    delete require.cache[require.resolve('../../server/src/utils/rate-limiter')];
     
     // Mock Date.now for consistent testing
     jest.spyOn(Date, 'now').mockReturnValue(1000000);
     
     // Get fresh instance
-    rateLimiter = require('../server/src/utils/rate-limiter');
+    rateLimiter = require('../../server/src/utils/rate-limiter');
     
     // Clear any existing client data
     rateLimiter.clear();

@@ -3,9 +3,9 @@
  * 極限条件でのシステム動作を検証
  */
 
-const securityValidator = require('../server/src/utils/security');
-const rateLimiter = require('../server/src/utils/rate-limiter');
-const portManager = require('../server/src/utils/port-manager');
+const securityValidator = require('../../server/src/utils/security');
+const rateLimiter = require('../../server/src/utils/rate-limiter');
+const portManager = require('../../server/src/utils/port-manager');
 
 describe('Stress Tests and Edge Cases', () => {
 

@@ -5,12 +5,12 @@
  */
 
 const request = require('supertest');
-const app = require('../server/src/server');
-const security = require('../server/src/utils/security');
-const helpers = require('../server/src/utils/helpers');
+const app = require('../../server/src/server');
+const security = require('../../server/src/utils/security');
+const helpers = require('../../server/src/utils/helpers');
 
 // Mock dependencies
-jest.mock('../server/src/utils/logger');
+jest.mock('../../server/src/utils/logger');
 jest.mock('child_process');
 const { spawn } = require('child_process');
 
@@ -336,7 +336,7 @@ describe('PDF Converter Support - Phase 1', () => {
     });
 
     it('should log process execution details', async () => {
-      const logger = require('../server/src/utils/logger');
+      const logger = require('../../server/src/utils/logger');
       
       mockSpawn.stdout.on.mockImplementation((event, callback) => {
         if (event === 'data') callback('Test\n');
