@@ -13,7 +13,8 @@ const rateLimiter = require('./utils/rate-limiter');
 const logger = require('./utils/logger');
 const crypto = require('./utils/crypto');
 const authManager = require('./utils/auth-manager');
-const portManager = require('./utils/port-manager');
+const PortManager = require('./utils/port-manager');
+const portManager = new PortManager();
 const helpGenerator = require('./utils/help-generator');
 const powershellExecutor = require('./utils/powershell-enhanced');
 const httpClient = require('./utils/http-client');
@@ -35,10 +36,8 @@ function validateEnvironment() {
   }
   
   // Check SSH credentials if remote features are enabled
-  if (process.env.NORDVPN_ENABLED === 'true') {
-    if (!process.env.REMOTE_PASSWORD) {
-      warnings.push('REMOTE_PASSWORD must be set when NORDVPN_ENABLED is true');
-    }
+  if (process.env.NORDVPN_ENABLED === 'true' && !process.env.REMOTE_PASSWORD) {
+    warnings.push('REMOTE_PASSWORD must be set when NORDVPN_ENABLED is true');
   }
   
   // Validate numeric environment variables
