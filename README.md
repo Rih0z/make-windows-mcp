@@ -128,97 +128,33 @@ git pull origin main
 npm run install:all
 ```
 
-## 📋 対応言語・ツール
+## 🛠️ 対応ツール
 
-- ✅ .NET (dotnet)
-- ✅ Java (mvn, gradle)
-- ✅ Python (pip, pytest, venv)
-- ✅ Node.js (npm, yarn)
-- ✅ Go (go build)
-- ✅ Rust (cargo)
-- ✅ C++ (cmake, msbuild)
-- ✅ Docker
-- ✅ PowerShell
+.NET, Java, Python, Node.js, Go, Rust, C++, Docker, PowerShell など11ツール対応
 
-## 🔒 セキュリティ
+## 📚 各種ドキュメント
 
-- **3段階モード**: 通常/開発/危険モード
-- **認証**: Bearer Token
-- **制限**: IP制限、レート制限、コマンド検証
-- **監査**: 全操作ログ記録
+### 🚀 利用者向け
+- **[外部ユーザー向け接続ガイド](./docs/EXTERNAL_USER_GUIDE.md)** - 完全セットアップ・使用方法
+- **[使用例集](./docs/USE_CASES.md)** - 実際のプロジェクト例とワークフロー
 
-## 📚 詳細ドキュメント
+### 🔧 技術者向け  
+- **[API完全リファレンス](./docs/api/COMPLETE_COMMAND_REFERENCE.md)** - 全コマンド詳細
+- **[エンタープライズ機能ガイド](./docs/api/ENTERPRISE_FEATURES_GUIDE.md)** - 高度な機能・設定
+- **[アーキテクチャドキュメント](./docs/architecture/ARCHITECTURE.md)** - システム設計・構成
 
-- **[セットアップガイド](CLAUDE_CODE_SETUP.md)** - 詳細な設定手順
-- **[設定テンプレート](config/claude-code/)** - 環境別設定例
-- **[トラブルシューティング](TROUBLESHOOTING.md)** - 問題解決ガイド
-- **[セキュリティガイド](SECURITY.md)** - セキュリティ設定
+### 📋 運用・管理
+- **[変更履歴](./docs/CHANGELOG.md)** - 詳細なバージョン履歴  
+- **[テスト結果](./docs/messages/TEST_RESULTS.md)** - 動作確認状況
+- **[バグレポート対応](./docs/messages/)** - 問題解決履歴
 
-## 🔧 開発・貢献
-
-```bash
-# 開発環境セットアップ
-npm run install:all
-npm run build:all
-
-# テスト実行
-npm test
-npm run test:coverage
-```
-
-## 📈 アップデート履歴
-
-<details>
-<summary>📜 詳細なアップデート履歴を表示</summary>
-
-### v1.0.42 (2025-07-18)
-- ✅ プロジェクト構造の完全整理
-- ✅ セキュリティ強化（.env分離）
-- ✅ ポート範囲機能（8080-8089）
-- ✅ 開発機能デフォルト有効化
-
-### v1.0.41 (2025-07-17)
-- ✅ Claude Code統合システム完成
-- ✅ 自動セットアップスクリプト
-- ✅ 設定テンプレート追加
-
-### v1.0.40 (2025-07-17)
-- ✅ テスト強化・カバレッジ向上
-- ✅ エンタープライズ機能拡張
-
-### 過去のバージョン
-
-#### v1.0.33 (2025-07-14)
-- ✅ Python仮想環境サポート
-- ✅ エンタープライズPython開発対応
-
-#### v1.0.32 (2025-07-13)
-- 🔧 PowerShell実行の回帰バグ修正
-
-#### v1.0.31 (2025-07-12)
-- 🔧 タイムアウト・エンコード・テスト強化
-
-#### v1.0.30 (2025-07-11)
-- ✅ JSON・UTF-8・ストリーミング対応
-
-#### v1.0.29 (2025-07-10)
-- ✅ 動的ヘルプシステム実装
-
-#### v1.0.28 (2025-07-09)
-- ✅ エンタープライズ認証システム強化
-
-#### v1.0.27 (2025-07-08)
-- ✅ PDF Base64エンコードツール実装
-
-#### v1.0.26-25 (2025-07-07-06)
-- ✅ スマートサーバー発見・ポート管理システム
-
-</details>
+### 📖 完全ドキュメント一覧
+**[→ docs/README.md](./docs/README.md)** で目的別に整理されたドキュメント一覧をご確認ください。
 
 ## 📄 ライセンス
 
-MIT License - 自由に使用・改変・配布可能
+MIT License
 
 ---
 
-**環境に束縛されない開発体験を今すぐ始めましょう！**
+**Mac/Linux開発 → Windows実行の完全ワークフローを今すぐ体験！**
